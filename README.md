@@ -8,8 +8,10 @@ The Gibson SDK is the official Software Development Kit for building AI security
 ## Table of Contents
 
 - [Overview](#overview)
+- [Architecture Overview](#architecture-overview)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Data Flow Examples](#data-flow-examples)
 - [Core Concepts](#core-concepts)
   - [Agents](#agents)
   - [Tools](#tools)
@@ -38,6 +40,143 @@ The Gibson SDK provides a comprehensive set of APIs for:
 - **Managing Missions**: Orchestrate testing campaigns across multiple agents and targets
 - **Collecting Findings**: Standardized vulnerability reporting with MITRE ATT&CK/ATLAS mappings
 - **Memory Management**: Three-tier memory system (working, mission, long-term)
+
+## Architecture Overview
+
+The Gibson SDK follows a layered architecture where agents orchestrate security testing using tools, plugins, and LLM capabilities:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           GIBSON FRAMEWORK                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      MISSION ORCHESTRATOR                            │   │
+│  │   Manages mission lifecycle, agent coordination, finding collection  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                         │
+│                    ┌───────────────┼───────────────┐                        │
+│                    ▼               ▼               ▼                        │
+│  ┌─────────────────────┐ ┌─────────────────┐ ┌─────────────────────┐       │
+│  │       AGENT 1       │ │     AGENT 2     │ │      AGENT N        │       │
+│  │  (Prompt Injection) │ │   (Jailbreak)   │ │  (Data Extraction)  │       │
+│  └─────────────────────┘ └─────────────────┘ └─────────────────────┘       │
+│           │                      │                      │                   │
+│           └──────────────────────┼──────────────────────┘                   │
+│                                  ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         AGENT HARNESS                                │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
+│  │  │   LLM    │ │  Tools   │ │ Plugins  │ │  Memory  │ │ Findings │   │   │
+│  │  │  Access  │ │  Access  │ │  Access  │ │  Access  │ │  Submit  │   │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│           │              │              │              │                    │
+│           ▼              ▼              ▼              ▼                    │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────────────┐    │
+│  │ LLM Pool   │  │  Tool      │  │  Plugin    │  │   Memory System    │    │
+│  │ (OpenAI,   │  │  Registry  │  │  Registry  │  │ ┌────────────────┐ │    │
+│  │ Anthropic, │  │            │  │            │  │ │Working (RAM)   │ │    │
+│  │ Ollama)    │  │ ┌────────┐ │  │ ┌────────┐ │  │ ├────────────────┤ │    │
+│  └────────────┘  │ │HTTP    │ │  │ │GraphRAG│ │  │ │Mission (SQLite)│ │    │
+│                  │ │Browser │ │  │ │MITRE   │ │  │ ├────────────────┤ │    │
+│                  │ │Scanner │ │  │ │Custom  │ │  │ │Long-term (Vec) │ │    │
+│                  │ └────────┘ │  │ └────────┘ │  │ └────────────────┘ │    │
+│                  └────────────┘  └────────────┘  └────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+                        ┌─────────────────────────────┐
+                        │       TARGET SYSTEM         │
+                        │  (LLM API, Chat, RAG, etc.) │
+                        └─────────────────────────────┘
+```
+
+### Component Relationships
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SDK COMPONENT MODEL                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ┌─────────────┐      uses        ┌─────────────┐                      │
+│   │             │ ───────────────► │             │                      │
+│   │   AGENT     │                  │    TOOL     │                      │
+│   │             │ ◄─────────────── │             │                      │
+│   │ • Execute   │     returns      │ • Execute   │                      │
+│   │ • LLM Slots │                  │ • Schema    │                      │
+│   │ • Findings  │                  │ • Health    │                      │
+│   └─────────────┘                  └─────────────┘                      │
+│          │                                │                              │
+│          │ queries                        │ provides                     │
+│          ▼                                ▼                              │
+│   ┌─────────────┐                  ┌─────────────┐                      │
+│   │             │                  │             │                      │
+│   │   PLUGIN    │                  │   SCHEMA    │                      │
+│   │             │                  │             │                      │
+│   │ • Methods   │                  │ • Validate  │                      │
+│   │ • Query     │                  │ • Types     │                      │
+│   │ • Lifecycle │                  │ • JSON      │                      │
+│   └─────────────┘                  └─────────────┘                      │
+│                                                                          │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │                        HARNESS (Runtime)                         │   │
+│   │                                                                  │   │
+│   │  LLM ──► Complete(), Stream(), CompleteWithTools()              │   │
+│   │  Tool ─► CallTool(), ListTools()                                │   │
+│   │  Plugin► QueryPlugin(), ListPlugins()                           │   │
+│   │  Memory► Working(), Mission(), LongTerm()                       │   │
+│   │  Find ──► SubmitFinding(), GetFindings()                        │   │
+│   │  Obs ───► Logger(), Tracer(), TokenUsage()                      │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Three-Tier Memory Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         MEMORY SYSTEM                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    WORKING MEMORY (Ephemeral)                    │    │
+│  │                                                                  │    │
+│  │  • In-memory key-value store                                    │    │
+│  │  • Cleared after task completion                                │    │
+│  │  • Fast access, no persistence                                  │    │
+│  │  • Use for: Current step, temporary calculations, scratch data  │    │
+│  │                                                                  │    │
+│  │  Example: working.Set(ctx, "current_payload_index", 5)          │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    MISSION MEMORY (Persistent)                   │    │
+│  │                                                                  │    │
+│  │  • SQLite-backed storage with FTS5 search                       │    │
+│  │  • Persists for duration of mission                             │    │
+│  │  • Searchable and queryable                                     │    │
+│  │  • Use for: Conversation history, discovered patterns, state    │    │
+│  │                                                                  │    │
+│  │  Example: mission.Set(ctx, "vuln_pattern_1", pattern, metadata) │    │
+│  │           mission.Search(ctx, "injection patterns", 10)         │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    LONG-TERM MEMORY (Vector)                     │    │
+│  │                                                                  │    │
+│  │  • Vector database (Qdrant, Milvus, etc.)                       │    │
+│  │  • Persists across missions                                     │    │
+│  │  • Semantic similarity search                                   │    │
+│  │  • Use for: Attack patterns, successful payloads, learnings    │    │
+│  │                                                                  │    │
+│  │  Example: longterm.Store(ctx, "Successful jailbreak...", meta)  │    │
+│  │           longterm.Search(ctx, "bypass content filter", 5, nil) │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Installation
 
@@ -105,6 +244,353 @@ func main() {
 
     log.Printf("Created agent: %s v%s", myAgent.Name(), myAgent.Version())
 }
+```
+
+## Data Flow Examples
+
+### Example 1: Recon Agent Flow
+
+This diagram shows how a reconnaissance agent discovers information about a target LLM:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        RECON AGENT DATA FLOW                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────┐                                                    ┌──────────┐
+  │  Task   │                                                    │  Target  │
+  │ (Goal:  │                                                    │   LLM    │
+  │ "Recon  │                                                    │   API    │
+  │  target │                                                    └────┬─────┘
+  │  LLM")  │                                                         │
+  └────┬────┘                                                         │
+       │                                                              │
+       ▼                                                              │
+  ┌─────────────────────────────────────────────────────────────┐    │
+  │                     RECON AGENT                              │    │
+  │                                                              │    │
+  │  1. Initialize                                               │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  2. Load target info from Harness                           │    │
+  │     │  target := harness.Target()                           │    │
+  │     │  logger := harness.Logger()                           │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  3. Check long-term memory for prior recon                  │    │
+  │     │  results := harness.Memory().LongTerm().Search(...)   │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  4. Call HTTP tool to probe endpoints          ─────────────┼────┼───┐
+  │     │  resp := harness.CallTool("http-client", {            │    │   │
+  │     │      "url": target.URL + "/health",                   │    │   │
+  │     │      "method": "GET"                                  │    │   │
+  │     │  })                                                    │    │   │
+  │     │                                            ◄──────────┼────┼───┘
+  │     ▼                                                        │    │
+  │  5. Use LLM to analyze response                             │    │
+  │     │  harness.Complete("analyzer", [                       │    │
+  │     │      {Role: "user", Content: "Analyze: " + resp}      │    │
+  │     │  ])                                                    │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  6. Store findings in mission memory                        │    │
+  │     │  harness.Memory().Mission().Set("recon_results", ...) │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  7. Query GraphRAG plugin for similar targets               │    │
+  │     │  harness.QueryPlugin("graphrag", "find_similar", ...) │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  8. If vulnerability indicators found, submit finding       │    │
+  │     │  harness.SubmitFinding(finding.Finding{               │    │
+  │     │      Title: "Information Disclosure",                 │    │
+  │     │      Severity: finding.SeverityMedium,                │    │
+  │     │      Category: finding.CategoryInformationDisclosure, │    │
+  │     │      Evidence: [...],                                 │    │
+  │     │  })                                                    │    │
+  │     │                                                        │    │
+  │     ▼                                                        │    │
+  │  9. Return result with discovered information               │    │
+  │     return agent.Result{                                    │    │
+  │         Status: agent.StatusSuccess,                        │    │
+  │         Output: reconData,                                  │    │
+  │         Findings: []string{findingID},                      │    │
+  │     }                                                        │    │
+  └─────────────────────────────────────────────────────────────┘    │
+       │                                                              │
+       ▼                                                              │
+  ┌─────────┐                                                         │
+  │ Result  │                                                         │
+  │ + Recon │                                                         │
+  │   Data  │                                                         │
+  └─────────┘                                                         │
+```
+
+### Example 2: Prompt Injection Agent Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PROMPT INJECTION AGENT DATA FLOW                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌──────────────────────────────┐
+                    │       PROMPT INJECTION       │
+                    │           AGENT              │
+                    └──────────────┬───────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        │                          │                          │
+        ▼                          ▼                          ▼
+   ┌─────────┐              ┌─────────────┐            ┌───────────┐
+   │ Step 1  │              │   Step 2    │            │  Step 3   │
+   │ Load    │              │   Generate  │            │  Execute  │
+   │ Payload │              │   Attack    │            │  Attack   │
+   │ Library │              │   Prompts   │            │  Payloads │
+   └────┬────┘              └──────┬──────┘            └─────┬─────┘
+        │                          │                          │
+        │                          │                          │
+        ▼                          ▼                          ▼
+┌───────────────┐        ┌─────────────────┐        ┌─────────────────┐
+│ Long-Term     │        │ LLM (Primary)   │        │  Target LLM     │
+│ Memory        │        │                 │        │                 │
+│               │        │ "Generate       │        │ Send injection  │
+│ Search for    │        │  variations of  │        │ payload and     │
+│ successful    │        │  this payload   │        │ analyze         │
+│ past payloads │        │  for target     │        │ response        │
+│               │        │  system..."     │        │                 │
+└───────┬───────┘        └────────┬────────┘        └────────┬────────┘
+        │                         │                          │
+        │                         │                          │
+        ▼                         ▼                          ▼
+   ┌─────────┐              ┌─────────────┐            ┌───────────┐
+   │ Payload │              │  Generated  │            │  Target   │
+   │ Library │              │   Attack    │            │  Response │
+   │ Results │              │   Prompts   │            │           │
+   └────┬────┘              └──────┬──────┘            └─────┬─────┘
+        │                          │                          │
+        └──────────────────────────┼──────────────────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │         Step 4               │
+                    │   Analyze & Classify         │
+                    └──────────────┬───────────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    │                             │
+                    ▼                             ▼
+           ┌───────────────┐            ┌───────────────┐
+           │ Vulnerability │            │ No Vuln Found │
+           │    Found!     │            │               │
+           └───────┬───────┘            └───────┬───────┘
+                   │                            │
+                   ▼                            ▼
+           ┌───────────────┐            ┌───────────────┐
+           │ Submit        │            │ Update        │
+           │ Finding       │            │ Working       │
+           │               │            │ Memory        │
+           │ • Severity    │            │               │
+           │ • Evidence    │            │ Try next      │
+           │ • Repro Steps │            │ payload...    │
+           │ • MITRE Map   │            │               │
+           └───────────────┘            └───────────────┘
+```
+
+### Example 3: Multi-Agent Coordination Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     MULTI-AGENT MISSION FLOW                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                         ┌────────────────┐
+                         │    MISSION     │
+                         │  ORCHESTRATOR  │
+                         └───────┬────────┘
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         │                       │                       │
+         ▼                       ▼                       ▼
+   ┌───────────┐          ┌───────────┐          ┌───────────┐
+   │  RECON    │          │ INJECTION │          │ JAILBREAK │
+   │  AGENT    │          │   AGENT   │          │   AGENT   │
+   └─────┬─────┘          └─────┬─────┘          └─────┬─────┘
+         │                      │                      │
+         │ Phase 1              │ Phase 2              │ Phase 3
+         │                      │                      │
+         ▼                      │                      │
+   ┌───────────┐                │                      │
+   │ Discover  │                │                      │
+   │ • Endpoints                │                      │
+   │ • Headers  │               │                      │
+   │ • Behavior │               │                      │
+   └─────┬─────┘                │                      │
+         │                      │                      │
+         │  ┌───────────────────┘                      │
+         │  │ (reads recon data)                       │
+         ▼  ▼                                          │
+   ┌─────────────────┐                                 │
+   │  MISSION MEMORY │                                 │
+   │                 │                                 │
+   │ • recon_results │◄────────────────────────────────┤
+   │ • vuln_patterns │                                 │
+   │ • attack_state  │                                 │
+   └────────┬────────┘                                 │
+            │                                          │
+            │  ┌───────────────────────────────────────┘
+            │  │ (reads injection findings)
+            ▼  ▼
+   ┌─────────────────────────────────────────────────────┐
+   │                   FINDINGS STORE                     │
+   │                                                      │
+   │  Finding 1: Information Disclosure (Medium)         │
+   │  Finding 2: Prompt Injection (High)                 │
+   │  Finding 3: Jailbreak Successful (Critical)         │
+   └─────────────────────────────────────────────────────┘
+            │
+            ▼
+   ┌─────────────────────────────────────────────────────┐
+   │                    EXPORT                            │
+   │                                                      │
+   │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+   │  │   JSON   │ │  SARIF   │ │   CSV    │ │  HTML  │ │
+   │  └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+   └─────────────────────────────────────────────────────┘
+```
+
+### Example 4: Tool Execution Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        TOOL EXECUTION PIPELINE                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Agent calls: harness.CallTool("http-client", input)
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │        TOOL REGISTRY          │
+              │                               │
+              │  1. Lookup tool by name       │
+              │  2. Check tool health         │
+              │  3. Route to implementation   │
+              └───────────────┬───────────────┘
+                              │
+           ┌──────────────────┴──────────────────┐
+           │                                     │
+           ▼                                     ▼
+  ┌─────────────────┐                   ┌─────────────────┐
+  │  Internal Tool  │                   │  External Tool  │
+  │  (In-process)   │                   │  (gRPC Client)  │
+  └────────┬────────┘                   └────────┬────────┘
+           │                                     │
+           ▼                                     ▼
+  ┌─────────────────┐                   ┌─────────────────┐
+  │ Schema Validate │                   │ gRPC Request    │
+  │     Input       │                   │ to External     │
+  └────────┬────────┘                   │ Tool Service    │
+           │                            └────────┬────────┘
+           ▼                                     │
+  ┌─────────────────┐                            │
+  │ Execute Tool    │                            │
+  │ Function        │                            │
+  └────────┬────────┘                            │
+           │                                     │
+           ▼                                     ▼
+  ┌─────────────────┐                   ┌─────────────────┐
+  │ Schema Validate │                   │ Deserialize     │
+  │     Output      │                   │ gRPC Response   │
+  └────────┬────────┘                   └────────┬────────┘
+           │                                     │
+           └──────────────────┬──────────────────┘
+                              │
+                              ▼
+                    ┌───────────────────┐
+                    │   Return Output   │
+                    │   to Agent        │
+                    └───────────────────┘
+```
+
+### Example 5: Finding Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FINDING LIFECYCLE                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Agent discovers vulnerability
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    CREATE FINDING                                │
+  │                                                                  │
+  │  finding := finding.NewFinding()                                │
+  │  finding.Title = "System Prompt Disclosure"                     │
+  │  finding.Category = finding.CategoryInformationDisclosure       │
+  │  finding.Severity = finding.SeverityHigh                        │
+  │  finding.Confidence = 0.95                                      │
+  └─────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    ADD EVIDENCE                                  │
+  │                                                                  │
+  │  finding.AddEvidence(finding.Evidence{                          │
+  │      Type: finding.EvidenceHTTPRequest,                         │
+  │      Title: "Malicious Prompt",                                 │
+  │      Content: "Ignore previous instructions...",                │
+  │  })                                                              │
+  │                                                                  │
+  │  finding.AddEvidence(finding.Evidence{                          │
+  │      Type: finding.EvidenceHTTPResponse,                        │
+  │      Title: "Disclosed System Prompt",                          │
+  │      Content: "You are a helpful assistant...",                 │
+  │  })                                                              │
+  └─────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    ADD MITRE MAPPING                             │
+  │                                                                  │
+  │  finding.SetMitreAtlas(&finding.MitreMapping{                   │
+  │      Matrix: "ATLAS",                                           │
+  │      TacticID: "AML.TA0002",                                    │
+  │      TacticName: "ML Model Access",                             │
+  │      TechniqueID: "AML.T0051",                                  │
+  │      TechniqueName: "LLM Prompt Injection",                     │
+  │  })                                                              │
+  └─────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    SUBMIT FINDING                                │
+  │                                                                  │
+  │  err := harness.SubmitFinding(ctx, finding)                     │
+  └─────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    FINDING STORE                                 │
+  │                                                                  │
+  │  • Persisted to database                                        │
+  │  • Indexed for search                                           │
+  │  • Risk score calculated                                        │
+  │  • Status: OPEN                                                 │
+  └─────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    EXPORT OPTIONS                                │
+  │                                                                  │
+  │  framework.ExportFindings(ctx, finding.FormatSARIF, writer)     │
+  │                                                                  │
+  │  Output formats:                                                │
+  │  • JSON - Raw finding data                                      │
+  │  • SARIF - For GitHub/GitLab security integration               │
+  │  • CSV - For spreadsheet analysis                               │
+  │  • HTML - For human-readable reports                            │
+  └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Concepts
