@@ -19,6 +19,7 @@ The Gibson SDK is the official Software Development Kit for building AI security
   - [LLM Slots](#llm-slots)
   - [Findings](#findings)
   - [Memory](#memory)
+  - [GraphRAG](#graphrag)
 - [Creating Agents](#creating-agents)
 - [Creating Tools](#creating-tools)
 - [Creating Plugins](#creating-plugins)
@@ -693,6 +694,62 @@ id, err := longTerm.Store(ctx, "Important information", metadata)
 results, err := longTerm.Search(ctx, "semantic query", 5, filters)
 ```
 
+### GraphRAG
+
+GraphRAG (Graph-based Retrieval-Augmented Generation) extends traditional vector search with graph relationships for context-aware knowledge retrieval. It combines semantic embeddings with graph traversal to discover related attack patterns, findings, and techniques across your testing missions.
+
+**Query for similar attack patterns:**
+```go
+import "github.com/zero-day-ai/sdk/graphrag"
+
+// Query related findings with graph context
+query := graphrag.NewQuery("SQL injection in authentication").
+    WithTopK(5).
+    WithMaxHops(2).
+    WithNodeTypes("finding", "technique").
+    WithMission(mission.ID)
+
+results, err := harness.GraphRAG().Query(ctx, query)
+if err != nil {
+    logger.Error("graphrag query failed", "error", err)
+}
+
+for _, result := range results {
+    logger.Info("related finding",
+        "title", result.Node.Content,
+        "score", result.Score,
+    )
+}
+```
+
+**Store a custom node:**
+```go
+// Store finding with relationships
+node := &graphrag.Node{
+    ID:        "finding-123",
+    Type:      "finding",
+    MissionID: mission.ID,
+    Content:   "SQL injection in login endpoint",
+    Properties: map[string]any{
+        "severity": "high",
+        "technique": "AML.T0051",
+    },
+}
+
+err := harness.GraphRAG().StoreNode(ctx, node)
+
+// Create relationship to technique
+rel := graphrag.NewRelationship(
+    "finding-123",
+    "technique-sql-injection",
+    "USES_TECHNIQUE",
+).WithProperty("confidence", 0.95)
+
+err = harness.GraphRAG().AddRelationship(ctx, rel)
+```
+
+GraphRAG helps agents learn from past testing missions by discovering patterns across vulnerabilities, techniques, and targets. See the [graphrag package documentation](https://pkg.go.dev/github.com/zero-day-ai/sdk/graphrag) for advanced usage including hybrid scoring, multi-hop traversal, and relationship management.
+
 ## Creating Agents
 
 ### Basic Agent
@@ -1361,6 +1418,7 @@ llm.WithTools(tools...)
 - **`github.com/zero-day-ai/sdk/plugin`** - Plugin types and builders
 - **`github.com/zero-day-ai/sdk/llm`** - LLM message types and completion requests
 - **`github.com/zero-day-ai/sdk/memory`** - Three-tier memory system
+- **`github.com/zero-day-ai/sdk/graphrag`** - Graph-based retrieval-augmented generation
 - **`github.com/zero-day-ai/sdk/finding`** - Security finding types and export
 - **`github.com/zero-day-ai/sdk/types`** - Core types (targets, techniques, missions, health)
 - **`github.com/zero-day-ai/sdk/schema`** - JSON Schema validation

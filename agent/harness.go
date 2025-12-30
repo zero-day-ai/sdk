@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
@@ -112,6 +113,59 @@ type Harness interface {
 	// TokenUsage returns the token usage tracker for this execution.
 	// This tracks token consumption across all LLM slots.
 	TokenUsage() llm.TokenTracker
+
+	// GraphRAG Query Methods
+	//
+	// These methods provide access to the GraphRAG knowledge graph for semantic search,
+	// pattern discovery, and relationship traversal.
+
+	// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
+	// Returns nodes matching the query criteria, ranked by combined relevance score.
+	QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
+
+	// FindSimilarAttacks searches for attack patterns semantically similar to the given content.
+	// Returns up to topK attack patterns ordered by similarity score.
+	FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error)
+
+	// FindSimilarFindings searches for findings semantically similar to the referenced finding.
+	// Returns up to topK findings ordered by similarity score.
+	FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error)
+
+	// GetAttackChains discovers multi-step attack paths starting from a technique.
+	// Returns attack chains up to maxDepth hops from the starting technique.
+	GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error)
+
+	// GetRelatedFindings retrieves findings connected via SIMILAR_TO or RELATED_TO relationships.
+	// Returns all directly related findings for the given finding ID.
+	GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error)
+
+	// GraphRAG Storage Methods
+	//
+	// These methods enable agents to store arbitrary data in the knowledge graph
+	// with custom node types, properties, and relationships.
+
+	// StoreGraphNode stores an arbitrary node in the knowledge graph.
+	// The node will be enriched with mission context and timestamps.
+	// If Content is provided, embeddings will be automatically generated.
+	// Returns the assigned node ID.
+	StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error)
+
+	// CreateGraphRelationship creates a relationship between two existing nodes.
+	// Both nodes must exist; returns an error if either node is not found.
+	CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error
+
+	// StoreGraphBatch stores multiple nodes and relationships atomically.
+	// Nodes are processed before relationships to ensure all targets exist.
+	// Returns all assigned node IDs in order.
+	StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error)
+
+	// TraverseGraph walks the graph from a starting node following relationships.
+	// Returns visited nodes with their paths and distances from the start.
+	TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error)
+
+	// GraphRAGHealth returns the health status of the GraphRAG subsystem.
+	// Use this to check availability before performing GraphRAG operations.
+	GraphRAGHealth(ctx context.Context) types.HealthStatus
 }
 
 // Descriptor provides metadata about an agent.
