@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zero-day-ai/gibson/api/gen/proto"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/types"

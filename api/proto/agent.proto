@@ -1,0 +1,163 @@
+syntax = "proto3";
+package gibson.agent;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/proto";
+
+import "common.proto";
+
+service AgentService {
+    rpc GetDescriptor(AgentGetDescriptorRequest) returns (AgentDescriptor);
+    rpc GetSlotSchema(AgentGetSlotSchemaRequest) returns (AgentGetSlotSchemaResponse);
+    rpc Execute(AgentExecuteRequest) returns (AgentExecuteResponse);
+    rpc Health(AgentHealthRequest) returns (gibson.common.HealthStatus);
+    rpc StreamExecute(stream ClientMessage) returns (stream AgentMessage);
+}
+
+message AgentGetDescriptorRequest {}
+
+message AgentDescriptor {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string capabilities = 4;
+    repeated string target_types = 5;
+    repeated string technique_types = 6;
+}
+
+message AgentSlotDefinition {
+    string name = 1;
+    string description = 2;
+    bool required = 3;
+    AgentSlotConfig default_config = 4;
+    AgentSlotConstraints constraints = 5;
+}
+
+message AgentSlotConfig {
+    string provider = 1;
+    string model = 2;
+    double temperature = 3;
+    int32 max_tokens = 4;
+}
+
+message AgentSlotConstraints {
+    int32 min_context_window = 1;
+    repeated string required_features = 2;
+}
+
+message AgentGetSlotSchemaRequest {}
+message AgentGetSlotSchemaResponse {
+    repeated AgentSlotDefinition slots = 1;
+}
+
+message AgentExecuteRequest {
+    string task_json = 1;
+    int64 timeout_ms = 2;
+}
+
+message AgentExecuteResponse {
+    string result_json = 1;
+    gibson.common.Error error = 2;
+}
+
+message AgentHealthRequest {}
+
+// Client -> Agent messages
+message ClientMessage {
+    oneof payload {
+        StartExecutionRequest start = 1;
+        SteeringMessage steering = 2;
+        InterruptRequest interrupt = 3;
+        SetModeRequest set_mode = 4;
+        ResumeRequest resume = 5;
+    }
+}
+
+message StartExecutionRequest {
+    string task_json = 1;
+    AgentMode initial_mode = 2;
+}
+
+message SteeringMessage {
+    string id = 1;
+    string content = 2;
+    map<string, string> metadata = 3;
+}
+
+message InterruptRequest {
+    string reason = 1;
+}
+
+message SetModeRequest {
+    AgentMode mode = 1;
+}
+
+message ResumeRequest {
+    string guidance = 1;
+}
+
+enum AgentMode {
+    AGENT_MODE_AUTONOMOUS = 0;
+    AGENT_MODE_INTERACTIVE = 1;
+}
+
+// Agent -> Client messages
+message AgentMessage {
+    oneof payload {
+        OutputChunk output = 1;
+        ToolCallEvent tool_call = 2;
+        ToolResultEvent tool_result = 3;
+        FindingEvent finding = 4;
+        StatusChange status = 5;
+        SteeringAck steering_ack = 6;
+        ErrorEvent error = 7;
+    }
+    string trace_id = 10;
+    string span_id = 11;
+    int64 sequence = 12;
+    int64 timestamp_ms = 13;
+}
+
+message OutputChunk {
+    string content = 1;
+    bool is_reasoning = 2;
+}
+
+message ToolCallEvent {
+    string tool_name = 1;
+    string input_json = 2;
+    string call_id = 3;
+}
+
+message ToolResultEvent {
+    string call_id = 1;
+    string output_json = 2;
+    bool success = 3;
+}
+
+message FindingEvent {
+    string finding_json = 1;
+}
+
+message StatusChange {
+    AgentStatus status = 1;
+    string message = 2;
+}
+
+message SteeringAck {
+    string message_id = 1;
+    string response = 2;
+}
+
+message ErrorEvent {
+    string code = 1;
+    string message = 2;
+    bool fatal = 3;
+}
+
+enum AgentStatus {
+    AGENT_STATUS_RUNNING = 0;
+    AGENT_STATUS_PAUSED = 1;
+    AGENT_STATUS_WAITING_FOR_INPUT = 2;
+    AGENT_STATUS_INTERRUPTED = 3;
+    AGENT_STATUS_COMPLETED = 4;
+    AGENT_STATUS_FAILED = 5;
+}

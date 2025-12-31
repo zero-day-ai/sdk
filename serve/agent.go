@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zero-day-ai/gibson/api/gen/proto"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/agent"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
