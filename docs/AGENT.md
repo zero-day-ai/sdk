@@ -8,10 +8,12 @@ This guide explains how to build agents, tools, and plugins for the Gibson Frame
 2. [LLM Slot System](#llm-slot-system)
 3. [Configuration](#configuration)
 4. [Building Agents](#building-agents)
-5. [Building Tools](#building-tools)
-6. [Building Plugins](#building-plugins)
-7. [Multi-Vendor LLM Usage](#multi-vendor-llm-usage)
-8. [Complete Examples](#complete-examples)
+5. [Component Manifest (component.yaml)](#component-manifest-componentyaml)
+6. [Agent Installation](#agent-installation)
+7. [Building Tools](#building-tools)
+8. [Building Plugins](#building-plugins)
+9. [Multi-Vendor LLM Usage](#multi-vendor-llm-usage)
+10. [Complete Examples](#complete-examples)
 
 ---
 
@@ -507,6 +509,271 @@ type Harness interface {
     TokenUsage() llm.TokenTracker
 }
 ```
+
+---
+
+## Component Manifest (component.yaml)
+
+Every agent must have a `component.yaml` manifest file in its root directory. This file tells Gibson how to build, run, and validate the agent.
+
+### Manifest File Requirements
+
+- **File name**: Must be exactly `component.yaml` (or `component.json`)
+- **Location**: Root directory of the agent
+- **For mono-repos**: Each agent subdirectory must have its own `component.yaml`
+
+### Agent Manifest Structure
+
+```yaml
+kind: agent                   # Component type (must be "agent")
+name: security-scanner        # Unique agent name (lowercase, alphanumeric, hyphens)
+version: 1.0.0               # Semantic version
+description: Comprehensive security scanning agent with LLM-powered analysis
+author: Gibson Security Team
+license: MIT
+repository: https://github.com/zero-day-ai/gibson-agents
+
+# Agent-specific metadata
+agent:
+  capabilities:               # What this agent can do
+    - prompt_injection
+    - jailbreak
+    - data_extraction
+    - reconnaissance
+
+  target_types:               # What targets this agent can attack
+    - llm_chat
+    - api
+    - rag_system
+
+  technique_types:            # Attack technique categories
+    - reconnaissance
+    - initial_access
+    - credential_access
+
+  mitre_attack:               # MITRE ATT&CK technique IDs
+    - T1190                   # Exploit Public-Facing Application
+    - T1552                   # Unsecured Credentials
+
+# LLM slot requirements
+llm_slots:
+  primary:
+    description: Main reasoning LLM for analysis and planning
+    required: true
+    constraints:
+      min_context_window: 100000
+      required_features:
+        - tool_use
+        - vision
+    default:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+
+  fast:
+    description: Fast LLM for quick classification tasks
+    required: false
+    constraints:
+      min_context_window: 8000
+    default:
+      provider: anthropic
+      model: claude-3-5-haiku-20241022
+
+# Tool dependencies (from gibson-tools-official)
+tools:
+  - name: http-scanner
+    path: reconnaissance/http-scanner
+    required: true
+  - name: nuclei
+    path: reconnaissance/nuclei
+    required: false
+
+# Build configuration
+build:
+  command: go build -o security-scanner ./cmd/scanner
+  artifacts:
+    - security-scanner
+  workdir: .
+  env:
+    CGO_ENABLED: "0"
+
+# Runtime configuration
+runtime:
+  type: go                    # Runtime type: go, python, docker, binary
+  entrypoint: ./security-scanner
+  port: 0                     # gRPC port (0 = dynamic assignment)
+  args: []                    # Command-line arguments
+  health_check:
+    interval: 30s
+    timeout: 5s
+
+# Environment variables
+env:
+  SCANNER_LOG_LEVEL: info
+  SCANNER_SAFE_MODE: "true"
+
+# Dependencies
+dependencies:
+  gibson: ">=1.0.0"           # Minimum Gibson version
+  components:                  # Other Gibson components required
+    - http-scanner@1.0.0
+  system: []                   # System binaries required
+  env:                         # Required environment variables
+    API_KEY: ""               # Empty = optional, non-empty = required
+```
+
+### Field Reference
+
+#### Top-Level Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `kind` | Yes | Must be `agent` |
+| `name` | Yes | Unique identifier (alphanumeric, dash, underscore) |
+| `version` | Yes | Semantic version (e.g., `1.0.0`) |
+| `description` | No | Brief description of the agent |
+| `author` | No | Author name or organization |
+| `license` | No | License identifier (MIT, Apache-2.0, etc.) |
+| `repository` | No | Source repository URL |
+
+#### Agent Metadata (`agent` section)
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `agent.capabilities` | Yes | List of agent capabilities (prompt_injection, jailbreak, etc.) |
+| `agent.target_types` | Yes | Target types the agent can attack (llm_chat, api, rag_system) |
+| `agent.technique_types` | No | Attack technique categories |
+| `agent.mitre_attack` | No | MITRE ATT&CK technique IDs |
+
+#### LLM Slots (`llm_slots` section)
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `llm_slots.<name>.description` | No | Description of what this slot is used for |
+| `llm_slots.<name>.required` | No | Whether this slot must be available (default: true) |
+| `llm_slots.<name>.constraints.min_context_window` | No | Minimum context window size |
+| `llm_slots.<name>.constraints.required_features` | No | Required model features (tool_use, vision, etc.) |
+| `llm_slots.<name>.default.provider` | No | Default LLM provider |
+| `llm_slots.<name>.default.model` | No | Default model name |
+
+#### Tool Dependencies (`tools` section)
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `tools[].name` | Yes | Tool name |
+| `tools[].path` | Yes | Path in gibson-tools-official repo |
+| `tools[].required` | No | Whether this tool is required (default: true) |
+
+#### Build Configuration (`build` section)
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `build.command` | No | Build command (default: `make build`) |
+| `build.artifacts` | No | Expected output files |
+| `build.workdir` | No | Build working directory |
+| `build.env` | No | Build environment variables |
+
+#### Runtime Configuration (`runtime` section)
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `runtime.type` | Yes | Runtime type: `go`, `python`, `docker`, `binary` |
+| `runtime.entrypoint` | Yes | Executable path or command |
+| `runtime.port` | No | gRPC port (0 = dynamic) |
+| `runtime.args` | No | Command-line arguments |
+| `runtime.health_check.interval` | No | Health check interval |
+| `runtime.health_check.timeout` | No | Health check timeout |
+
+---
+
+## Agent Installation
+
+### Installing from Repository
+
+Use the Gibson CLI to install agents from a git repository:
+
+```bash
+# Install from dedicated repository
+gibson agent install https://github.com/user/my-agent
+
+# Install from mono-repo subdirectory (use # fragment)
+gibson agent install https://github.com/user/agents#security/scanner
+
+# Install using SSH URL with subdirectory
+gibson agent install git@github.com:user/agents.git#path/to/agent
+
+# Install with specific branch
+gibson agent install https://github.com/user/my-agent --branch main
+
+# Install with specific tag
+gibson agent install https://github.com/user/my-agent --tag v1.0.0
+
+# Force reinstall
+gibson agent install https://github.com/user/my-agent --force
+
+# Bulk install all agents from mono-repo
+gibson agent install-all https://github.com/user/gibson-agents
+```
+
+### Installation Process
+
+When you run `gibson agent install <repo-url>`:
+
+1. **Clone Repository**: Clone to temporary directory
+2. **Locate Manifest**: Look for `component.yaml` in root (or subdirectory if specified with `#`)
+3. **Validate Manifest**: Parse and validate manifest structure
+4. **Check Dependencies**: Verify Gibson version, tools, and system dependencies
+5. **Build Component**: Execute build command
+6. **Install**: Move to `~/.gibson/agents/<name>/`
+7. **Register**: Add to component registry
+
+### Installation Directory Structure
+
+```
+~/.gibson/
+├── agents/
+│   ├── security-scanner/
+│   │   ├── component.yaml
+│   │   ├── go.mod
+│   │   ├── main.go
+│   │   └── security-scanner    # Built binary
+│   ├── k8skiller/
+│   └── ...
+├── tools/
+├── plugins/
+└── config.yaml
+```
+
+### Managing Installed Agents
+
+```bash
+# List installed agents
+gibson agent list
+
+# Get agent info
+gibson agent info security-scanner
+
+# Update an agent
+gibson agent update security-scanner
+
+# Update all agents
+gibson agent update --all
+
+# Uninstall an agent
+gibson agent uninstall security-scanner
+
+# Check agent health
+gibson agent health security-scanner
+```
+
+### Common Installation Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `MANIFEST_NOT_FOUND` | No `component.yaml` in expected location | Ensure file is named exactly `component.yaml` |
+| `INVALID_KIND` | Kind field missing or not `agent` | Add `kind: agent` to manifest |
+| `BUILD_FAILED` | Build command failed | Check build command and dependencies |
+| `DEPENDENCY_FAILED` | Missing tool or system dependency | Install required dependencies first |
+| `SLOT_VALIDATION_FAILED` | LLM slot constraints not met | Check LLM provider configuration |
 
 ---
 

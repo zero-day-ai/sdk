@@ -181,29 +181,40 @@ bin/
 Use the Gibson CLI to install tools from a git repository:
 
 ```bash
-# Install a single tool
-gibson tool install https://github.com/zero-day-ai/gibson-tools-official/tool/nmap
+# Install from dedicated repository
+gibson tool install https://github.com/user/my-tool
+
+# Install from mono-repo subdirectory (use # fragment)
+gibson tool install https://github.com/zero-day-ai/gibson-tools-official#discovery/nmap
+
+# Install using SSH URL with subdirectory
+gibson tool install git@github.com:zero-day-ai/gibson-tools-official.git#discovery/nmap
 
 # Install with specific branch
-gibson tool install https://github.com/zero-day-ai/gibson-tools-official/tool/nmap --branch main
+gibson tool install https://github.com/user/my-tool --branch main
 
 # Install with specific tag
-gibson tool install https://github.com/zero-day-ai/gibson-tools-official/tool/nmap --tag v1.0.0
+gibson tool install https://github.com/user/my-tool --tag v1.0.0
 
 # Force reinstall
-gibson tool install https://github.com/zero-day-ai/gibson-tools-official/tool/nmap --force
+gibson tool install https://github.com/user/my-tool --force
+
+# Bulk install all tools from mono-repo
+gibson tool install-all https://github.com/zero-day-ai/gibson-tools-official
 ```
 
 ### Installation Process
 
 When you run `gibson tool install <repo-url>`:
 
-1. **Parse URL**: Extract component kind and name from URL
-2. **Clone Repository**: Clone to `~/.gibson/tools/<name>/`
-3. **Load Manifest**: Read and validate `component.yaml`
-4. **Check Dependencies**: Verify system dependencies are available
-5. **Build Component**: Execute build command (default: `make build`)
-6. **Register**: Add to component registry
+1. **Parse URL**: Extract repository URL and optional subdirectory (from `#` fragment)
+2. **Clone Repository**: Clone to temporary directory
+3. **Locate Manifest**: Look for `component.yaml` in root (or subdirectory if specified with `#`)
+4. **Validate Manifest**: Parse and validate manifest structure
+5. **Check Dependencies**: Verify system dependencies are available
+6. **Build Component**: Execute build command (default: `make build`)
+7. **Install**: Move to `~/.gibson/tools/<name>/`
+8. **Register**: Add to component registry
 
 ### Installation Directory Structure
 
