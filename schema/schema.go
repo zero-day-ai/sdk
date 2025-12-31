@@ -26,6 +26,12 @@ type JSON struct {
 	Ref         string            `json:"$ref,omitempty"`
 }
 
+// Any creates a JSON schema that accepts any type.
+// This is useful for dynamic or unstructured data.
+func Any() JSON {
+	return JSON{}
+}
+
 // String creates a JSON schema for a string type.
 func String() JSON {
 	return JSON{Type: "string"}
