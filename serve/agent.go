@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -50,6 +52,65 @@ func Agent(a agent.Agent, opts ...Option) error {
 	srv.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	fmt.Printf("Agent %s v%s listening on :%d\n", a.Name(), a.Version(), srv.Port())
+
+	// Register with registry if configured
+	var serviceInfo interface{}
+	if cfg.Registry != nil {
+		// Build endpoint based on LocalMode or TCP
+		endpoint := ""
+		if cfg.LocalMode != "" {
+			endpoint = fmt.Sprintf("unix://%s", cfg.LocalMode)
+		} else {
+			endpoint = fmt.Sprintf("localhost:%d", srv.Port())
+		}
+
+		// Extract agent metadata
+		capabilities := make([]string, len(a.Capabilities()))
+		for i, cap := range a.Capabilities() {
+			capabilities[i] = cap.String()
+		}
+
+		targetTypes := make([]string, len(a.TargetTypes()))
+		for i, tt := range a.TargetTypes() {
+			targetTypes[i] = tt.String()
+		}
+
+		techniqueTypes := make([]string, len(a.TechniqueTypes()))
+		for i, tt := range a.TechniqueTypes() {
+			techniqueTypes[i] = tt.String()
+		}
+
+		// Create ServiceInfo struct (using map to avoid circular dependency)
+		serviceInfo = map[string]interface{}{
+			"kind":        "agent",
+			"name":        a.Name(),
+			"version":     a.Version(),
+			"instance_id": uuid.New().String(),
+			"endpoint":    endpoint,
+			"metadata": map[string]string{
+				"description":     a.Description(),
+				"capabilities":    strings.Join(capabilities, ","),
+				"target_types":    strings.Join(targetTypes, ","),
+				"technique_types": strings.Join(techniqueTypes, ","),
+			},
+			"started_at": time.Now(),
+		}
+
+		// Register with the registry
+		ctx := context.Background()
+		if err := cfg.Registry.Register(ctx, serviceInfo); err != nil {
+			fmt.Printf("Warning: failed to register with registry: %v\n", err)
+		} else {
+			fmt.Printf("Registered with registry: %s\n", endpoint)
+			// Deregister on shutdown
+			defer func() {
+				ctx := context.Background()
+				if err := cfg.Registry.Deregister(ctx, serviceInfo); err != nil {
+					fmt.Printf("Warning: failed to deregister from registry: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	// Start serving
 	return srv.Serve(context.Background())

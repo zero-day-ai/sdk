@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/tool"
 	"google.golang.org/grpc/codes"
@@ -50,6 +52,64 @@ func Tool(t tool.Tool, opts ...Option) error {
 	srv.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	fmt.Printf("Tool %s v%s listening on :%d\n", t.Name(), t.Version(), srv.Port())
+
+	// Register with registry if configured
+	var serviceInfo interface{}
+	if cfg.Registry != nil {
+		// Build endpoint based on LocalMode or TCP
+		endpoint := ""
+		if cfg.LocalMode != "" {
+			endpoint = fmt.Sprintf("unix://%s", cfg.LocalMode)
+		} else {
+			endpoint = fmt.Sprintf("localhost:%d", srv.Port())
+		}
+
+		// Extract tool metadata
+		metadata := map[string]string{
+			"description": t.Description(),
+		}
+
+		// Add tags if available
+		if len(t.Tags()) > 0 {
+			metadata["tags"] = strings.Join(t.Tags(), ",")
+		}
+
+		// Serialize input schema
+		if inputSchemaBytes, err := json.Marshal(t.InputSchema()); err == nil {
+			metadata["input_schema"] = string(inputSchemaBytes)
+		}
+
+		// Serialize output schema
+		if outputSchemaBytes, err := json.Marshal(t.OutputSchema()); err == nil {
+			metadata["output_schema"] = string(outputSchemaBytes)
+		}
+
+		// Create ServiceInfo struct (using map to avoid circular dependency)
+		serviceInfo = map[string]interface{}{
+			"kind":        "tool",
+			"name":        t.Name(),
+			"version":     t.Version(),
+			"instance_id": uuid.New().String(),
+			"endpoint":    endpoint,
+			"metadata":    metadata,
+			"started_at":  time.Now(),
+		}
+
+		// Register with the registry
+		ctx := context.Background()
+		if err := cfg.Registry.Register(ctx, serviceInfo); err != nil {
+			fmt.Printf("Warning: failed to register with registry: %v\n", err)
+		} else {
+			fmt.Printf("Registered with registry: %s\n", endpoint)
+			// Deregister on shutdown
+			defer func() {
+				ctx := context.Background()
+				if err := cfg.Registry.Deregister(ctx, serviceInfo); err != nil {
+					fmt.Printf("Warning: failed to deregister from registry: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	// Start serving
 	return srv.Serve(context.Background())

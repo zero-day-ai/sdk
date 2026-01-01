@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/schema"
+	"github.com/zero-day-ai/sdk/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
@@ -18,10 +21,14 @@ import (
 type mockPlugin struct {
 	initFunc    func(ctx context.Context, config map[string]any) error
 	shutdownErr error
-	methods     []MethodDescriptor
+	methods     []plugin.MethodDescriptor
 	queryFunc   func(ctx context.Context, method string, params map[string]any) (any, error)
-	health      HealthStatus
+	health      types.HealthStatus
 }
+
+func (m *mockPlugin) Name() string        { return "test-plugin" }
+func (m *mockPlugin) Version() string     { return "1.0.0" }
+func (m *mockPlugin) Description() string { return "Test plugin for unit tests" }
 
 func (m *mockPlugin) Initialize(ctx context.Context, config map[string]any) error {
 	if m.initFunc != nil {
@@ -34,28 +41,22 @@ func (m *mockPlugin) Shutdown(ctx context.Context) error {
 	return m.shutdownErr
 }
 
-func (m *mockPlugin) ListMethods(ctx context.Context) ([]MethodDescriptor, error) {
+func (m *mockPlugin) Methods() []plugin.MethodDescriptor {
 	if m.methods != nil {
-		return m.methods, nil
+		return m.methods
 	}
-	return []MethodDescriptor{
+	return []plugin.MethodDescriptor{
 		{
 			Name:        "test_method",
 			Description: "Test method",
-			InputSchema: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"param": map[string]any{"type": "string"},
-				},
-			},
-			OutputSchema: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"result": map[string]any{"type": "string"},
-				},
-			},
+			InputSchema: schema.Object(map[string]schema.JSON{
+				"param": schema.String(),
+			}),
+			OutputSchema: schema.Object(map[string]schema.JSON{
+				"result": schema.String(),
+			}),
 		},
-	}, nil
+	}
 }
 
 func (m *mockPlugin) Query(ctx context.Context, method string, params map[string]any) (any, error) {
@@ -65,9 +66,9 @@ func (m *mockPlugin) Query(ctx context.Context, method string, params map[string
 	return map[string]any{"status": "ok"}, nil
 }
 
-func (m *mockPlugin) Health(ctx context.Context) HealthStatus {
+func (m *mockPlugin) Health(ctx context.Context) types.HealthStatus {
 	if m.health.Status == "" {
-		return HealthStatus{
+		return types.HealthStatus{
 			Status:  "healthy",
 			Message: "Plugin is healthy",
 		}
@@ -76,7 +77,7 @@ func (m *mockPlugin) Health(ctx context.Context) HealthStatus {
 }
 
 // setupPluginTestServer creates an in-memory gRPC server for testing using bufconn.
-func setupPluginTestServer(t *testing.T, p Plugin) (*grpc.ClientConn, func()) {
+func setupPluginTestServer(t *testing.T, p plugin.Plugin) (*grpc.ClientConn, func()) {
 	const bufSize = 1024 * 1024
 	lis := bufconn.Listen(bufSize)
 
@@ -214,32 +215,22 @@ func TestPluginServiceServer_Shutdown(t *testing.T) {
 
 func TestPluginServiceServer_ListMethods(t *testing.T) {
 	mockP := &mockPlugin{
-		methods: []MethodDescriptor{
+		methods: []plugin.MethodDescriptor{
 			{
 				Name:        "method1",
 				Description: "First method",
-				InputSchema: map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"input": map[string]any{"type": "string"},
-					},
-				},
-				OutputSchema: map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"output": map[string]any{"type": "string"},
-					},
-				},
+				InputSchema: schema.Object(map[string]schema.JSON{
+					"input": schema.String(),
+				}),
+				OutputSchema: schema.Object(map[string]schema.JSON{
+					"output": schema.String(),
+				}),
 			},
 			{
 				Name:        "method2",
 				Description: "Second method",
-				InputSchema: map[string]any{
-					"type": "object",
-				},
-				OutputSchema: map[string]any{
-					"type": "object",
-				},
+				InputSchema:  schema.Object(map[string]schema.JSON{}),
+				OutputSchema: schema.Object(map[string]schema.JSON{}),
 			},
 		},
 	}
@@ -395,12 +386,12 @@ func TestPluginServiceServer_Query(t *testing.T) {
 func TestPluginServiceServer_Health(t *testing.T) {
 	tests := []struct {
 		name         string
-		health       HealthStatus
+		health       types.HealthStatus
 		expectStatus string
 	}{
 		{
 			name: "healthy plugin",
-			health: HealthStatus{
+			health: types.HealthStatus{
 				Status:  "healthy",
 				Message: "Plugin is operational",
 			},
@@ -408,7 +399,7 @@ func TestPluginServiceServer_Health(t *testing.T) {
 		},
 		{
 			name: "degraded plugin",
-			health: HealthStatus{
+			health: types.HealthStatus{
 				Status:  "degraded",
 				Message: "Performance issues",
 			},
@@ -416,7 +407,7 @@ func TestPluginServiceServer_Health(t *testing.T) {
 		},
 		{
 			name: "unhealthy plugin",
-			health: HealthStatus{
+			health: types.HealthStatus{
 				Status:  "unhealthy",
 				Message: "Plugin unavailable",
 			},

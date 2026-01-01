@@ -4,50 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/plugin"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 )
-
-// Plugin is the interface that SDK plugins must implement.
-// This is a placeholder until the plugin package is created.
-// TODO: Import from github.com/zero-day-ai/sdk/plugin once that package exists.
-type Plugin interface {
-	// Initialize initializes the plugin with the provided configuration.
-	Initialize(ctx context.Context, config map[string]any) error
-
-	// Shutdown gracefully shuts down the plugin.
-	Shutdown(ctx context.Context) error
-
-	// ListMethods returns the available plugin methods.
-	ListMethods(ctx context.Context) ([]MethodDescriptor, error)
-
-	// Query executes a plugin method with the provided parameters.
-	Query(ctx context.Context, method string, params map[string]any) (any, error)
-
-	// Health returns the current health status.
-	Health(ctx context.Context) HealthStatus
-}
-
-// MethodDescriptor describes a plugin method.
-// This is a placeholder until the plugin package is created.
-type MethodDescriptor struct {
-	Name         string
-	Description  string
-	InputSchema  map[string]any
-	OutputSchema map[string]any
-}
-
-// HealthStatus represents the health state of a component.
-// This is a placeholder until we can import from types.
-type HealthStatus struct {
-	Status  string
-	Message string
-	Details map[string]any
-}
 
 // PluginFunc starts a gRPC server for a plugin.
 // It creates a server, registers the plugin service, and serves requests
@@ -63,7 +29,7 @@ type HealthStatus struct {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-func PluginFunc(p Plugin, opts ...Option) error {
+func PluginFunc(p plugin.Plugin, opts ...Option) error {
 	// Build configuration
 	cfg := DefaultConfig()
 	for _, opt := range opts {
@@ -85,7 +51,55 @@ func PluginFunc(p Plugin, opts ...Option) error {
 	// Set health status to serving
 	srv.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
-	fmt.Printf("Plugin listening on :%d\n", srv.Port())
+	fmt.Printf("Plugin %s v%s listening on :%d\n", p.Name(), p.Version(), srv.Port())
+
+	// Register with registry if configured
+	var serviceInfo interface{}
+	if cfg.Registry != nil {
+		// Build endpoint based on LocalMode or TCP
+		endpoint := ""
+		if cfg.LocalMode != "" {
+			endpoint = fmt.Sprintf("unix://%s", cfg.LocalMode)
+		} else {
+			endpoint = fmt.Sprintf("localhost:%d", srv.Port())
+		}
+
+		// Extract plugin metadata - get method names from Methods()
+		methods := p.Methods()
+		methodNames := make([]string, len(methods))
+		for i, method := range methods {
+			methodNames[i] = method.Name
+		}
+
+		// Create ServiceInfo struct (using map to avoid circular dependency)
+		serviceInfo = map[string]interface{}{
+			"kind":        "plugin",
+			"name":        p.Name(),
+			"version":     p.Version(),
+			"instance_id": uuid.New().String(),
+			"endpoint":    endpoint,
+			"metadata": map[string]string{
+				"description": p.Description(),
+				"methods":     strings.Join(methodNames, ","),
+			},
+			"started_at": time.Now(),
+		}
+
+		// Register with the registry
+		ctx := context.Background()
+		if err := cfg.Registry.Register(ctx, serviceInfo); err != nil {
+			fmt.Printf("Warning: failed to register with registry: %v\n", err)
+		} else {
+			fmt.Printf("Registered with registry: %s\n", endpoint)
+			// Deregister on shutdown
+			defer func() {
+				ctx := context.Background()
+				if err := cfg.Registry.Deregister(ctx, serviceInfo); err != nil {
+					fmt.Printf("Warning: failed to deregister from registry: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	// Start serving
 	return srv.Serve(context.Background())
@@ -95,7 +109,7 @@ func PluginFunc(p Plugin, opts ...Option) error {
 // It bridges the gRPC protocol to the Plugin interface.
 type pluginServiceServer struct {
 	proto.UnimplementedPluginServiceServer
-	plugin Plugin
+	plugin plugin.Plugin
 }
 
 // Initialize initializes the plugin with the provided configuration.
@@ -149,10 +163,7 @@ func (s *pluginServiceServer) Shutdown(ctx context.Context, req *proto.PluginShu
 
 // ListMethods returns the available plugin methods.
 func (s *pluginServiceServer) ListMethods(ctx context.Context, req *proto.PluginListMethodsRequest) (*proto.PluginListMethodsResponse, error) {
-	methods, err := s.plugin.ListMethods(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list methods: %v", err)
-	}
+	methods := s.plugin.Methods()
 
 	// Convert to proto methods
 	protoMethods := make([]*proto.PluginMethodDescriptor, len(methods))

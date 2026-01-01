@@ -48,6 +48,15 @@ type Config struct {
 	// and cleaned up on server shutdown.
 	// If empty, LocalMode is disabled.
 	LocalMode string
+
+	// Registry is the optional registry for service registration.
+	// If provided, components will register themselves on startup
+	// and deregister on shutdown.
+	Registry interface {
+		Register(ctx context.Context, info interface{}) error
+		Deregister(ctx context.Context, info interface{}) error
+		Close() error
+	}
 }
 
 // DefaultConfig returns default serve configuration.

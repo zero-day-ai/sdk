@@ -506,3 +506,93 @@ func TestLocalModeCleanupOnError(t *testing.T) {
 	_, err = os.Stat(socketPath)
 	assert.True(t, os.IsNotExist(err), "Socket should be cleaned up on error")
 }
+
+// mockRegistry is a mock implementation of the Registry interface for testing
+type mockRegistry struct {
+	registered   []interface{}
+	deregistered []interface{}
+	registerErr  error
+	deregisterErr error
+	closed       bool
+}
+
+func newMockRegistry() *mockRegistry {
+	return &mockRegistry{
+		registered:   make([]interface{}, 0),
+		deregistered: make([]interface{}, 0),
+	}
+}
+
+func (m *mockRegistry) Register(ctx context.Context, info interface{}) error {
+	if m.registerErr != nil {
+		return m.registerErr
+	}
+	m.registered = append(m.registered, info)
+	return nil
+}
+
+func (m *mockRegistry) Deregister(ctx context.Context, info interface{}) error {
+	if m.deregisterErr != nil {
+		return m.deregisterErr
+	}
+	m.deregistered = append(m.deregistered, info)
+	return nil
+}
+
+func (m *mockRegistry) Close() error {
+	m.closed = true
+	return nil
+}
+
+func TestWithRegistry(t *testing.T) {
+	mockReg := newMockRegistry()
+	cfg := DefaultConfig()
+
+	opt := WithRegistry(mockReg)
+	opt(cfg)
+
+	assert.Equal(t, mockReg, cfg.Registry)
+}
+
+func TestWithRegistryFromEnv(t *testing.T) {
+	tests := []struct {
+		name           string
+		envValue       string
+		expectRegistry bool
+	}{
+		{
+			name:           "env var not set",
+			envValue:       "",
+			expectRegistry: false,
+		},
+		{
+			name:           "env var set to empty",
+			envValue:       "",
+			expectRegistry: false,
+		},
+		// Note: Testing with actual endpoints would require etcd to be running
+		// So we only test the absence of the env var here
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear env var first
+			os.Unsetenv("GIBSON_REGISTRY_ENDPOINTS")
+
+			if tt.envValue != "" {
+				os.Setenv("GIBSON_REGISTRY_ENDPOINTS", tt.envValue)
+				defer os.Unsetenv("GIBSON_REGISTRY_ENDPOINTS")
+			}
+
+			cfg := DefaultConfig()
+			opt := WithRegistryFromEnv()
+			opt(cfg)
+
+			if tt.expectRegistry {
+				assert.NotNil(t, cfg.Registry)
+			} else {
+				assert.Nil(t, cfg.Registry)
+			}
+		})
+	}
+}
