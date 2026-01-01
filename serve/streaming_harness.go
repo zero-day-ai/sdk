@@ -16,98 +16,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-// StreamingHarness extends agent.Harness with bidirectional streaming capabilities.
-// It provides methods for emitting real-time events to clients during agent execution
-// and receiving steering messages for interactive control.
-//
-// StreamingHarness is designed for agents that need to provide live feedback,
-// such as streaming reasoning steps, tool invocations, and findings as they occur,
-// rather than just returning a final result.
-type StreamingHarness interface {
-	// Embed the base Harness interface to inherit all standard capabilities
-	// (LLM access, tools, plugins, findings, memory, etc.)
-	agent.Harness
-
-	// Event Emission Methods
-	//
-	// These methods enable agents to emit real-time events during execution.
-	// All events are sent to the connected client via the gRPC stream.
-
-	// EmitOutput emits a text output chunk to the client.
-	// Use isReasoning=true for internal reasoning/thinking output,
-	// or isReasoning=false for final user-facing output.
-	//
-	// Example:
-	//   h.EmitOutput("Analyzing RBAC permissions...", true)  // reasoning
-	//   h.EmitOutput("Found vulnerable service account", false)  // result
-	EmitOutput(content string, isReasoning bool) error
-
-	// EmitToolCall emits an event indicating a tool invocation is starting.
-	// The callID should be a unique identifier for correlating with the result.
-	//
-	// Example:
-	//   h.EmitToolCall("kubectl", map[string]any{"args": []string{"get", "pods"}}, "call-123")
-	EmitToolCall(toolName string, input map[string]any, callID string) error
-
-	// EmitToolResult emits the result of a tool invocation.
-	// The callID must match the ID from the corresponding EmitToolCall.
-	// Set success=true if the tool executed successfully, false if it failed.
-	//
-	// Example:
-	//   h.EmitToolResult("call-123", map[string]any{"output": "..."}, true)
-	EmitToolResult(callID string, output map[string]any, success bool) error
-
-	// EmitFinding emits a security finding discovered during testing.
-	// The finding will be both streamed to the client and recorded via SubmitFinding.
-	//
-	// Example:
-	//   h.EmitFinding(myFinding)
-	EmitFinding(finding agent.Finding) error
-
-	// EmitStatus emits an agent status change (running, paused, waiting, etc.).
-	// The message provides additional context about the status change.
-	//
-	// Example:
-	//   h.EmitStatus(proto.AgentStatus_AGENT_STATUS_WAITING_FOR_INPUT, "Awaiting user approval")
-	EmitStatus(status proto.AgentStatus, message string) error
-
-	// EmitError emits an error event to the client.
-	// Set fatal=true if the error should terminate execution, false for recoverable errors.
-	//
-	// Example:
-	//   h.EmitError("RBAC_DENIED", "Insufficient permissions to list pods", false)
-	EmitError(code string, message string, fatal bool) error
-
-	// Steering and Mode Methods
-	//
-	// These methods enable bidirectional communication with the client.
-
-	// Steering returns a receive-only channel for steering messages from the client.
-	// Agents can listen on this channel to receive user input, approvals, or interrupts.
-	//
-	// Example:
-	//   select {
-	//   case msg := <-h.Steering():
-	//       // Handle steering message
-	//   case <-ctx.Done():
-	//       return ctx.Err()
-	//   }
-	Steering() <-chan *proto.SteeringMessage
-
-	// Mode returns the current execution mode (autonomous or interactive).
-	// Agents can check this to adjust their behavior.
-	//
-	// Example:
-	//   if h.Mode() == proto.AgentMode_AGENT_MODE_INTERACTIVE {
-	//       // Wait for user approval before proceeding
-	//   }
-	Mode() proto.AgentMode
-
-	// SetMode updates the current execution mode atomically.
-	// This is called by the streaming framework when the client sends a SetModeRequest.
-	// Agents generally should not call this directly.
-	SetMode(mode proto.AgentMode)
-}
+// Note: The serve package's streamingHarness implements agent.StreamingHarness
+// to provide bidirectional streaming capabilities. The agent.StreamingHarness
+// interface is defined in agent/harness.go and uses Go-native types rather than
+// proto types for a cleaner API surface.
 
 // streamingHarness is the concrete implementation of StreamingHarness.
 // It wraps an underlying agent.Harness and adds streaming event emission capabilities.
@@ -136,7 +48,7 @@ type streamingHarness struct {
 	logger *slog.Logger
 }
 
-// NewStreamingHarness creates a new StreamingHarness that wraps the given harness
+// NewStreamingHarness creates a new agent.StreamingHarness that wraps the given harness
 // and emits events to the provided stream.
 //
 // Parameters:
@@ -145,13 +57,13 @@ type streamingHarness struct {
 //   - steeringCh: Channel for receiving SteeringMessages from the client
 //   - mode: Initial execution mode (autonomous or interactive)
 //
-// Returns a StreamingHarness ready for use in streaming agent execution.
+// Returns an agent.StreamingHarness ready for use in streaming agent execution.
 func NewStreamingHarness(
 	harness agent.Harness,
 	stream grpc.BidiStreamingServer[proto.ClientMessage, proto.AgentMessage],
 	steeringCh <-chan *proto.SteeringMessage,
 	mode proto.AgentMode,
-) StreamingHarness {
+) agent.StreamingHarness {
 	var logger *slog.Logger
 	if harness != nil {
 		logger = harness.Logger()
@@ -238,17 +150,21 @@ func (h *streamingHarness) EmitToolCall(toolName string, input map[string]any, c
 	return h.send(msg)
 }
 
-// EmitToolResult emits the result of a tool invocation
-func (h *streamingHarness) EmitToolResult(callID string, output map[string]any, success bool) error {
+// EmitToolResult emits the result of a tool invocation.
+// Implements agent.StreamingHarness interface.
+func (h *streamingHarness) EmitToolResult(output map[string]any, err error, callID string) error {
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
 	// Serialize output to JSON
-	outputJSON, err := json.Marshal(output)
-	if err != nil {
-		h.logger.Error("failed to marshal tool output", "error", err, "call_id", callID)
-		return err
+	outputJSON, jsonErr := json.Marshal(output)
+	if jsonErr != nil {
+		h.logger.Error("failed to marshal tool output", "error", jsonErr, "call_id", callID)
+		return jsonErr
 	}
+
+	// Determine success based on whether an error was provided
+	success := err == nil
 
 	msg := BuildToolResultEvent(callID, string(outputJSON), success, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
@@ -270,37 +186,103 @@ func (h *streamingHarness) EmitFinding(finding agent.Finding) error {
 	return h.send(msg)
 }
 
-// EmitStatus emits an agent status change
-func (h *streamingHarness) EmitStatus(status proto.AgentStatus, message string) error {
+// EmitStatus emits an agent status change.
+// Implements agent.StreamingHarness interface.
+func (h *streamingHarness) EmitStatus(status string, message string) error {
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
-	msg := BuildStatusEvent(status, message, h.nextSequence(), traceID, spanID)
+	// Convert string status to proto.AgentStatus
+	protoStatus := stringToProtoStatus(status)
+
+	msg := BuildStatusEvent(protoStatus, message, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
 }
 
-// EmitError emits an error event to the client
-func (h *streamingHarness) EmitError(code string, message string, fatal bool) error {
+// stringToProtoStatus converts a string status to proto.AgentStatus
+func stringToProtoStatus(status string) proto.AgentStatus {
+	switch status {
+	case "running":
+		return proto.AgentStatus_AGENT_STATUS_RUNNING
+	case "paused":
+		return proto.AgentStatus_AGENT_STATUS_PAUSED
+	case "completed":
+		return proto.AgentStatus_AGENT_STATUS_COMPLETED
+	case "failed":
+		return proto.AgentStatus_AGENT_STATUS_FAILED
+	case "interrupted":
+		return proto.AgentStatus_AGENT_STATUS_INTERRUPTED
+	case "waiting":
+		return proto.AgentStatus_AGENT_STATUS_WAITING_FOR_INPUT
+	default:
+		return proto.AgentStatus_AGENT_STATUS_RUNNING
+	}
+}
+
+// EmitError emits an error event to the client.
+// Implements agent.StreamingHarness interface.
+func (h *streamingHarness) EmitError(err error, errContext string) error {
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
+
+	// Build error code from error type and message from error + context
+	code := "ERROR"
+	message := err.Error()
+	if errContext != "" {
+		message = errContext + ": " + message
+	}
+	fatal := false // agent.StreamingHarness.EmitError is for non-fatal errors
 
 	msg := BuildErrorEvent(code, message, fatal, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
 }
 
-// Steering returns a receive-only channel for steering messages from the client
-func (h *streamingHarness) Steering() <-chan *proto.SteeringMessage {
-	return h.steeringCh
+// Steering returns a receive-only channel for steering messages from the client.
+// Implements agent.StreamingHarness interface.
+// This returns a channel of agent.SteeringMessage which wraps proto messages.
+func (h *streamingHarness) Steering() <-chan agent.SteeringMessage {
+	// Create a channel to convert proto messages to agent messages
+	if h.steeringCh == nil {
+		return nil
+	}
+
+	// Create a wrapper channel that converts proto steering messages to agent ones
+	agentCh := make(chan agent.SteeringMessage, 10)
+	go func() {
+		defer close(agentCh)
+		for protoMsg := range h.steeringCh {
+			agentMsg := agent.SteeringMessage{
+				Content:  protoMsg.Content,
+				Priority: false, // Proto SteeringMessage has no Priority field, default to false
+			}
+			agentCh <- agentMsg
+		}
+	}()
+	return agentCh
 }
 
-// Mode returns the current execution mode
-func (h *streamingHarness) Mode() proto.AgentMode {
+// Mode returns the current execution mode.
+// Implements agent.StreamingHarness interface.
+func (h *streamingHarness) Mode() agent.ExecutionMode {
 	h.modeMu.RLock()
 	defer h.modeMu.RUnlock()
-	return h.mode
+	return protoModeToAgentMode(h.mode)
 }
 
-// SetMode updates the current execution mode atomically
+// protoModeToAgentMode converts proto.AgentMode to agent.ExecutionMode
+func protoModeToAgentMode(mode proto.AgentMode) agent.ExecutionMode {
+	switch mode {
+	case proto.AgentMode_AGENT_MODE_AUTONOMOUS:
+		return agent.ExecutionModeAutonomous
+	case proto.AgentMode_AGENT_MODE_INTERACTIVE:
+		return agent.ExecutionModeManual
+	default:
+		return agent.ExecutionModeAutonomous
+	}
+}
+
+// SetMode updates the current execution mode atomically.
+// Used internally by the streaming framework.
 func (h *streamingHarness) SetMode(mode proto.AgentMode) {
 	h.modeMu.Lock()
 	defer h.modeMu.Unlock()
@@ -318,15 +300,14 @@ func (h *streamingHarness) CallTool(ctx context.Context, name string, input map[
 	}
 
 	// Delegate to underlying harness
-	output, err := h.Harness.CallTool(ctx, name, input)
+	output, toolErr := h.Harness.CallTool(ctx, name, input)
 
-	// Emit tool result event after invocation
-	success := err == nil
-	if emitErr := h.EmitToolResult(callID, output, success); emitErr != nil {
+	// Emit tool result event after invocation (using new signature)
+	if emitErr := h.EmitToolResult(output, toolErr, callID); emitErr != nil {
 		h.logger.Warn("failed to emit tool result event", "error", emitErr, "tool", name)
 	}
 
-	return output, err
+	return output, toolErr
 }
 
 // SubmitFinding overrides the base harness SubmitFinding to emit events automatically

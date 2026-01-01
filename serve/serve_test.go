@@ -2,11 +2,15 @@ package serve
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -186,4 +190,319 @@ func TestServerPort(t *testing.T) {
 	port := srv.Port()
 	assert.Greater(t, port, 0)
 	assert.NotEqual(t, 0, port) // Should have a real port
+}
+
+func TestLocalMode(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/test.sock"
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	// Socket file should exist
+	_, err = os.Stat(socketPath)
+	assert.NoError(t, err, "Unix socket should exist")
+
+	// Socket should have 0600 permissions
+	info, err := os.Stat(socketPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0600), info.Mode().Perm(), "Socket should have 0600 permissions")
+
+	// Stop server
+	srv.Stop()
+
+	// Socket should be cleaned up
+	_, err = os.Stat(socketPath)
+	assert.True(t, os.IsNotExist(err), "Unix socket should be removed after shutdown")
+}
+
+func TestLocalModeServe(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/test-serve.sock"
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	// Start server in background
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Serve(ctx)
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify both TCP and Unix socket are accessible
+	// TCP listener should be accessible
+	tcpPort := srv.Port()
+	assert.Greater(t, tcpPort, 0)
+
+	// Unix socket should exist
+	_, err = os.Stat(socketPath)
+	assert.NoError(t, err, "Unix socket should exist while server is running")
+
+	// Cancel context to trigger graceful shutdown
+	cancel()
+
+	// Wait for server to shut down
+	select {
+	case err := <-errCh:
+		assert.ErrorIs(t, err, context.Canceled)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Server did not shut down in time")
+	}
+
+	// Socket should be cleaned up after shutdown
+	_, err = os.Stat(socketPath)
+	assert.True(t, os.IsNotExist(err), "Unix socket should be removed after shutdown")
+}
+
+func TestLocalModeGracefulStop(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/test-graceful.sock"
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	// Start server in background
+	ctx := context.Background()
+	go func() {
+		_ = srv.Serve(ctx)
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify socket exists
+	_, err = os.Stat(socketPath)
+	assert.NoError(t, err, "Unix socket should exist")
+
+	// Call GracefulStop
+	srv.GracefulStop()
+
+	// Socket should be cleaned up
+	_, err = os.Stat(socketPath)
+	assert.True(t, os.IsNotExist(err), "Unix socket should be removed after graceful stop")
+}
+
+func TestLocalModeWithExistingSocket(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/existing.sock"
+
+	// Create a stale socket file
+	f, err := os.Create(socketPath)
+	require.NoError(t, err)
+	f.Close()
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	// NewServer should remove the existing socket and create a new one
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+	defer srv.Stop()
+
+	// Socket should exist and be a socket (not a regular file)
+	info, err := os.Stat(socketPath)
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, info.Mode()&os.ModeSocket, "Should be a socket, not a regular file")
+}
+
+func TestLocalModeHealthCheckViaSocket(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/health-check.sock"
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	// Start server in background
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		_ = srv.Serve(ctx)
+	}()
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify socket exists
+	_, err = os.Stat(socketPath)
+	require.NoError(t, err, "Unix socket should exist")
+
+	// Test health check via Unix socket
+	t.Run("health check via socket succeeds", func(t *testing.T) {
+		// Create a gRPC client connected to the Unix socket
+		conn, err := grpc.NewClient(
+			"unix://"+socketPath,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Create health check client
+		healthClient := grpc_health_v1.NewHealthClient(conn)
+
+		// Perform health check
+		checkCtx, checkCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer checkCancel()
+
+		resp, err := healthClient.Check(checkCtx, &grpc_health_v1.HealthCheckRequest{})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, grpc_health_v1.HealthCheckResponse_SERVING, resp.Status)
+	})
+
+	// Test health check watch stream via Unix socket
+	t.Run("health check watch via socket succeeds", func(t *testing.T) {
+		// Create a gRPC client connected to the Unix socket
+		conn, err := grpc.NewClient(
+			"unix://"+socketPath,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Create health check client
+		healthClient := grpc_health_v1.NewHealthClient(conn)
+
+		// Perform health check watch
+		watchCtx, watchCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer watchCancel()
+
+		stream, err := healthClient.Watch(watchCtx, &grpc_health_v1.HealthCheckRequest{})
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		// Receive first status update
+		resp, err := stream.Recv()
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, grpc_health_v1.HealthCheckResponse_SERVING, resp.Status)
+	})
+
+	// Shutdown server
+	cancel()
+
+	// Wait for server to shut down
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify socket is cleaned up
+	_, err = os.Stat(socketPath)
+	assert.True(t, os.IsNotExist(err), "Unix socket should be removed after shutdown")
+}
+
+func TestLocalModeHealthCheckConnectionFailure(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/nonexistent.sock"
+
+	// Attempt to connect to non-existent socket
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	conn, err := grpc.NewClient(
+		"unix://"+socketPath,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Create health check client
+	healthClient := grpc_health_v1.NewHealthClient(conn)
+
+	// Perform health check - should fail because socket doesn't exist
+	_, err = healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+	assert.Error(t, err, "Health check should fail when socket doesn't exist")
+}
+
+func TestLocalModeSocketPermissions(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/permissions.sock"
+
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+	}
+
+	srv, err := NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+	defer srv.Stop()
+
+	// Verify socket has 0600 permissions (owner read/write only)
+	info, err := os.Stat(socketPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0600), info.Mode().Perm(), "Socket should have 0600 permissions for security")
+}
+
+func TestLocalModeCleanupOnError(t *testing.T) {
+	// Create temporary directory for socket
+	tmpDir := t.TempDir()
+	socketPath := tmpDir + "/error-cleanup.sock"
+
+	// Test that socket is cleaned up even if there's an error after creation
+	// We'll simulate this by creating a server with invalid TLS config
+	cfg := &Config{
+		Port:            0,
+		HealthEndpoint:  "/health",
+		GracefulTimeout: 1 * time.Second,
+		LocalMode:       socketPath,
+		TLSCertFile:     "/nonexistent/cert.pem",
+		TLSKeyFile:      "/nonexistent/key.pem",
+	}
+
+	srv, err := NewServer(cfg)
+	assert.Error(t, err, "NewServer should fail with invalid TLS config")
+	assert.Nil(t, srv)
+
+	// Verify socket was cleaned up
+	_, err = os.Stat(socketPath)
+	assert.True(t, os.IsNotExist(err), "Socket should be cleaned up on error")
 }

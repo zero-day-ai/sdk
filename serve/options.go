@@ -66,3 +66,21 @@ func WithTLS(certFile, keyFile string) Option {
 		c.TLSKeyFile = keyFile
 	}
 }
+
+// WithLocalMode enables Unix domain socket listening alongside TCP.
+// The server will create a Unix socket at the specified path with 0600 permissions
+// (owner read/write only) for secure local IPC communication.
+// The socket is automatically cleaned up on server shutdown.
+//
+// This is useful for local component deployment where the Gibson framework
+// needs to communicate with agents/tools via Unix sockets for better performance
+// and security compared to TCP localhost connections.
+//
+// Example:
+//
+//	serve.Agent(myAgent, serve.WithLocalMode("/var/run/gibson/agents/my-agent.sock"))
+func WithLocalMode(socketPath string) Option {
+	return func(c *Config) {
+		c.LocalMode = socketPath
+	}
+}

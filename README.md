@@ -1120,9 +1120,95 @@ func main() {
 
 ## Serving Components
 
-The SDK provides gRPC server infrastructure for exposing agents, tools, and plugins over the network.
+The SDK provides gRPC server infrastructure for exposing agents, tools, and plugins over the network. Components can be deployed locally (using Unix domain sockets for high-performance IPC) or remotely (using TCP networking).
 
-### Serving an Agent
+### Deployment Modes
+
+Gibson supports two primary deployment modes:
+
+1. **Local Mode**: Components run on the same machine as the Gibson CLI, communicating via Unix domain sockets
+2. **Remote Mode**: Components run on different machines (or containers), communicating via TCP/IP
+
+### Local Mode (Unix Sockets)
+
+**Recommended for local development and single-machine deployments.**
+
+Local mode uses Unix domain sockets for inter-process communication, providing:
+- Zero network overhead (faster than TCP)
+- Automatic cleanup on process termination
+- File-based permissions (0600 - owner read/write only)
+- Process discovery via filesystem
+
+#### Requirements for Local Components
+
+1. **Unix Socket Support**: Component must create a Unix domain socket at a predictable path
+2. **gRPC Health Check**: Component must implement the standard gRPC health check service
+3. **Lifecycle Files**: Framework manages PID files and lock files automatically
+
+#### Serving an Agent Locally
+
+```go
+package main
+
+import (
+    "log"
+    "os"
+    "path/filepath"
+
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    // Create your agent
+    myAgent := createMyAgent()
+
+    // Determine socket path
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        log.Fatal(err)
+    }
+    socketPath := filepath.Join(homeDir, ".gibson", "run", "agents", "my-agent.sock")
+
+    // Serve locally via Unix socket (also listens on TCP for flexibility)
+    err = serve.Agent(myAgent,
+        serve.WithPort(50051),                  // TCP port for remote access
+        serve.WithLocalMode(socketPath),        // Unix socket for local access
+        serve.WithGracefulShutdown(30*time.Second),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+**Socket Path Convention:**
+- Agents: `~/.gibson/run/agents/{name}.sock`
+- Tools: `~/.gibson/run/tools/{name}.sock`
+- Plugins: `~/.gibson/run/plugins/{name}.sock`
+
+#### Local Mode Behavior
+
+When `WithLocalMode()` is enabled:
+1. Server creates Unix socket at specified path with 0600 permissions
+2. Server listens on **both** Unix socket and TCP port
+3. Framework prefers Unix socket for local components (faster)
+4. Socket is cleaned up automatically on graceful shutdown
+5. PID and lock files are managed by the framework
+
+### Remote Mode (TCP Networking)
+
+**Recommended for distributed deployments, containers, and Kubernetes.**
+
+Remote mode uses standard TCP/IP networking for communication across machines.
+
+#### Requirements for Remote Components
+
+1. **Network Accessibility**: Component must be reachable via TCP
+2. **gRPC Health Check**: Component must implement the standard gRPC health check service
+3. **Optional TLS**: TLS is recommended for production deployments
+4. **Configuration**: Remote components must be registered in `~/.gibson/config.yaml`
+
+#### Serving an Agent Remotely
 
 ```go
 package main
@@ -1138,9 +1224,10 @@ func main() {
     // Create your agent
     myAgent := createMyAgent()
 
-    // Serve it over gRPC
+    // Serve remotely via TCP (production deployment)
     err := serve.Agent(myAgent,
         serve.WithPort(50051),
+        serve.WithTLS("cert.pem", "key.pem"),  // Enable TLS for production
         serve.WithGracefulShutdown(30*time.Second),
     )
     if err != nil {
@@ -1149,7 +1236,131 @@ func main() {
 }
 ```
 
-### Serving a Tool
+#### Configuring Remote Components
+
+Remote components must be registered in `~/.gibson/config.yaml`:
+
+```yaml
+# ~/.gibson/config.yaml
+
+# Remote agents
+remote_agents:
+  davinci:
+    address: "agent-server.example.com:50051"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+    tls:
+      enabled: true
+      cert_file: "/path/to/client-cert.pem"
+      key_file: "/path/to/client-key.pem"
+      ca_file: "/path/to/ca-cert.pem"
+
+  recon-agent:
+    address: "10.0.1.50:50052"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+
+# Remote tools
+remote_tools:
+  nmap:
+    address: "tool-cluster.internal:50053"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 60s
+      timeout: 10s
+
+# Remote plugins
+remote_plugins:
+  graphrag:
+    address: "graphdb.internal:50054"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+```
+
+### Health Check Requirements
+
+**All components (local and remote) must implement the gRPC health check service.**
+
+The SDK automatically registers the health check service when you use `serve.Agent()`, `serve.Tool()`, or `serve.Plugin()`.
+
+#### gRPC Health Check Service
+
+Components must respond to health checks using the standard `grpc.health.v1.Health` service:
+
+```protobuf
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+```
+
+**Health States:**
+- `SERVING`: Component is healthy and ready to accept requests
+- `NOT_SERVING`: Component is unhealthy or shutting down
+- `UNKNOWN`: Health status cannot be determined
+
+The SDK handles this automatically, but you can update health status programmatically:
+
+```go
+// In your component initialization
+server, err := serve.NewServer(&serve.Config{
+    Port: 50051,
+    LocalMode: socketPath,
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set component as healthy
+server.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+
+// Set component as unhealthy (e.g., during shutdown)
+server.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+```
+
+### Tool Serving Examples
+
+#### Local Tool
+
+```go
+package main
+
+import (
+    "log"
+    "os"
+    "path/filepath"
+
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    myTool := createMyTool()
+
+    homeDir, _ := os.UserHomeDir()
+    socketPath := filepath.Join(homeDir, ".gibson", "run", "tools", "my-tool.sock")
+
+    err := serve.Tool(myTool,
+        serve.WithPort(50052),
+        serve.WithLocalMode(socketPath),
+        serve.WithHealthEndpoint("/health"),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+#### Remote Tool with TLS
 
 ```go
 package main
@@ -1165,7 +1376,7 @@ func main() {
 
     err := serve.Tool(myTool,
         serve.WithPort(50052),
-        serve.WithHealthEndpoint("/health"),
+        serve.WithTLS("cert.pem", "key.pem"),
     )
     if err != nil {
         log.Fatal(err)
@@ -1173,7 +1384,38 @@ func main() {
 }
 ```
 
-### Serving a Plugin
+### Plugin Serving Examples
+
+#### Local Plugin
+
+```go
+package main
+
+import (
+    "log"
+    "os"
+    "path/filepath"
+
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    myPlugin := createMyPlugin()
+
+    homeDir, _ := os.UserHomeDir()
+    socketPath := filepath.Join(homeDir, ".gibson", "run", "plugins", "my-plugin.sock")
+
+    err := serve.Plugin(myPlugin,
+        serve.WithPort(50053),
+        serve.WithLocalMode(socketPath),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+#### Remote Plugin
 
 ```go
 package main
@@ -1196,6 +1438,319 @@ func main() {
     }
 }
 ```
+
+### Docker Deployment
+
+Deploy components as Docker containers for isolation and portability.
+
+#### Dockerfile Example
+
+```dockerfile
+# Dockerfile for Gibson Agent
+FROM golang:1.24.4-alpine AS builder
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -o agent ./cmd/agent
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+COPY --from=builder /app/agent .
+
+# Expose gRPC port
+EXPOSE 50051
+
+# Health check via gRPC
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD grpc_health_probe -addr=:50051 || exit 1
+
+# Run agent
+CMD ["./agent"]
+```
+
+#### Docker Compose Example
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  davinci-agent:
+    build: ./agents/davinci
+    ports:
+      - "50051:50051"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AGENT_PORT=50051
+    networks:
+      - gibson-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  recon-agent:
+    build: ./agents/recon
+    ports:
+      - "50052:50051"
+    environment:
+      - AGENT_PORT=50051
+    networks:
+      - gibson-network
+    restart: unless-stopped
+
+  nmap-tool:
+    build: ./tools/nmap
+    ports:
+      - "50053:50051"
+    environment:
+      - TOOL_PORT=50051
+    networks:
+      - gibson-network
+    restart: unless-stopped
+
+networks:
+  gibson-network:
+    driver: bridge
+```
+
+#### Running with Docker Compose
+
+```bash
+# Start all components
+docker-compose up -d
+
+# Configure Gibson to use remote components
+cat > ~/.gibson/config.yaml <<EOF
+remote_agents:
+  davinci:
+    address: "localhost:50051"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+  recon:
+    address: "localhost:50052"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+
+remote_tools:
+  nmap:
+    address: "localhost:50053"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+EOF
+
+# Run attack with remote components
+gibson attack --agent davinci --target http://example.com
+```
+
+### Kubernetes Deployment
+
+Deploy components to Kubernetes for production-grade orchestration.
+
+#### Kubernetes Manifest Example
+
+```yaml
+# agent-deployment.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: davinci-agent
+  namespace: gibson
+spec:
+  selector:
+    app: davinci-agent
+  ports:
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: davinci-agent
+  namespace: gibson
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: davinci-agent
+  template:
+    metadata:
+      labels:
+        app: davinci-agent
+    spec:
+      containers:
+      - name: agent
+        image: ghcr.io/zero-day-ai/davinci-agent:latest
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: AGENT_PORT
+          value: "50051"
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-credentials
+              key: anthropic-api-key
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50051"]
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50051"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llm-credentials
+  namespace: gibson
+type: Opaque
+stringData:
+  anthropic-api-key: "sk-ant-..."
+```
+
+#### Deploying to Kubernetes
+
+```bash
+# Create namespace
+kubectl create namespace gibson
+
+# Deploy agent
+kubectl apply -f agent-deployment.yaml
+
+# Verify deployment
+kubectl get pods -n gibson
+kubectl get svc -n gibson
+
+# Configure Gibson CLI to use Kubernetes services
+cat > ~/.gibson/config.yaml <<EOF
+remote_agents:
+  davinci:
+    address: "davinci-agent.gibson.svc.cluster.local:50051"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+
+  recon:
+    address: "recon-agent.gibson.svc.cluster.local:50051"
+    protocol: grpc
+    health_check:
+      type: grpc
+      interval: 30s
+      timeout: 5s
+EOF
+
+# Run attack using Kubernetes-deployed agents
+gibson attack --agent davinci --target http://example.com
+```
+
+#### Helm Chart Example
+
+```yaml
+# helm-chart/values.yaml
+agents:
+  davinci:
+    replicas: 3
+    image:
+      repository: ghcr.io/zero-day-ai/davinci-agent
+      tag: latest
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+    env:
+      AGENT_PORT: "50051"
+
+  recon:
+    replicas: 2
+    image:
+      repository: ghcr.io/zero-day-ai/recon-agent
+      tag: latest
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+llmCredentials:
+  anthropicApiKey: "sk-ant-..."
+  openaiApiKey: "sk-..."
+```
+
+```bash
+# Install with Helm
+helm install gibson ./helm-chart -n gibson --create-namespace
+
+# Upgrade deployment
+helm upgrade gibson ./helm-chart -n gibson
+```
+
+### Best Practices for Deployment
+
+#### Local Development
+- Use **Local Mode** with Unix sockets for faster IPC
+- Components managed by `gibson agent start`, `gibson tool start`
+- Automatic discovery via filesystem
+- No configuration file needed
+
+#### Production (Single Machine)
+- Use **Local Mode** with Unix sockets
+- Enable systemd service files for automatic restart
+- Monitor via `gibson component status`
+- Logs centralized via journald
+
+#### Production (Distributed)
+- Use **Remote Mode** with TCP + TLS
+- Deploy components as Docker containers or Kubernetes pods
+- Configure health check intervals appropriately
+- Implement graceful shutdown (30s timeout minimum)
+- Use load balancers for high availability
+- Enable observability (OpenTelemetry, Prometheus)
+
+#### Security Considerations
+1. **Unix Sockets**: Automatically secured with 0600 permissions (owner-only)
+2. **TCP Networking**: Always use TLS in production
+3. **Secrets Management**: Use environment variables or secret managers (Vault, K8s Secrets)
+4. **Network Policies**: Restrict component-to-component communication in Kubernetes
+5. **Health Checks**: Implement proper health checks to prevent routing to unhealthy instances
 
 ## Framework Usage
 

@@ -33,7 +33,7 @@ type StreamingAgent interface {
 	//
 	// The harness also provides access to steering messages via Steering() and
 	// the current execution mode via Mode().
-	ExecuteStreaming(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error)
+	ExecuteStreaming(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error)
 }
 
 // StreamExecute handles bidirectional streaming RPC for agent execution.
@@ -146,7 +146,7 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 				modeMu.Unlock()
 
 				// Emit PAUSED status to indicate execution is paused
-				_ = streamingHarness.EmitStatus(proto.AgentStatus_AGENT_STATUS_PAUSED,
+				_ = streamingHarness.EmitStatus("paused",
 					fmt.Sprintf("Execution paused: %s", payload.Interrupt.Reason))
 
 				select {
@@ -162,7 +162,13 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 				modeMu.Unlock()
 
 				// Update the mode in the streaming harness as well
-				streamingHarness.SetMode(payload.SetMode.Mode)
+				// SetMode is internal - use type assertion to access concrete type
+				type concreteHarness interface {
+					SetMode(proto.AgentMode)
+				}
+				if sh, ok := streamingHarness.(concreteHarness); ok {
+					sh.SetMode(payload.SetMode.Mode)
+				}
 
 			case *proto.ClientMessage_Resume:
 				// Resume execution with optional guidance
@@ -175,7 +181,7 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 				if payload.Resume.Guidance != "" {
 					guidanceMsg = fmt.Sprintf("Execution resumed with guidance: %s", payload.Resume.Guidance)
 				}
-				_ = streamingHarness.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, guidanceMsg)
+				_ = streamingHarness.EmitStatus("running", guidanceMsg)
 
 				select {
 				case resumeCh <- payload.Resume.Guidance:
@@ -187,7 +193,7 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	}()
 
 	// Emit RUNNING status to indicate execution has started
-	if err := streamingHarness.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "Starting execution"); err != nil {
+	if err := streamingHarness.EmitStatus("running", "Starting execution"); err != nil {
 		return status.Errorf(codes.Internal, "failed to emit running status: %v", err)
 	}
 
@@ -209,16 +215,26 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	}
 
 	// Determine final status based on execution result
-	var finalStatus proto.AgentStatus
+	var finalStatusStr string
 	var finalMessage string
-
 	if execErr != nil {
-		finalStatus = proto.AgentStatus_AGENT_STATUS_FAILED
+		finalStatusStr = "failed"
 		finalMessage = fmt.Sprintf("Execution failed: %v", execErr)
 
-		// Also emit an error event
-		if emitErr := streamingHarness.EmitError("EXECUTION_ERROR", execErr.Error(), true); emitErr != nil {
-			// Log but don't fail the RPC
+		// Emit a fatal error event for execution failure
+		// Use concrete type to access internal send method with proper error code
+		type concreteStreaming interface {
+			getTraceInfo(ctx context.Context) (string, string)
+			nextSequence() int64
+			send(msg *proto.AgentMessage) error
+		}
+		if sh, ok := streamingHarness.(concreteStreaming); ok {
+			ctx := context.Background()
+			traceID, spanID := sh.getTraceInfo(ctx)
+			errMsg := BuildErrorEvent("EXECUTION_ERROR", execErr.Error(), true, sh.nextSequence(), traceID, spanID)
+			if emitErr := sh.send(errMsg); emitErr != nil {
+				// Log but don't fail the RPC
+			}
 		}
 	} else {
 		// Check if we were interrupted
@@ -227,10 +243,10 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 		modeMu.RUnlock()
 
 		if wasInterrupted {
-			finalStatus = proto.AgentStatus_AGENT_STATUS_INTERRUPTED
+			finalStatusStr = "interrupted"
 			finalMessage = "Execution interrupted by client"
 		} else {
-			finalStatus = proto.AgentStatus_AGENT_STATUS_COMPLETED
+			finalStatusStr = "completed"
 			// Extract status from result if available
 			if result.Status != "" {
 				finalMessage = string(result.Status)
@@ -241,7 +257,7 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	}
 
 	// Emit final status
-	if err := streamingHarness.EmitStatus(finalStatus, finalMessage); err != nil {
+	if err := streamingHarness.EmitStatus(finalStatusStr, finalMessage); err != nil {
 		return status.Errorf(codes.Internal, "failed to emit final status: %v", err)
 	}
 

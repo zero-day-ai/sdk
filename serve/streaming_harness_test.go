@@ -5,9 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
@@ -260,15 +262,15 @@ func TestNewStreamingHarness(t *testing.T) {
 		t.Fatal("NewStreamingHarness returned nil")
 	}
 
-	// Verify it implements StreamingHarness interface
-	_, ok := sh.(StreamingHarness)
+	// Verify it implements agent.StreamingHarness interface
+	_, ok := sh.(agent.StreamingHarness)
 	if !ok {
-		t.Error("NewStreamingHarness does not implement StreamingHarness interface")
+		t.Error("NewStreamingHarness does not implement agent.StreamingHarness interface")
 	}
 
-	// Verify mode is set correctly
-	if sh.Mode() != mode {
-		t.Errorf("Mode() = %v, want %v", sh.Mode(), mode)
+	// Verify mode is set correctly (proto autonomous maps to agent autonomous)
+	if sh.Mode() != agent.ExecutionModeAutonomous {
+		t.Errorf("Mode() = %v, want %v", sh.Mode(), agent.ExecutionModeAutonomous)
 	}
 
 	// Verify steering channel is accessible
@@ -393,24 +395,28 @@ func TestEmitToolResult(t *testing.T) {
 		name    string
 		callID  string
 		output  map[string]any
-		success bool
+		err     error
+		success bool // expected success in proto
 	}{
 		{
 			name:    "successful result",
 			callID:  "call-123",
 			output:  map[string]any{"status": "ok", "pods": []string{"pod-1", "pod-2"}},
+			err:     nil,
 			success: true,
 		},
 		{
 			name:    "failed result",
 			callID:  "call-456",
 			output:  map[string]any{"error": "connection timeout"},
+			err:     errors.New("connection timeout"),
 			success: false,
 		},
 		{
 			name:    "empty output",
 			callID:  "call-789",
 			output:  map[string]any{},
+			err:     nil,
 			success: true,
 		},
 	}
@@ -423,7 +429,7 @@ func TestEmitToolResult(t *testing.T) {
 
 			sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
-			err := sh.EmitToolResult(tt.callID, tt.output, tt.success)
+			err := sh.EmitToolResult(tt.output, tt.err, tt.callID)
 			if err != nil {
 				t.Errorf("EmitToolResult() error = %v, want nil", err)
 			}
@@ -492,24 +498,28 @@ func TestEmitFinding(t *testing.T) {
 // TestEmitStatus verifies that EmitStatus sends correct events.
 func TestEmitStatus(t *testing.T) {
 	tests := []struct {
-		name    string
-		status  proto.AgentStatus
-		message string
+		name          string
+		status        string
+		message       string
+		expectedProto proto.AgentStatus
 	}{
 		{
-			name:    "running status",
-			status:  proto.AgentStatus_AGENT_STATUS_RUNNING,
-			message: "Starting RBAC analysis",
+			name:          "running status",
+			status:        "running",
+			message:       "Starting RBAC analysis",
+			expectedProto: proto.AgentStatus_AGENT_STATUS_RUNNING,
 		},
 		{
-			name:    "completed status",
-			status:  proto.AgentStatus_AGENT_STATUS_COMPLETED,
-			message: "Scan complete",
+			name:          "completed status",
+			status:        "completed",
+			message:       "Scan complete",
+			expectedProto: proto.AgentStatus_AGENT_STATUS_COMPLETED,
 		},
 		{
-			name:    "paused status",
-			status:  proto.AgentStatus_AGENT_STATUS_PAUSED,
-			message: "Waiting for user approval",
+			name:          "paused status",
+			status:        "paused",
+			message:       "Waiting for user approval",
+			expectedProto: proto.AgentStatus_AGENT_STATUS_PAUSED,
 		},
 	}
 
@@ -537,8 +547,8 @@ func TestEmitStatus(t *testing.T) {
 				t.Fatalf("payload type = %T, want *proto.AgentMessage_Status", msg.Payload)
 			}
 
-			if statusMsg.Status.Status != tt.status {
-				t.Errorf("status = %v, want %v", statusMsg.Status.Status, tt.status)
+			if statusMsg.Status.Status != tt.expectedProto {
+				t.Errorf("status = %v, want %v", statusMsg.Status.Status, tt.expectedProto)
 			}
 
 			if statusMsg.Status.Message != tt.message {
@@ -551,22 +561,19 @@ func TestEmitStatus(t *testing.T) {
 // TestEmitError verifies that EmitError sends correct events.
 func TestEmitError(t *testing.T) {
 	tests := []struct {
-		name    string
-		code    string
-		message string
-		fatal   bool
+		name       string
+		err        error
+		errContext string
 	}{
 		{
-			name:    "non-fatal error",
-			code:    "RBAC_DENIED",
-			message: "Insufficient permissions",
-			fatal:   false,
+			name:       "error with context",
+			err:        errors.New("Insufficient permissions"),
+			errContext: "RBAC check",
 		},
 		{
-			name:    "fatal error",
-			code:    "CLUSTER_UNREACHABLE",
-			message: "Cannot connect to cluster",
-			fatal:   true,
+			name:       "error without context",
+			err:        errors.New("Cannot connect to cluster"),
+			errContext: "",
 		},
 	}
 
@@ -578,7 +585,7 @@ func TestEmitError(t *testing.T) {
 
 			sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
-			err := sh.EmitError(tt.code, tt.message, tt.fatal)
+			err := sh.EmitError(tt.err, tt.errContext)
 			if err != nil {
 				t.Errorf("EmitError() error = %v, want nil", err)
 			}
@@ -594,16 +601,14 @@ func TestEmitError(t *testing.T) {
 				t.Fatalf("payload type = %T, want *proto.AgentMessage_Error", msg.Payload)
 			}
 
-			if errorMsg.Error.Code != tt.code {
-				t.Errorf("code = %q, want %q", errorMsg.Error.Code, tt.code)
+			// Verify the error message contains the expected content
+			if tt.errContext != "" {
+				if !strings.Contains(errorMsg.Error.Message, tt.errContext) {
+					t.Errorf("message = %q, want to contain %q", errorMsg.Error.Message, tt.errContext)
+				}
 			}
-
-			if errorMsg.Error.Message != tt.message {
-				t.Errorf("message = %q, want %q", errorMsg.Error.Message, tt.message)
-			}
-
-			if errorMsg.Error.Fatal != tt.fatal {
-				t.Errorf("fatal = %v, want %v", errorMsg.Error.Fatal, tt.fatal)
+			if !strings.Contains(errorMsg.Error.Message, tt.err.Error()) {
+				t.Errorf("message = %q, want to contain %q", errorMsg.Error.Message, tt.err.Error())
 			}
 		})
 	}
@@ -911,16 +916,19 @@ func TestSteeringAndModeAccessors(t *testing.T) {
 
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, mode)
 
-	// Test Mode()
-	if sh.Mode() != mode {
-		t.Errorf("Mode() = %v, want %v", sh.Mode(), mode)
+	// Test Mode() - returns agent.ExecutionMode (converted from proto)
+	expectedMode := agent.ExecutionModeManual // INTERACTIVE maps to Manual
+	if sh.Mode() != expectedMode {
+		t.Errorf("Mode() = %v, want %v", sh.Mode(), expectedMode)
 	}
 
-	// Test SetMode()
+	// Test SetMode() - access via type assertion to concrete type
+	concreteHarness := sh.(*streamingHarness)
 	newMode := proto.AgentMode_AGENT_MODE_AUTONOMOUS
-	sh.SetMode(newMode)
-	if sh.Mode() != newMode {
-		t.Errorf("Mode() after SetMode() = %v, want %v", sh.Mode(), newMode)
+	concreteHarness.SetMode(newMode)
+	expectedNewMode := agent.ExecutionModeAutonomous
+	if sh.Mode() != expectedNewMode {
+		t.Errorf("Mode() after SetMode() = %v, want %v", sh.Mode(), expectedNewMode)
 	}
 
 	// Test Steering() channel
@@ -935,15 +943,25 @@ func TestSteeringAndModeAccessors(t *testing.T) {
 		Content: "test input",
 	}
 
-	steeringCh <- testMsg
+	// Send in a goroutine to avoid blocking
+	go func() {
+		steeringCh <- testMsg
+	}()
 
+	// Use a timeout since the message goes through an adapter goroutine
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 	select {
 	case msg := <-steeringChan:
-		if msg == nil {
-			t.Error("received nil message from steering channel")
+		// agent.SteeringMessage is a value type, check if Content is set
+		if msg.Content == "" {
+			t.Error("received empty message from steering channel")
 		}
-	default:
-		t.Error("no message received from steering channel")
+		if msg.Content != "test input" {
+			t.Errorf("expected content 'test input', got %q", msg.Content)
+		}
+	case <-ctx.Done():
+		t.Error("timeout waiting for steering message")
 	}
 }
 
@@ -955,9 +973,18 @@ func TestSetModeConcurrency(t *testing.T) {
 
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
-	modes := []proto.AgentMode{
+	// Access concrete type for SetMode (internal method)
+	concreteHarness := sh.(*streamingHarness)
+
+	protoModes := []proto.AgentMode{
 		proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 		proto.AgentMode_AGENT_MODE_INTERACTIVE,
+	}
+
+	// Expected agent.ExecutionMode values for validation
+	expectedModes := []agent.ExecutionMode{
+		agent.ExecutionModeAutonomous,
+		agent.ExecutionModeManual,
 	}
 
 	var wg sync.WaitGroup
@@ -969,7 +996,7 @@ func TestSetModeConcurrency(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
-			sh.SetMode(modes[i%len(modes)])
+			concreteHarness.SetMode(protoModes[i%len(protoModes)])
 		}
 	}()
 
@@ -985,7 +1012,7 @@ func TestSetModeConcurrency(t *testing.T) {
 	// Final mode should be valid
 	finalMode := sh.Mode()
 	validMode := false
-	for _, mode := range modes {
+	for _, mode := range expectedModes {
 		if finalMode == mode {
 			validMode = true
 			break
@@ -993,7 +1020,7 @@ func TestSetModeConcurrency(t *testing.T) {
 	}
 
 	if !validMode {
-		t.Errorf("final mode %v is not in expected modes %v", finalMode, modes)
+		t.Errorf("final mode %v is not in expected modes %v", finalMode, expectedModes)
 	}
 }
 
@@ -1031,11 +1058,11 @@ func TestEmitMethodsSequenceOrdering(t *testing.T) {
 
 	// Emit various event types in sequence
 	sh.EmitOutput("output1", false)
-	sh.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "running")
+	sh.EmitStatus("running", "running message")
 	sh.EmitToolCall("tool1", map[string]any{}, "call-1")
-	sh.EmitToolResult("call-1", map[string]any{}, true)
+	sh.EmitToolResult(map[string]any{"result": "done"}, nil, "call-1")
 	sh.EmitFinding(&mockFinding{id: "f1", severity: "high", category: "test"})
-	sh.EmitError("ERR", "error", false)
+	sh.EmitError(errors.New("error"), "ERR context")
 	sh.EmitOutput("output2", true)
 
 	msgs := stream.getSentMessages()
@@ -1146,7 +1173,7 @@ func TestConcurrentEmitsAndDelegation(t *testing.T) {
 		// Emit status
 		go func() {
 			defer wg.Done()
-			sh.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "running")
+			sh.EmitStatus("running", "running message")
 		}()
 	}
 

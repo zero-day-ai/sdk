@@ -108,11 +108,11 @@ func (e *executionCounter) get() int {
 // mockStreamingAgent implements both agent.Agent and StreamingAgent for testing streaming agents.
 type mockStreamingAgent struct {
 	*mockAgent
-	executeStreamingFunc func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error)
+	executeStreamingFunc func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error)
 	streamingCounter     executionCounter
 }
 
-func (a *mockStreamingAgent) ExecuteStreaming(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+func (a *mockStreamingAgent) ExecuteStreaming(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 	a.streamingCounter.increment()
 
 	if a.executeStreamingFunc != nil {
@@ -213,10 +213,10 @@ func TestStreamExecute_StreamingAgent(t *testing.T) {
 			name:    "streaming-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Emit some events during execution
 			harness.EmitOutput("Starting analysis", true)
-			harness.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "Analyzing target")
+			harness.EmitStatus("running", "Analyzing target")
 			harness.EmitOutput("Analysis complete", false)
 			return agent.NewSuccessResult("streaming complete"), nil
 		},
@@ -284,7 +284,7 @@ func TestStreamExecute_SteeringMessage(t *testing.T) {
 
 	stream := newMockStreamServer(ctx)
 
-	steeringReceived := make(chan *proto.SteeringMessage, 1)
+	steeringReceived := make(chan agent.SteeringMessage, 1)
 
 	// Create agent that waits for steering
 	testAgent := &mockStreamingAgent{
@@ -292,7 +292,7 @@ func TestStreamExecute_SteeringMessage(t *testing.T) {
 			name:    "steering-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Wait for steering message
 			select {
 			case msg := <-harness.Steering():
@@ -356,9 +356,7 @@ func TestStreamExecute_SteeringMessage(t *testing.T) {
 	// Verify agent received the steering message
 	select {
 	case received := <-steeringReceived:
-		if received.Id != steeringMsg.Id {
-			t.Errorf("steering message ID = %q, want %q", received.Id, steeringMsg.Id)
-		}
+		// agent.SteeringMessage only has Content and Priority (no ID)
 		if received.Content != steeringMsg.Content {
 			t.Errorf("steering message content = %q, want %q", received.Content, steeringMsg.Content)
 		}
@@ -389,7 +387,7 @@ func TestStreamExecute_SetMode(t *testing.T) {
 
 	stream := newMockStreamServer(ctx)
 
-	modesObserved := make(chan proto.AgentMode, 2)
+	modesObserved := make(chan agent.ExecutionMode, 2)
 
 	// Create agent that checks mode multiple times
 	testAgent := &mockStreamingAgent{
@@ -397,7 +395,7 @@ func TestStreamExecute_SetMode(t *testing.T) {
 			name:    "mode-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Record initial mode
 			modesObserved <- harness.Mode()
 
@@ -456,7 +454,7 @@ func TestStreamExecute_SetMode(t *testing.T) {
 	}
 
 	// Verify mode changes
-	modes := make([]proto.AgentMode, 0, 2)
+	modes := make([]agent.ExecutionMode, 0, 2)
 	close(modesObserved)
 	for mode := range modesObserved {
 		modes = append(modes, mode)
@@ -466,12 +464,12 @@ func TestStreamExecute_SetMode(t *testing.T) {
 		t.Fatalf("observed %d modes, want 2", len(modes))
 	}
 
-	if modes[0] != proto.AgentMode_AGENT_MODE_AUTONOMOUS {
-		t.Errorf("initial mode = %v, want AUTONOMOUS", modes[0])
+	if modes[0] != agent.ExecutionModeAutonomous {
+		t.Errorf("initial mode = %v, want Autonomous", modes[0])
 	}
 
-	if modes[1] != proto.AgentMode_AGENT_MODE_INTERACTIVE {
-		t.Errorf("changed mode = %v, want INTERACTIVE", modes[1])
+	if modes[1] != agent.ExecutionModeManual {
+		t.Errorf("changed mode = %v, want Manual (maps from INTERACTIVE)", modes[1])
 	}
 }
 
@@ -488,7 +486,7 @@ func TestStreamExecute_Interrupt(t *testing.T) {
 			name:    "interrupt-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Simulate long-running work
 			time.Sleep(500 * time.Millisecond)
 			return agent.NewSuccessResult("completed"), nil
@@ -568,7 +566,7 @@ func TestStreamExecute_Resume(t *testing.T) {
 			name:    "resume-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Simulate work
 			time.Sleep(200 * time.Millisecond)
 			return agent.NewSuccessResult("completed"), nil
@@ -848,7 +846,7 @@ func TestStreamExecute_SequenceNumbers(t *testing.T) {
 			name:    "sequence-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			harness.EmitOutput("output1", false)
 			harness.EmitOutput("output2", false)
 			harness.EmitOutput("output3", false)
@@ -926,12 +924,12 @@ func TestStreamExecute_EventOrdering(t *testing.T) {
 			name:    "ordering-agent",
 			version: "1.0.0",
 		},
-		executeStreamingFunc: func(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error) {
+		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Emit events in specific order
 			harness.EmitOutput("step1", false)                                      // 2
-			harness.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "working")   // 3
+			harness.EmitStatus("running", "working")                                  // 3
 			harness.EmitToolCall("tool1", map[string]any{}, "call-1")               // 4
-			harness.EmitToolResult("call-1", map[string]any{}, true)                // 5
+			harness.EmitToolResult(map[string]any{}, nil, "call-1")                 // 5
 			harness.EmitOutput("step2", false)                                      // 6
 			return agent.NewSuccessResult("completed"), nil
 		},

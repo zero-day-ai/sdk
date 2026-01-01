@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -40,6 +41,13 @@ type Config struct {
 	// TLSKeyFile is the path to the TLS private key file.
 	// If empty, TLS is disabled.
 	TLSKeyFile string
+
+	// LocalMode enables Unix domain socket listening alongside TCP.
+	// When enabled, the server creates a Unix socket at the specified path
+	// for local IPC communication. The socket is created with 0600 permissions
+	// and cleaned up on server shutdown.
+	// If empty, LocalMode is disabled.
+	LocalMode string
 }
 
 // DefaultConfig returns default serve configuration.
@@ -56,10 +64,12 @@ func DefaultConfig() *Config {
 // It handles server initialization, startup, graceful shutdown,
 // and health check registration.
 type Server struct {
-	grpcServer   *grpc.Server
-	listener     net.Listener
-	config       *Config
-	healthServer *health.Server
+	grpcServer     *grpc.Server
+	listener       net.Listener
+	unixListener   net.Listener // Optional Unix domain socket listener for LocalMode
+	config         *Config
+	healthServer   *health.Server
+	unixSocketPath string // Path to Unix socket for cleanup
 }
 
 // NewServer creates a new gRPC server with the provided configuration.
@@ -70,10 +80,45 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg = DefaultConfig()
 	}
 
-	// Create listener
+	// Create TCP listener
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen on port %d: %w", cfg.Port, err)
+	}
+
+	// Create Unix socket listener if LocalMode is enabled
+	var unixListener net.Listener
+	var unixSocketPath string
+	if cfg.LocalMode != "" {
+		// Create parent directory if it doesn't exist
+		socketDir := filepath.Dir(cfg.LocalMode)
+		if err := os.MkdirAll(socketDir, 0755); err != nil {
+			listener.Close()
+			return nil, fmt.Errorf("failed to create socket directory %s: %w", socketDir, err)
+		}
+
+		// Remove existing socket if it exists
+		if err := os.Remove(cfg.LocalMode); err != nil && !os.IsNotExist(err) {
+			listener.Close()
+			return nil, fmt.Errorf("failed to remove existing socket %s: %w", cfg.LocalMode, err)
+		}
+
+		// Create Unix domain socket with restricted permissions
+		unixListener, err = net.Listen("unix", cfg.LocalMode)
+		if err != nil {
+			listener.Close()
+			return nil, fmt.Errorf("failed to create unix socket at %s: %w", cfg.LocalMode, err)
+		}
+
+		// Set socket permissions to 0600 (owner read/write only)
+		if err := os.Chmod(cfg.LocalMode, 0600); err != nil {
+			listener.Close()
+			unixListener.Close()
+			os.Remove(cfg.LocalMode)
+			return nil, fmt.Errorf("failed to set socket permissions: %w", err)
+		}
+
+		unixSocketPath = cfg.LocalMode
 	}
 
 	// Build gRPC server options
@@ -84,6 +129,10 @@ func NewServer(cfg *Config) (*Server, error) {
 		creds, err := credentials.NewServerTLSFromFile(cfg.TLSCertFile, cfg.TLSKeyFile)
 		if err != nil {
 			listener.Close()
+			if unixListener != nil {
+				unixListener.Close()
+				os.Remove(unixSocketPath)
+			}
 			return nil, fmt.Errorf("failed to load TLS credentials: %w", err)
 		}
 		opts = append(opts, grpc.Creds(creds))
@@ -97,10 +146,12 @@ func NewServer(cfg *Config) (*Server, error) {
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
 
 	return &Server{
-		grpcServer:   grpcServer,
-		listener:     listener,
-		config:       cfg,
-		healthServer: healthServer,
+		grpcServer:     grpcServer,
+		listener:       listener,
+		unixListener:   unixListener,
+		config:         cfg,
+		healthServer:   healthServer,
+		unixSocketPath: unixSocketPath,
 	}, nil
 }
 
@@ -119,16 +170,26 @@ func (s *Server) HealthServer() *health.Server {
 // Serve starts the gRPC server and blocks until shutdown.
 // It handles graceful shutdown on SIGINT/SIGTERM signals.
 // The context can be used to initiate shutdown programmatically.
+// When LocalMode is enabled, the server listens on both TCP and Unix socket.
 func (s *Server) Serve(ctx context.Context) error {
-	// Create error channel for serve errors
-	errCh := make(chan error, 1)
+	// Create error channel for serve errors (buffer size 2 for TCP and Unix listeners)
+	errCh := make(chan error, 2)
 
-	// Start serving in a goroutine
+	// Start serving on TCP listener
 	go func() {
 		if err := s.grpcServer.Serve(s.listener); err != nil {
-			errCh <- fmt.Errorf("gRPC server error: %w", err)
+			errCh <- fmt.Errorf("gRPC TCP server error: %w", err)
 		}
 	}()
+
+	// Start serving on Unix socket if LocalMode is enabled
+	if s.unixListener != nil {
+		go func() {
+			if err := s.grpcServer.Serve(s.unixListener); err != nil {
+				errCh <- fmt.Errorf("gRPC Unix socket server error: %w", err)
+			}
+		}()
+	}
 
 	// Setup signal handling for graceful shutdown
 	sigCh := make(chan os.Signal, 1)
@@ -147,6 +208,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		return nil
 	case err := <-errCh:
 		// Server error
+		s.cleanup()
 		return err
 	}
 }
@@ -156,6 +218,7 @@ func (s *Server) Serve(ctx context.Context) error {
 // This should only be used when graceful shutdown is not required.
 func (s *Server) Stop() {
 	s.grpcServer.Stop()
+	s.cleanup()
 }
 
 // GracefulStop gracefully stops the gRPC server.
@@ -183,6 +246,19 @@ func (s *Server) GracefulStop() {
 		// Timeout - force stop
 		fmt.Println("Graceful shutdown timeout, forcing stop")
 		s.grpcServer.Stop()
+	}
+
+	// Clean up Unix socket
+	s.cleanup()
+}
+
+// cleanup removes the Unix socket file if it exists.
+// This is called during server shutdown to prevent stale socket files.
+func (s *Server) cleanup() {
+	if s.unixSocketPath != "" {
+		if err := os.Remove(s.unixSocketPath); err != nil && !os.IsNotExist(err) {
+			fmt.Printf("Warning: failed to remove Unix socket %s: %v\n", s.unixSocketPath, err)
+		}
 	}
 }
 
