@@ -168,6 +168,75 @@ type Harness interface {
 	GraphRAGHealth(ctx context.Context) types.HealthStatus
 }
 
+// StreamingHarness extends Harness with real-time event emission capabilities.
+// It provides methods for emitting events during agent execution for live streaming
+// to clients and receiving steering messages for interactive control.
+//
+// This interface is implemented by the serve package's streaming harness implementation.
+// Agents that want streaming support should use the StreamingExecuteFunc type with
+// SetStreamingExecuteFunc when building their configuration.
+type StreamingHarness interface {
+	// Embed the base Harness interface to inherit all standard capabilities
+	Harness
+
+	// EmitOutput emits a text output chunk to the client.
+	// Use isReasoning=true for internal reasoning/thinking output,
+	// or isReasoning=false for final user-facing output.
+	EmitOutput(content string, isReasoning bool) error
+
+	// EmitToolCall emits an event indicating a tool invocation is starting.
+	// The callID should be a unique identifier for correlating with the result.
+	EmitToolCall(toolName string, input map[string]any, callID string) error
+
+	// EmitToolResult emits an event with the result of a tool invocation.
+	// The callID should match the ID used in the corresponding EmitToolCall.
+	EmitToolResult(output map[string]any, err error, callID string) error
+
+	// EmitFinding emits an event when a security finding is discovered.
+	// This allows clients to receive findings in real-time as they're found.
+	EmitFinding(finding Finding) error
+
+	// EmitStatus emits a status change event.
+	// Use this to indicate progress through different phases of execution.
+	EmitStatus(status string, message string) error
+
+	// EmitError emits an error event without terminating execution.
+	// Use this for non-fatal errors that the agent recovers from.
+	EmitError(err error, context string) error
+
+	// Steering returns a read-only channel for receiving steering messages.
+	// Agents can select on this channel to respond to user guidance during execution.
+	Steering() <-chan SteeringMessage
+
+	// Mode returns the current execution mode (autonomous, semi-autonomous, manual).
+	// Agents should adjust their behavior based on the current mode.
+	Mode() ExecutionMode
+}
+
+// SteeringMessage represents a message from the client to steer agent behavior.
+// This is a placeholder type that will be properly defined when implementing steering.
+type SteeringMessage struct {
+	// Content is the steering message content from the user.
+	Content string
+
+	// Priority indicates if this is a high-priority steering message.
+	Priority bool
+}
+
+// ExecutionMode represents the agent's execution mode.
+type ExecutionMode int
+
+const (
+	// ExecutionModeAutonomous means the agent operates independently.
+	ExecutionModeAutonomous ExecutionMode = iota
+
+	// ExecutionModeSemiAutonomous means the agent pauses for approval on critical actions.
+	ExecutionModeSemiAutonomous
+
+	// ExecutionModeManual means the agent waits for explicit user direction.
+	ExecutionModeManual
+)
+
 // Descriptor provides metadata about an agent.
 // This is used for agent discovery and selection.
 type Descriptor struct {

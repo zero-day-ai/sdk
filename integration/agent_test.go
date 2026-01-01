@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	sdk "github.com/zero-day-ai/sdk"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
@@ -448,4 +449,45 @@ func (m *mockHarness) Logger() *slog.Logger {
 
 func (m *mockHarness) TokenUsage() llm.TokenTracker {
 	return nil
+}
+
+// GraphRAG methods (required by Harness interface)
+func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (m *mockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
+	return types.NewHealthyStatus("ok")
 }

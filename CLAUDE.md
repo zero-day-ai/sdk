@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Specs should ALWAYS go in ~/Code/zero-day.ai/.spec-workflow
+
+
 ## Overview
 
 The Gibson SDK is the official Go SDK for building AI security testing agents, tools, and plugins for the Gibson Framework. It provides APIs for creating autonomous security testing agents that discover vulnerabilities in LLMs and AI systems.

@@ -10,10 +10,14 @@ This guide explains how to build agents, tools, and plugins for the Gibson Frame
 4. [Building Agents](#building-agents)
 5. [Component Manifest (component.yaml)](#component-manifest-componentyaml)
 6. [Agent Installation](#agent-installation)
-7. [Building Tools](#building-tools)
-8. [Building Plugins](#building-plugins)
-9. [Multi-Vendor LLM Usage](#multi-vendor-llm-usage)
-10. [Complete Examples](#complete-examples)
+7. [Health Checks](#health-checks)
+8. [Checking Agent Status](#checking-agent-status)
+9. [Building Tools](#building-tools)
+10. [Building Plugins](#building-plugins)
+11. [Multi-Vendor LLM Usage](#multi-vendor-llm-usage)
+12. [Complete Examples](#complete-examples)
+13. [Agent Streaming and TUI Integration](#agent-streaming-and-tui-integration)
+14. [Streaming Agents](#streaming-agents)
 
 ---
 
@@ -603,8 +607,11 @@ runtime:
   port: 0                     # gRPC port (0 = dynamic assignment)
   args: []                    # Command-line arguments
   health_check:
-    interval: 30s
-    timeout: 5s
+    protocol: grpc            # Protocol: "http", "grpc", or "auto" (default: auto)
+    interval: 30s             # Health check interval for monitoring
+    timeout: 5s               # Timeout per health check request
+    endpoint: /health         # HTTP endpoint (only used with http protocol)
+    service_name: ""          # gRPC service name (empty = overall server health)
 
 # Environment variables
 env:
@@ -680,8 +687,11 @@ dependencies:
 | `runtime.entrypoint` | Yes | Executable path or command |
 | `runtime.port` | No | gRPC port (0 = dynamic) |
 | `runtime.args` | No | Command-line arguments |
-| `runtime.health_check.interval` | No | Health check interval |
-| `runtime.health_check.timeout` | No | Health check timeout |
+| `runtime.health_check.protocol` | No | Health check protocol: `http`, `grpc`, or `auto` (default: `auto`) |
+| `runtime.health_check.interval` | No | Health check interval for ongoing monitoring (default: `10s`) |
+| `runtime.health_check.timeout` | No | Timeout per health check request (default: `5s`) |
+| `runtime.health_check.endpoint` | No | HTTP health endpoint path (default: `/health`) |
+| `runtime.health_check.service_name` | No | gRPC service name to check (default: empty = server health) |
 
 ---
 
@@ -774,6 +784,285 @@ gibson agent health security-scanner
 | `BUILD_FAILED` | Build command failed | Check build command and dependencies |
 | `DEPENDENCY_FAILED` | Missing tool or system dependency | Install required dependencies first |
 | `SLOT_VALIDATION_FAILED` | LLM slot constraints not met | Check LLM provider configuration |
+
+---
+
+## Health Checks
+
+The Gibson Framework uses health checks to determine when a component has successfully started and to monitor ongoing health during operation. Components can expose health checks via HTTP or gRPC protocols.
+
+### How SDK Components Report Health
+
+When you use `sdk.ServeAgent()`, `sdk.ServeTool()`, or `sdk.ServePlugin()`, the SDK automatically registers a gRPC health service using the standard `grpc_health_v1` protocol. This is the recommended approach as it provides:
+
+- Automatic health reporting without additional code
+- Standard protocol supported by Kubernetes, load balancers, and monitoring tools
+- Service-specific health status (per-service granularity)
+
+```go
+// The SDK automatically implements grpc_health_v1.HealthServer
+// No additional code needed - health checks work out of the box
+sdk.ServeAgent(myAgent, sdk.WithPort(50051))
+```
+
+The gRPC health service responds to `grpc.health.v1.Health/Check` requests with status:
+- `SERVING` - Component is healthy and ready
+- `NOT_SERVING` - Component is unhealthy
+- `SERVICE_UNKNOWN` - Requested service name not found
+
+### How Gibson CLI Performs Health Checks
+
+Gibson CLI supports three health check protocols configured via the component manifest:
+
+1. **`grpc`** - Uses the standard gRPC health protocol (`grpc_health_v1`)
+2. **`http`** - Makes HTTP GET requests to a health endpoint
+3. **`auto`** (default) - Tries gRPC first, falls back to HTTP if gRPC connection fails
+
+```
+                        Protocol Detection Flow
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │                   Component Startup                          │
+    └────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │              Check health_check.protocol                     │
+    └────────────────────────────┬────────────────────────────────┘
+                                 │
+           ┌─────────────────────┼─────────────────────┐
+           ▼                     ▼                     ▼
+    ┌────────────┐        ┌────────────┐        ┌────────────┐
+    │  "grpc"    │        │  "http"    │        │  "auto"    │
+    └─────┬──────┘        └─────┬──────┘        └─────┬──────┘
+          │                     │                     │
+          ▼                     ▼                     ▼
+    ┌────────────┐        ┌────────────┐        ┌────────────┐
+    │ gRPC Check │        │ HTTP Check │        │ Try gRPC   │
+    │ grpc.health│        │ GET /health│        │            │
+    └────────────┘        └────────────┘        └─────┬──────┘
+                                                      │
+                                               ┌──────┴──────┐
+                                               │ Connection  │
+                                               │   Error?    │
+                                               └──────┬──────┘
+                                                 No   │   Yes
+                                            ┌─────────┴─────────┐
+                                            ▼                   ▼
+                                      ┌──────────┐       ┌──────────┐
+                                      │  Done    │       │ Try HTTP │
+                                      │  (gRPC)  │       │ Fallback │
+                                      └──────────┘       └──────────┘
+```
+
+### Configuring Health Checks in component.yaml
+
+Add the `health_check` section under `runtime` to configure health check behavior:
+
+```yaml
+# component.yaml
+kind: agent
+name: my-agent
+version: 1.0.0
+
+runtime:
+  type: go
+  entrypoint: ./my-agent
+  port: 0
+
+  # Health check configuration
+  health_check:
+    protocol: auto        # "http", "grpc", or "auto" (default: auto)
+    interval: 10s         # Check interval for monitoring (default: 10s)
+    timeout: 5s           # Timeout per check (default: 5s)
+    endpoint: /health     # HTTP endpoint path (default: /health)
+    service_name: ""      # gRPC service name (default: "" = overall health)
+```
+
+#### Health Check Configuration Options
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `protocol` | string | `auto` | Protocol: `http`, `grpc`, or `auto` |
+| `interval` | duration | `10s` | Interval between health checks during monitoring |
+| `timeout` | duration | `5s` | Timeout for each health check request |
+| `endpoint` | string | `/health` | HTTP endpoint path (only for HTTP protocol) |
+| `service_name` | string | `""` | gRPC service name to check (empty = overall server health) |
+
+### Protocol Selection Guidelines
+
+| Scenario | Recommended Protocol | Reason |
+|----------|---------------------|--------|
+| SDK-built components | `grpc` or `auto` | SDK uses gRPC health by default |
+| HTTP-only services | `http` | Component only exposes HTTP |
+| Mixed environments | `auto` | Auto-detects the correct protocol |
+| Kubernetes deployments | `grpc` | K8s natively supports gRPC health probes |
+
+### Example: Agent with gRPC Health Check
+
+```yaml
+# component.yaml for a Go agent using SDK
+kind: agent
+name: security-scanner
+version: 1.0.0
+
+runtime:
+  type: go
+  entrypoint: ./security-scanner
+  port: 0
+  health_check:
+    protocol: grpc        # Explicitly use gRPC (recommended for SDK agents)
+    timeout: 10s          # Allow more time for complex agents
+```
+
+### Example: Tool with HTTP Health Check
+
+```yaml
+# component.yaml for a tool that exposes HTTP health
+kind: tool
+name: legacy-scanner
+version: 1.0.0
+
+runtime:
+  type: binary
+  entrypoint: ./legacy-scanner
+  port: 8080
+  health_check:
+    protocol: http        # Use HTTP for non-SDK components
+    endpoint: /healthz    # Custom health endpoint
+    timeout: 3s
+```
+
+### Troubleshooting Health Check Issues
+
+#### Error: `[TIMEOUT] component=<name> timeout during health check`
+
+This error occurs when the component doesn't respond to health checks within the startup timeout. Common causes:
+
+| Cause | Solution |
+|-------|----------|
+| Protocol mismatch | If using SDK, set `protocol: grpc` in manifest |
+| Slow startup | Increase startup timeout or optimize initialization |
+| Wrong port | Ensure `port` in manifest matches actual listening port |
+| Component crashed | Check component logs for errors |
+
+#### Error: `[HEALTH_CHECK_FAILED] grpc health check failed`
+
+| Cause | Solution |
+|-------|----------|
+| gRPC service not registered | Ensure using `sdk.ServeAgent()` or equivalent |
+| Service name mismatch | Set correct `service_name` in manifest or use empty string |
+| Network issues | Check firewall rules and port availability |
+
+#### Debugging Health Checks
+
+```bash
+# Check if component is responding on expected port
+nc -zv localhost 50051
+
+# Test gRPC health check manually (requires grpcurl)
+grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
+
+# Test HTTP health check manually
+curl -v http://localhost:8080/health
+
+# View component logs for health check errors
+gibson agent logs my-agent
+```
+
+---
+
+## Checking Agent Status
+
+The `gibson agent status` command displays detailed runtime status for an agent including health check results, uptime, and recent errors.
+
+### Basic Usage
+
+```bash
+gibson agent status <agent-name>
+```
+
+### Sample Output
+
+```
+Agent: k8skiller
+Status: running
+PID: 12345
+Port: 50000
+Uptime: 2h 15m 30s
+Started: 2025-12-31T16:10:24-06:00
+
+Health Check:
+  Status: SERVING
+  Protocol: gRPC
+  Response Time: 2.3ms
+
+Health Configuration:
+  Protocol: grpc
+  Interval: 30s
+  Timeout: 5s
+
+Recent Errors: (none)
+```
+
+### Command Flags
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--watch` | `-w` | false | Enable continuous monitoring mode |
+| `--interval` | | 2s | Refresh interval for watch mode (minimum 1s) |
+| `--errors` | | 5 | Number of recent errors to display |
+| `--json` | | false | Output status as JSON |
+
+### JSON Output
+
+Use `--json` for machine-readable output suitable for monitoring integrations:
+
+```bash
+gibson agent status k8skiller --json
+```
+
+```json
+{
+  "name": "k8skiller",
+  "status": "running",
+  "pid": 12345,
+  "port": 50000,
+  "process_state": "running",
+  "uptime": "2h15m30s",
+  "uptime_seconds": 8130,
+  "started_at": "2025-12-31T16:10:24-06:00",
+  "health_check": {
+    "status": "SERVING",
+    "protocol": "grpc",
+    "response_time_ms": 2.3
+  },
+  "health_config": {
+    "protocol": "grpc",
+    "interval": "30s",
+    "timeout": "5s"
+  },
+  "recent_errors": []
+}
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Agent is running and healthy |
+| 1 | Agent is stopped, unhealthy, or not found |
+
+### Watch Mode
+
+Monitor agent status continuously:
+
+```bash
+gibson agent status k8skiller --watch
+gibson agent status k8skiller --watch --interval 5s
+```
+
+Press Ctrl+C to exit watch mode.
 
 ---
 
@@ -1504,6 +1793,700 @@ func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Resul
 
 ---
 
+## Agent Streaming and TUI Integration
+
+### Overview
+
+When agents are executed through the Gibson TUI, real-time streaming of agent events is displayed in the console view. This enables operators to monitor agent progress, see tool calls, view findings as they're discovered, and interact with agents during execution.
+
+### Stream Event Types
+
+Agents emit events that are displayed in the TUI console:
+
+| Event Type | Description | TUI Display |
+|------------|-------------|-------------|
+| `output` | Agent LLM reasoning/output text | Agent output styled text |
+| `tool_call` | Agent invoking a tool | ">>> Calling tool: toolname" with arguments |
+| `tool_result` | Tool execution response | "<<< Tool result: success/failed" with output |
+| `finding` | Security vulnerability discovered | Severity-colored finding block |
+| `status` | Agent state change (running, paused, completed) | Status message with context |
+| `steering_ack` | Acknowledgment of operator steering | Acceptance/rejection message |
+| `error` | Agent error occurred | Error-styled message with details |
+
+### Focusing on an Agent
+
+The `/focus` command in the TUI console subscribes to an agent's event stream:
+
+```
+> /focus davinci
+```
+
+This:
+1. Verifies the agent is registered and running
+2. Subscribes to the StreamManager for that agent
+3. Starts an EventProcessor that forwards events to the TUI
+4. Displays real-time agent output in the console
+
+### Sending Steering Commands
+
+While focused on an agent, operators can send commands:
+
+| Command | Description |
+|---------|-------------|
+| `/steer <message>` | Send guidance to the agent |
+| `/interrupt` | Request the agent to pause |
+| `/resume` | Resume a paused agent |
+| `/mode auto\|interactive` | Switch agent operation mode |
+| `/unfocus` | Stop streaming and unfocus |
+
+### Event Content Structures
+
+Agents should emit events with JSON content matching these structures:
+
+**Output Event:**
+```json
+{
+  "text": "Agent reasoning or output text",
+  "complete": true
+}
+```
+
+**Tool Call Event:**
+```json
+{
+  "tool_name": "http-request",
+  "tool_id": "call-123",
+  "arguments": {"url": "https://target.com", "method": "GET"}
+}
+```
+
+**Tool Result Event:**
+```json
+{
+  "tool_id": "call-123",
+  "success": true,
+  "output": {"status_code": 200, "body": "..."},
+  "error": ""
+}
+```
+
+**Finding Event:**
+```json
+{
+  "id": "finding-uuid",
+  "title": "SQL Injection in Login Form",
+  "severity": "critical",
+  "category": "injection",
+  "description": "Parameter 'username' is vulnerable..."
+}
+```
+
+**Status Event:**
+```json
+{
+  "status": "running|paused|completed|failed|waiting_for_input|interrupted",
+  "message": "Optional status message",
+  "reason": "Optional reason for status change"
+}
+```
+
+**Steering Acknowledgment Event:**
+```json
+{
+  "sequence": 5,
+  "accepted": true,
+  "message": "Optional response message"
+}
+```
+
+**Error Event:**
+```json
+{
+  "message": "Error description",
+  "code": "ERROR_CODE"
+}
+```
+
+### Best Practices for Agent Streaming
+
+1. **Emit Complete Output**: Set `complete: true` when a reasoning block is finished to improve TUI rendering.
+
+2. **Provide Tool Context**: Include meaningful `tool_name` and structured `arguments` in tool calls.
+
+3. **Acknowledge Steering**: Always emit `steering_ack` events when steering messages are received.
+
+4. **Report Status Changes**: Emit `status` events when the agent's operational state changes.
+
+5. **Structure Findings**: Include `id`, `title`, `severity`, and `category` for proper TUI display.
+
+### Stream Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                       Agent Streaming Flow                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐   │
+│  │   Agent     │────▶│  StreamManager   │────▶│ EventProcessor  │   │
+│  │  (gRPC)     │     │                  │     │                 │   │
+│  │             │     │  Subscribe()     │     │  Start()        │   │
+│  │ Emit Events │     │  Unsubscribe()   │     │  processLoop()  │   │
+│  └─────────────┘     └────────┬─────────┘     └───────┬─────────┘   │
+│                               │                       │              │
+│                               │                       ▼              │
+│                               │              ┌─────────────────┐    │
+│                               │              │   tea.Program   │    │
+│                               │              │                 │    │
+│                               │              │  Send(msg)      │    │
+│                               │              └───────┬─────────┘    │
+│                               │                      │               │
+│                               ▼                      ▼               │
+│                      ┌─────────────────┐    ┌─────────────────┐     │
+│                      │   SessionDAO    │    │  ConsoleView    │     │
+│                      │                 │    │                 │     │
+│                      │ Persist Events  │    │ EventRenderer   │     │
+│                      │                 │    │ Display Output  │     │
+│                      └─────────────────┘    └─────────────────┘     │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Steering Message Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Operator Steering Flow                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐   │
+│  │ TUI Console │────▶│  StreamManager   │────▶│     Agent       │   │
+│  │             │     │                  │     │                 │   │
+│  │ /steer msg  │     │ SendSteering()   │     │ Receive steer   │   │
+│  │ /interrupt  │     │ SendInterrupt()  │     │ Process command │   │
+│  │ /resume     │     │ Resume()         │     │ Emit steering   │   │
+│  │ /mode xxx   │     │ SetMode()        │     │   _ack event    │   │
+│  └─────────────┘     └──────────────────┘     └─────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Streaming Agents
+
+### Overview of Streaming Support
+
+Streaming enables agents to provide **real-time feedback** during execution rather than just returning a final result. When an agent is executed through the Gibson TUI or connected via the `StreamExecute` RPC, streaming events are displayed live in the console view, allowing operators to:
+
+- Monitor agent reasoning and decision-making in real-time
+- See tool invocations as they happen
+- Receive findings immediately upon discovery
+- Interact with agents through steering messages
+- Switch between autonomous and interactive modes
+- Interrupt and resume agent execution with guidance
+
+**When to Use Streaming vs Regular Execution:**
+
+| Use Streaming When... | Use Regular Execution When... |
+|----------------------|-------------------------------|
+| Agent has long-running operations | Agent completes quickly (< 5 seconds) |
+| Interactive oversight is needed | Fully autonomous operation is acceptable |
+| Real-time progress feedback improves UX | Final result is sufficient |
+| Agent needs to request user input | No user interaction is required |
+| Debugging complex agent behavior | Simple, deterministic operations |
+
+### StreamingAgent Interface
+
+Agents can opt into streaming support by implementing the `StreamingAgent` interface:
+
+```go
+type StreamingAgent interface {
+    agent.Agent
+
+    // ExecuteStreaming runs the agent with streaming event emission support.
+    // The StreamingHarness provides methods to emit events during execution.
+    ExecuteStreaming(ctx context.Context, harness StreamingHarness, task agent.Task) (agent.Result, error)
+}
+```
+
+**Key Points:**
+- `StreamingAgent` embeds the base `Agent` interface
+- The `ExecuteStreaming` method receives a `StreamingHarness` instead of the base `Harness`
+- Agents that don't implement `StreamingAgent` still work with streaming - the framework automatically emits events by intercepting harness calls
+
+### StreamingHarness Interface
+
+The `StreamingHarness` extends the base `agent.Harness` with bidirectional streaming capabilities:
+
+```go
+type StreamingHarness interface {
+    // Embed the base Harness interface
+    agent.Harness
+
+    // Event Emission Methods
+    EmitOutput(content string, isReasoning bool) error
+    EmitToolCall(toolName string, input map[string]any, callID string) error
+    EmitToolResult(callID string, output map[string]any, success bool) error
+    EmitFinding(finding agent.Finding) error
+    EmitStatus(status proto.AgentStatus, message string) error
+    EmitError(code string, message string, fatal bool) error
+
+    // Steering and Mode Methods
+    Steering() <-chan *proto.SteeringMessage
+    Mode() proto.AgentMode
+    SetMode(mode proto.AgentMode)
+}
+```
+
+#### Event Emission Methods
+
+**EmitOutput(content string, isReasoning bool)**
+- Emits text output chunks to the client
+- Set `isReasoning=true` for internal reasoning/thinking output
+- Set `isReasoning=false` for final user-facing output
+
+**EmitToolCall(toolName string, input map[string]any, callID string)**
+- Emits an event indicating a tool invocation is starting
+- `callID` should be a unique identifier for correlating with the result
+- The framework displays ">>> Calling tool: toolname" in the TUI
+
+**EmitToolResult(callID string, output map[string]any, success bool)**
+- Emits the result of a tool invocation
+- `callID` must match the ID from the corresponding `EmitToolCall`
+- Set `success=true` if the tool executed successfully, `false` if it failed
+
+**EmitFinding(finding agent.Finding)**
+- Emits a security finding discovered during testing
+- The finding will be both streamed to the client and recorded via `SubmitFinding`
+- TUI displays findings with severity-colored formatting
+
+**EmitStatus(status proto.AgentStatus, message string)**
+- Emits an agent status change (running, paused, waiting, completed, failed)
+- The message provides additional context about the status change
+- Available statuses:
+  - `AGENT_STATUS_RUNNING` - Agent is executing
+  - `AGENT_STATUS_PAUSED` - Agent is paused (interrupted)
+  - `AGENT_STATUS_WAITING_FOR_INPUT` - Agent needs user input
+  - `AGENT_STATUS_COMPLETED` - Agent finished successfully
+  - `AGENT_STATUS_FAILED` - Agent encountered an error
+  - `AGENT_STATUS_INTERRUPTED` - Agent was interrupted by client
+
+**EmitError(code string, message string, fatal bool)**
+- Emits an error event to the client
+- Set `fatal=true` if the error should terminate execution
+- Set `fatal=false` for recoverable errors that the agent can handle
+
+#### Steering and Mode Methods
+
+**Steering() <-chan *proto.SteeringMessage**
+- Returns a receive-only channel for steering messages from the client
+- Agents can listen on this channel to receive user input, approvals, or guidance
+- Steering messages contain:
+  - `Id` - Unique message identifier
+  - `Content` - The steering message text
+  - `Timestamp` - When the message was sent
+
+**Mode() proto.AgentMode**
+- Returns the current execution mode
+- Available modes:
+  - `AGENT_MODE_AUTONOMOUS` - Agent operates independently
+  - `AGENT_MODE_INTERACTIVE` - Agent waits for user approval before actions
+
+**SetMode(mode proto.AgentMode)**
+- Updates the current execution mode atomically
+- Called by the framework when the client sends a `SetModeRequest`
+- Agents generally should not call this directly
+
+### Creating a Streaming Agent
+
+Use the `WithStreamingExecuteFunc` option to create an agent with streaming support:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zero-day-ai/sdk"
+    "github.com/zero-day-ai/sdk/agent"
+    "github.com/zero-day-ai/sdk/api/gen/proto"
+    "github.com/zero-day-ai/sdk/llm"
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    myAgent, err := sdk.NewAgent(
+        sdk.WithName("streaming-recon"),
+        sdk.WithVersion("1.0.0"),
+        sdk.WithDescription("Reconnaissance agent with streaming support"),
+
+        sdk.WithLLMSlot("primary", llm.SlotRequirements{
+            MinContextWindow: 100000,
+            RequiredFeatures: []string{"tool_use"},
+        }),
+
+        sdk.WithTools("http-request", "dns-lookup"),
+
+        // Add streaming execution function
+        sdk.WithStreamingExecuteFunc(executeStreaming),
+    )
+    if err != nil {
+        panic(err)
+    }
+
+    serve.Agent(myAgent, serve.WithPort(50051))
+}
+
+func executeStreaming(ctx context.Context, h serve.StreamingHarness, task agent.Task) (agent.Result, error) {
+    // Emit status to indicate we're starting
+    h.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "Starting reconnaissance")
+
+    // Emit reasoning output
+    h.EmitOutput("Analyzing target: "+h.Target().URL, true)
+
+    // Phase 1: DNS lookup
+    h.EmitOutput("Phase 1: DNS Reconnaissance", false)
+
+    dnsResult, err := h.CallTool(ctx, "dns-lookup", map[string]any{
+        "domain": h.Target().URL,
+    })
+    if err != nil {
+        h.EmitError("DNS_LOOKUP_FAILED", err.Error(), false)
+        // Continue despite error
+    }
+
+    // Phase 2: HTTP analysis
+    h.EmitOutput("Phase 2: HTTP Analysis", false)
+
+    httpResult, err := h.CallTool(ctx, "http-request", map[string]any{
+        "url":    h.Target().URL,
+        "method": "GET",
+    })
+    if err != nil {
+        return agent.Result{Status: agent.StatusFailed}, err
+    }
+
+    // Check if we found a vulnerability
+    if isVulnerable(httpResult) {
+        finding := agent.Finding{
+            Title:       "Information Disclosure",
+            Description: "Server reveals sensitive information in headers",
+            Severity:    "high",
+            Category:    "information_disclosure",
+        }
+        h.EmitFinding(finding)
+    }
+
+    h.EmitStatus(proto.AgentStatus_AGENT_STATUS_COMPLETED, "Reconnaissance complete")
+
+    return agent.Result{
+        Status: agent.StatusSuccess,
+        Output: "Reconnaissance completed successfully",
+    }, nil
+}
+```
+
+### Emitting Events
+
+#### When to Emit Each Event Type
+
+| Event Type | When to Emit | Example Use Case |
+|------------|--------------|------------------|
+| `EmitOutput` (reasoning) | Internal agent thinking, planning, analysis | "Analyzing RBAC permissions for privilege escalation paths" |
+| `EmitOutput` (result) | Final output, phase transitions, summaries | "Found 3 vulnerable service accounts" |
+| `EmitToolCall` | Before invoking a tool (manual calls only) | Before calling kubectl to list pods |
+| `EmitToolResult` | After tool completes (manual calls only) | After kubectl returns pod list |
+| `EmitFinding` | When a vulnerability is discovered | SQL injection found in login form |
+| `EmitStatus` | Agent state changes, phase transitions | Starting phase 2, waiting for approval |
+| `EmitError` | Recoverable or fatal errors occur | API rate limit exceeded (recoverable) |
+
+#### Example: Emitting Events
+
+```go
+func executeStreaming(ctx context.Context, h serve.StreamingHarness, task agent.Task) (agent.Result, error) {
+    // Emit reasoning output
+    h.EmitOutput("Planning attack strategy...", true)
+
+    // Get attack plan from LLM
+    plan, err := h.Complete(ctx, "primary", []llm.Message{
+        {Role: "system", Content: "You are a security tester."},
+        {Role: "user", Content: "Plan an attack on: " + h.Target().URL},
+    })
+    if err != nil {
+        // Emit error event
+        h.EmitError("LLM_ERROR", fmt.Sprintf("Failed to generate plan: %v", err), true)
+        return agent.Result{Status: agent.StatusFailed}, err
+    }
+
+    // Emit the plan as output
+    h.EmitOutput(plan.Content, false)
+
+    // Execute each step of the plan
+    for i, step := range parseSteps(plan.Content) {
+        // Emit status for phase transition
+        h.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING,
+            fmt.Sprintf("Executing step %d of %d", i+1, len(steps)))
+
+        // Execute the step (CallTool automatically emits ToolCall and ToolResult)
+        result, err := h.CallTool(ctx, step.ToolName, step.Input)
+        if err != nil {
+            // Emit non-fatal error
+            h.EmitError("TOOL_ERROR", fmt.Sprintf("Step %d failed: %v", i+1, err), false)
+            continue
+        }
+
+        // Check for findings
+        if finding := analyzeResult(result); finding != nil {
+            h.EmitFinding(*finding)
+        }
+    }
+
+    return agent.Result{Status: agent.StatusSuccess}, nil
+}
+```
+
+### Automatic Event Emission
+
+**The `StreamingHarness` automatically emits events when agents use harness methods**, even if the agent doesn't explicitly implement `StreamingAgent`. This means you get streaming support for free by using the harness methods:
+
+#### Automatic Event Interception
+
+| Harness Method | Automatic Events Emitted |
+|----------------|-------------------------|
+| `CallTool(ctx, name, input)` | `ToolCallEvent` before, `ToolResultEvent` after |
+| `SubmitFinding(ctx, finding)` | `FindingEvent` before submitting |
+| `Complete(ctx, slot, messages)` | `OutputChunk` event with LLM response content |
+| `Stream(ctx, slot, messages)` | `OutputChunk` event for each streaming chunk |
+
+#### Example: Non-Streaming Agent with Automatic Events
+
+```go
+// This agent doesn't implement StreamingAgent, but still gets streaming events!
+func executeRegular(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
+    // When this runs through StreamExecute, the framework wraps the harness
+    // and automatically emits events for all harness method calls
+
+    // This automatically emits ToolCallEvent and ToolResultEvent
+    result, err := h.CallTool(ctx, "nmap", map[string]any{
+        "target": h.Target().URL,
+    })
+
+    // This automatically emits OutputChunk event with the LLM response
+    resp, err := h.Complete(ctx, "primary", []llm.Message{
+        {Role: "user", Content: "Analyze: " + result["output"].(string)},
+    })
+
+    // This automatically emits FindingEvent
+    h.SubmitFinding(ctx, myFinding)
+
+    return agent.Result{Status: agent.StatusSuccess}, nil
+}
+```
+
+### Steering and Interactive Mode
+
+Agents can receive steering messages from operators during execution and adjust their behavior based on the current mode:
+
+```go
+func executeStreaming(ctx context.Context, h serve.StreamingHarness, task agent.Task) (agent.Result, error) {
+    // Check the current mode
+    if h.Mode() == proto.AgentMode_AGENT_MODE_INTERACTIVE {
+        // Wait for user approval before proceeding
+        h.EmitStatus(proto.AgentStatus_AGENT_STATUS_WAITING_FOR_INPUT,
+            "Waiting for approval to execute exploit")
+
+        select {
+        case msg := <-h.Steering():
+            // User sent steering message
+            if msg.Content == "approve" {
+                h.EmitOutput("Proceeding with approval", false)
+            } else {
+                return agent.Result{Status: agent.StatusCancelled}, nil
+            }
+        case <-ctx.Done():
+            return agent.Result{Status: agent.StatusCancelled}, ctx.Err()
+        }
+    }
+
+    // Listen for steering messages while executing
+    go func() {
+        for {
+            select {
+            case msg := <-h.Steering():
+                // Handle steering message
+                h.EmitOutput(fmt.Sprintf("Received guidance: %s", msg.Content), true)
+                // Adjust agent behavior based on guidance
+            case <-ctx.Done():
+                return
+            }
+        }
+    }()
+
+    // Continue with normal execution
+    // ...
+
+    return agent.Result{Status: agent.StatusSuccess}, nil
+}
+```
+
+### Steering Commands from TUI
+
+When an operator focuses on an agent in the TUI, they can send commands:
+
+| Command | Description | Agent Handling |
+|---------|-------------|----------------|
+| `/steer <message>` | Send guidance to the agent | Received via `Steering()` channel |
+| `/interrupt` | Request the agent to pause | Framework emits `PAUSED` status |
+| `/resume [guidance]` | Resume a paused agent | Framework emits `RUNNING` status, optional guidance via `Steering()` |
+| `/mode auto` | Switch to autonomous mode | `Mode()` returns `AGENT_MODE_AUTONOMOUS` |
+| `/mode interactive` | Switch to interactive mode | `Mode()` returns `AGENT_MODE_INTERACTIVE` |
+| `/unfocus` | Stop streaming and unfocus | Stream is closed |
+
+### Best Practices for Streaming Agents
+
+1. **Emit Status Changes**: Always emit status events at major phase transitions so operators understand what the agent is doing.
+
+2. **Use Reasoning Output**: Emit reasoning output (isReasoning=true) for internal thoughts and planning to provide transparency.
+
+3. **Handle Interrupts Gracefully**: Check `ctx.Done()` regularly and respond to interrupts promptly.
+
+4. **Acknowledge Steering**: When receiving steering messages, emit output to acknowledge receipt and show how the guidance is being used.
+
+5. **Provide Context in Errors**: Include actionable context in error messages so operators can intervene if needed.
+
+6. **Don't Over-Emit**: Balance real-time feedback with noise - emit meaningful events, not every minor operation.
+
+7. **Use Automatic Emission When Possible**: Leverage the automatic event emission from harness methods rather than manually emitting ToolCall/ToolResult for every operation.
+
+8. **Test Both Modes**: Test your agent in both autonomous and interactive modes to ensure mode switching works correctly.
+
+### Complete Streaming Agent Example
+
+Here's a complete example of a Kubernetes security testing agent with streaming support:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zero-day-ai/sdk"
+    "github.com/zero-day-ai/sdk/agent"
+    "github.com/zero-day-ai/sdk/api/gen/proto"
+    "github.com/zero-day-ai/sdk/llm"
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    k8sAgent, err := sdk.NewAgent(
+        sdk.WithName("k8s-security-scanner"),
+        sdk.WithVersion("1.0.0"),
+        sdk.WithDescription("Kubernetes security scanner with streaming"),
+
+        sdk.WithLLMSlot("primary", llm.SlotRequirements{
+            MinContextWindow: 100000,
+            RequiredFeatures: []string{"tool_use"},
+        }),
+
+        sdk.WithTools("kubectl", "rbac-analyzer"),
+
+        sdk.WithStreamingExecuteFunc(executeK8sScanning),
+    )
+    if err != nil {
+        panic(err)
+    }
+
+    serve.Agent(k8sAgent, serve.WithPort(50051))
+}
+
+func executeK8sScanning(ctx context.Context, h serve.StreamingHarness, task agent.Task) (agent.Result, error) {
+    h.EmitStatus(proto.AgentStatus_AGENT_STATUS_RUNNING, "Starting Kubernetes security scan")
+
+    // Phase 1: Reconnaissance
+    h.EmitOutput("Phase 1: Reconnaissance", false)
+    h.EmitOutput("Gathering cluster information...", true)
+
+    clusterInfo, err := h.CallTool(ctx, "kubectl", map[string]any{
+        "args": []string{"cluster-info"},
+    })
+    if err != nil {
+        h.EmitError("RECON_FAILED", fmt.Sprintf("Failed to get cluster info: %v", err), true)
+        return agent.Result{Status: agent.StatusFailed}, err
+    }
+
+    // Phase 2: RBAC Analysis
+    h.EmitOutput("Phase 2: RBAC Analysis", false)
+
+    // Check if we're in interactive mode - if so, wait for approval
+    if h.Mode() == proto.AgentMode_AGENT_MODE_INTERACTIVE {
+        h.EmitStatus(proto.AgentStatus_AGENT_STATUS_WAITING_FOR_INPUT,
+            "Waiting for approval to analyze RBAC permissions")
+
+        select {
+        case msg := <-h.Steering():
+            if msg.Content != "approve" {
+                h.EmitOutput("RBAC analysis cancelled by operator", false)
+                return agent.Result{Status: agent.StatusCancelled}, nil
+            }
+        case <-ctx.Done():
+            return agent.Result{Status: agent.StatusCancelled}, ctx.Err()
+        }
+    }
+
+    rbacResult, err := h.CallTool(ctx, "rbac-analyzer", map[string]any{
+        "namespace": "default",
+    })
+    if err != nil {
+        h.EmitError("RBAC_ANALYSIS_FAILED", err.Error(), false)
+        // Continue despite error
+    } else {
+        // Analyze results with LLM
+        h.EmitOutput("Analyzing RBAC configuration for privilege escalation paths...", true)
+
+        analysis, err := h.Complete(ctx, "primary", []llm.Message{
+            {Role: "system", Content: "You are a Kubernetes security expert."},
+            {Role: "user", Content: fmt.Sprintf("Analyze this RBAC configuration for vulnerabilities: %v", rbacResult)},
+        })
+        if err != nil {
+            h.EmitError("LLM_ERROR", err.Error(), false)
+        } else if containsVulnerability(analysis.Content) {
+            finding := agent.Finding{
+                Title:       "Overprivileged Service Account",
+                Description: analysis.Content,
+                Severity:    "high",
+                Category:    "privilege_escalation",
+            }
+            h.EmitFinding(finding)
+        }
+    }
+
+    // Phase 3: Pod Security Analysis
+    h.EmitOutput("Phase 3: Pod Security Analysis", false)
+
+    pods, err := h.CallTool(ctx, "kubectl", map[string]any{
+        "args": []string{"get", "pods", "-o", "json"},
+    })
+    if err != nil {
+        h.EmitError("POD_ENUM_FAILED", err.Error(), false)
+    }
+
+    h.EmitStatus(proto.AgentStatus_AGENT_STATUS_COMPLETED, "Security scan complete")
+
+    return agent.Result{
+        Status: agent.StatusSuccess,
+        Output: "Kubernetes security scan completed successfully",
+    }, nil
+}
+
+func containsVulnerability(analysis string) bool {
+    // Parse LLM analysis for vulnerability indicators
+    // Implementation details omitted for brevity
+    return false
+}
+```
+
+---
+
 ## Summary
 
 The Gibson SDK's slot system provides:
@@ -1514,5 +2497,7 @@ The Gibson SDK's slot system provides:
 4. **Cost Control**: Route cheap tasks to cheap models
 5. **Offline Capability**: Local models (Ollama) for air-gapped environments
 6. **Token Tracking**: Monitor usage per slot for cost analysis
+7. **Real-Time Streaming**: Live event streaming for interactive agent oversight
+8. **Bidirectional Control**: Steering messages enable operator guidance during execution
 
 For more examples, see the `examples/` directory in the SDK.

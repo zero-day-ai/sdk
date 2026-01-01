@@ -121,6 +121,19 @@ func WithExecuteFunc(fn agent.ExecuteFunc) AgentOption {
 	}
 }
 
+// WithStreamingExecuteFunc sets the function that executes agent tasks with streaming support.
+// When set, the agent will implement the StreamingAgent interface and support real-time
+// event emission during execution. This is optional - agents without this set will still
+// work but won't provide streaming capabilities.
+//
+// The streaming execute function receives a StreamingHarness that extends the regular
+// Harness with event emission methods (EmitOutput, EmitToolCall, EmitToolResult, etc.).
+func WithStreamingExecuteFunc(fn agent.StreamingExecuteFunc) AgentOption {
+	return func(c *agent.Config) {
+		c.SetStreamingExecuteFunc(fn)
+	}
+}
+
 // WithInitFunc sets the function that initializes the agent.
 // This is called once when the agent is loaded.
 // If not set, a default no-op implementation is used.

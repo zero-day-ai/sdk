@@ -12,22 +12,28 @@ import (
 // This provides a flexible way to define agent behavior without implementing
 // the full Agent interface from scratch.
 type Config struct {
-	name           string
-	version        string
-	description    string
-	capabilities   []Capability
-	targetTypes    []types.TargetType
-	techniqueTypes []types.TechniqueType
-	llmSlots       []llm.SlotDefinition
-	executeFunc    ExecuteFunc
-	initFunc       InitFunc
-	shutdownFunc   ShutdownFunc
-	healthFunc     HealthFunc
+	name                  string
+	version               string
+	description           string
+	capabilities          []Capability
+	targetTypes           []types.TargetType
+	techniqueTypes        []types.TechniqueType
+	llmSlots              []llm.SlotDefinition
+	executeFunc           ExecuteFunc
+	streamingExecuteFunc  StreamingExecuteFunc
+	initFunc              InitFunc
+	shutdownFunc          ShutdownFunc
+	healthFunc            HealthFunc
 }
 
 // ExecuteFunc is the function signature for agent task execution.
 // Implementations should perform the task and return the result.
 type ExecuteFunc func(ctx context.Context, harness Harness, task Task) (Result, error)
+
+// StreamingExecuteFunc is the function signature for streaming agent task execution.
+// Implementations should perform the task with real-time event emission and return the result.
+// The StreamingHarness interface provides methods to emit events during execution.
+type StreamingExecuteFunc func(ctx context.Context, harness StreamingHarness, task Task) (Result, error)
 
 // InitFunc is the function signature for agent initialization.
 // Implementations should prepare the agent for execution.
@@ -136,6 +142,18 @@ func (c *Config) SetExecuteFunc(fn ExecuteFunc) *Config {
 	return c
 }
 
+// SetStreamingExecuteFunc sets the function that executes tasks with streaming support.
+// When set, the agent will implement the StreamingAgent interface and support real-time
+// event emission during execution. This is optional - agents without this set will still
+// work but won't provide streaming capabilities.
+//
+// The streaming execute function receives a StreamingHarness that extends the regular
+// Harness with event emission methods (EmitOutput, EmitToolCall, EmitToolResult, etc.).
+func (c *Config) SetStreamingExecuteFunc(fn StreamingExecuteFunc) *Config {
+	c.streamingExecuteFunc = fn
+	return c
+}
+
 // SetInitFunc sets the function that initializes the agent.
 // If not set, a default no-op implementation is used.
 func (c *Config) SetInitFunc(fn InitFunc) *Config {
@@ -204,34 +222,38 @@ func New(cfg *Config) (Agent, error) {
 	}
 
 	return &sdkAgent{
-		name:           cfg.name,
-		version:        cfg.version,
-		description:    cfg.description,
-		capabilities:   cfg.capabilities,
-		targetTypes:    cfg.targetTypes,
-		techniqueTypes: cfg.techniqueTypes,
-		llmSlots:       cfg.llmSlots,
-		executeFunc:    cfg.executeFunc,
-		initFunc:       initFunc,
-		shutdownFunc:   shutdownFunc,
-		healthFunc:     healthFunc,
+		name:                 cfg.name,
+		version:              cfg.version,
+		description:          cfg.description,
+		capabilities:         cfg.capabilities,
+		targetTypes:          cfg.targetTypes,
+		techniqueTypes:       cfg.techniqueTypes,
+		llmSlots:             cfg.llmSlots,
+		executeFunc:          cfg.executeFunc,
+		streamingExecuteFunc: cfg.streamingExecuteFunc,
+		initFunc:             initFunc,
+		shutdownFunc:         shutdownFunc,
+		healthFunc:           healthFunc,
 	}, nil
 }
 
 // sdkAgent is the internal implementation of the Agent interface.
 // It wraps user-provided functions to implement the full Agent interface.
+// If streamingExecuteFunc is set, it also implements the StreamingAgent interface
+// from the serve package.
 type sdkAgent struct {
-	name           string
-	version        string
-	description    string
-	capabilities   []Capability
-	targetTypes    []types.TargetType
-	techniqueTypes []types.TechniqueType
-	llmSlots       []llm.SlotDefinition
-	executeFunc    ExecuteFunc
-	initFunc       InitFunc
-	shutdownFunc   ShutdownFunc
-	healthFunc     HealthFunc
+	name                 string
+	version              string
+	description          string
+	capabilities         []Capability
+	targetTypes          []types.TargetType
+	techniqueTypes       []types.TechniqueType
+	llmSlots             []llm.SlotDefinition
+	executeFunc          ExecuteFunc
+	streamingExecuteFunc StreamingExecuteFunc
+	initFunc             InitFunc
+	shutdownFunc         ShutdownFunc
+	healthFunc           HealthFunc
 }
 
 // Name returns the agent's unique identifier.
@@ -272,6 +294,22 @@ func (a *sdkAgent) LLMSlots() []llm.SlotDefinition {
 // Execute performs a task using the configured execute function.
 func (a *sdkAgent) Execute(ctx context.Context, harness Harness, task Task) (Result, error) {
 	return a.executeFunc(ctx, harness, task)
+}
+
+// ExecuteStreaming performs a task using the configured streaming execute function.
+// This method implements the StreamingAgent interface from the serve package.
+// It will only be called if streamingExecuteFunc was set via SetStreamingExecuteFunc.
+//
+// The serve package checks for this method using type assertion to determine
+// if the agent supports streaming execution.
+func (a *sdkAgent) ExecuteStreaming(ctx context.Context, harness StreamingHarness, task Task) (Result, error) {
+	if a.streamingExecuteFunc == nil {
+		return Result{
+			Status: StatusFailed,
+			Error:  fmt.Errorf("streaming execute function not configured"),
+		}, fmt.Errorf("streaming execute function not configured")
+	}
+	return a.streamingExecuteFunc(ctx, harness, task)
 }
 
 // Initialize calls the configured init function.
