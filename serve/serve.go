@@ -49,6 +49,14 @@ type Config struct {
 	// If empty, LocalMode is disabled.
 	LocalMode string
 
+	// AdvertiseAddr is the address to advertise to the registry for other
+	// components to connect to this service. This is useful in containerized
+	// environments where the hostname differs from localhost.
+	// Format: "hostname:port" or just "hostname" (port will be appended).
+	// If empty, defaults to "localhost:{port}".
+	// Can be set via GIBSON_ADVERTISE_ADDR environment variable.
+	AdvertiseAddr string
+
 	// Registry is the optional registry for service registration.
 	// If provided, components will register themselves on startup
 	// and deregister on shutdown.

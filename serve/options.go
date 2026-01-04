@@ -3,6 +3,7 @@ package serve
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/zero-day-ai/sdk/registry"
@@ -91,6 +92,38 @@ func WithLocalMode(socketPath string) Option {
 	}
 }
 
+// WithAdvertiseAddr sets the address to advertise to the registry.
+// This is the address that other components will use to connect to this service.
+// Useful in containerized environments where the container hostname differs from localhost.
+//
+// The addr can be:
+//   - "hostname:port" - full address (e.g., "k8skiller:50051")
+//   - "hostname" - just hostname, port will be appended (e.g., "k8skiller")
+//
+// Example:
+//
+//	serve.Agent(myAgent, serve.WithAdvertiseAddr("my-agent:50051"))
+func WithAdvertiseAddr(addr string) Option {
+	return func(c *Config) {
+		c.AdvertiseAddr = addr
+	}
+}
+
+// WithAdvertiseAddrFromEnv sets the advertise address from the GIBSON_ADVERTISE_ADDR
+// environment variable. If the env var is not set, this option has no effect.
+//
+// Example:
+//
+//	// Set GIBSON_ADVERTISE_ADDR=k8skiller:50051
+//	serve.Agent(myAgent, serve.WithAdvertiseAddrFromEnv())
+func WithAdvertiseAddrFromEnv() Option {
+	return func(c *Config) {
+		if addr := os.Getenv("GIBSON_ADVERTISE_ADDR"); addr != "" {
+			c.AdvertiseAddr = addr
+		}
+	}
+}
+
 // WithRegistry enables automatic service registration with the provided registry.
 // When configured, components will automatically:
 //   - Register themselves with the registry after the gRPC server starts
@@ -120,6 +153,9 @@ func WithRegistry(reg interface {
 //
 // The env var should be comma-separated endpoints: "localhost:2379,etcd2:2379"
 //
+// This also checks GIBSON_ADVERTISE_ADDR to set the advertise address for
+// containerized environments where the hostname differs from localhost.
+//
 // This is a convenience wrapper around WithRegistry that automatically creates
 // a registry client from environment configuration. It's the easiest way for
 // components to support optional service discovery without requiring explicit
@@ -133,6 +169,11 @@ func WithRegistry(reg interface {
 // If not set, the component will work normally but won't be discoverable.
 func WithRegistryFromEnv() Option {
 	return func(c *Config) {
+		// Check for advertise address first
+		if addr := os.Getenv("GIBSON_ADVERTISE_ADDR"); addr != "" {
+			c.AdvertiseAddr = addr
+		}
+
 		client, err := registry.NewClientFromEnv()
 		if err != nil {
 			// Log warning but don't fail - component should still work

@@ -56,10 +56,17 @@ func Tool(t tool.Tool, opts ...Option) error {
 	// Register with registry if configured
 	var serviceInfo interface{}
 	if cfg.Registry != nil {
-		// Build endpoint based on LocalMode or TCP
+		// Build endpoint based on LocalMode, AdvertiseAddr, or TCP
 		endpoint := ""
 		if cfg.LocalMode != "" {
 			endpoint = fmt.Sprintf("unix://%s", cfg.LocalMode)
+		} else if cfg.AdvertiseAddr != "" {
+			// Use advertise address - append port if not present
+			if strings.Contains(cfg.AdvertiseAddr, ":") {
+				endpoint = cfg.AdvertiseAddr
+			} else {
+				endpoint = fmt.Sprintf("%s:%d", cfg.AdvertiseAddr, srv.Port())
+			}
 		} else {
 			endpoint = fmt.Sprintf("localhost:%d", srv.Port())
 		}
