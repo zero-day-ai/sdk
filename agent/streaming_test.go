@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/types"
 )
@@ -89,7 +90,7 @@ func (m *mockStreamingHarness) EmitToolResult(output map[string]any, err error, 
 	return nil
 }
 
-func (m *mockStreamingHarness) EmitFinding(finding Finding) error {
+func (m *mockStreamingHarness) EmitFinding(f *finding.Finding) error {
 	return nil
 }
 

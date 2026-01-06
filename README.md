@@ -1967,17 +1967,38 @@ llm.WithTools(tools...)
 
 ### Core Packages
 
+#### Component Types
 - **`github.com/zero-day-ai/sdk`** - Main SDK entry point, framework interface
 - **`github.com/zero-day-ai/sdk/agent`** - Agent types and builders
 - **`github.com/zero-day-ai/sdk/tool`** - Tool types and builders
 - **`github.com/zero-day-ai/sdk/plugin`** - Plugin types and builders
+
+#### LLM and Memory
 - **`github.com/zero-day-ai/sdk/llm`** - LLM message types and completion requests
-- **`github.com/zero-day-ai/sdk/memory`** - Three-tier memory system
-- **`github.com/zero-day-ai/sdk/graphrag`** - Graph-based retrieval-augmented generation
-- **`github.com/zero-day-ai/sdk/finding`** - Security finding types and export
+- **`github.com/zero-day-ai/sdk/memory`** - Three-tier memory system (working, mission, long-term)
+- **`github.com/zero-day-ai/sdk/graphrag`** - Graph-based retrieval-augmented generation for knowledge discovery
+
+#### Security and Findings
+- **`github.com/zero-day-ai/sdk/finding`** - Security finding types and export formats (JSON, SARIF, CSV, HTML)
 - **`github.com/zero-day-ai/sdk/types`** - Core types (targets, techniques, missions, health)
-- **`github.com/zero-day-ai/sdk/schema`** - JSON Schema validation
-- **`github.com/zero-day-ai/sdk/serve`** - gRPC server infrastructure
+
+#### Validation and Schema
+- **`github.com/zero-day-ai/sdk/schema`** - JSON Schema validation for tool I/O
+- **`github.com/zero-day-ai/sdk/input`** - Type-safe extraction helpers for map[string]any values
+
+#### Infrastructure
+- **`github.com/zero-day-ai/sdk/serve`** - gRPC server infrastructure for serving components
+- **`github.com/zero-day-ai/sdk/registry`** - Component registry and discovery
+- **`github.com/zero-day-ai/sdk/health`** - Health check types and status reporting
+
+#### Utilities
+- **`github.com/zero-day-ai/sdk/exec`** - External command execution with proper security handling
+- **`github.com/zero-day-ai/sdk/toolerr`** - Structured error handling for tools with error codes
+- **`github.com/zero-day-ai/sdk/parser`** - Parsing utilities for common formats
+
+#### Evaluation and Feedback
+- **`github.com/zero-day-ai/sdk/eval`** - Evaluation harness for agent testing and feedback collection
+- **`github.com/zero-day-ai/sdk/planning`** - Planning context and hints (reserved for future bounded planning integration)
 
 ### Key Interfaces
 

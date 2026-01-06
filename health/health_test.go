@@ -604,8 +604,9 @@ func BenchmarkCombine(b *testing.B) {
 func ExampleBinaryCheck() {
 	status := BinaryCheck("sh")
 	if status.IsHealthy() {
-		println("sh is available")
+		// sh binary is available on the system
 	}
+	// Output:
 }
 
 func ExampleNetworkCheck() {
@@ -614,15 +615,17 @@ func ExampleNetworkCheck() {
 
 	status := NetworkCheck(ctx, "localhost", 80)
 	if status.IsUnhealthy() {
-		println("Cannot connect to localhost:80")
+		// Cannot connect to localhost:80
 	}
+	// Output:
 }
 
 func ExampleFileCheck() {
 	status := FileCheck("/etc/hosts")
 	if status.IsHealthy() {
-		println("/etc/hosts exists")
+		// /etc/hosts exists
 	}
+	// Output:
 }
 
 func ExampleCombine() {
@@ -633,8 +636,9 @@ func ExampleCombine() {
 	)
 
 	if status.IsUnhealthy() {
-		println("System dependencies not met")
+		// System dependencies not met
 	}
+	// Output:
 }
 
 // TestNetworkCheckLiveConnection tests connection to a real service

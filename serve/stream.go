@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"os"
 	"sync"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/types"
+	"go.opentelemetry.io/otel/trace/noop"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -91,10 +95,15 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	// Create a read-only view of the steering channel for the harness
 	steeringReadCh := (<-chan *proto.SteeringMessage)(steeringCh)
 
-	// Create StreamingHarness wrapping nil harness (for now)
-	// TODO: In a full implementation, this would wrap a real harness
-	// provided by the framework with LLM provisioning, tool/plugin access, etc.
-	streamingHarness := NewStreamingHarness(nil, stream, steeringReadCh, currentMode)
+	// Create base harness - either callback-based or local
+	baseHarness, cleanup, err := s.createStreamingHarness(ctx, startReq.Start)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to create harness: %v", err)
+	}
+	defer cleanup()
+
+	// Create StreamingHarness wrapping the base harness
+	streamingHarness := NewStreamingHarness(baseHarness, stream, steeringReadCh, currentMode)
 
 	// Spawn receive loop goroutine to handle incoming client messages
 	go func() {
@@ -270,4 +279,71 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	}
 
 	return nil
+}
+
+// createStreamingHarness creates a harness for streaming execution.
+// It returns a callback-based harness if a callback endpoint is configured,
+// otherwise returns a local harness for standalone operation.
+//
+// The returned cleanup function must be called when the harness is no longer needed
+// to release resources (e.g., close gRPC connections).
+func (s *agentServiceServer) createStreamingHarness(ctx context.Context, req *proto.StartExecutionRequest) (agent.Harness, func(), error) {
+	// Check if callback endpoint is provided
+	if req.CallbackEndpoint != "" {
+		// Create callback client
+		var opts []CallbackClientOption
+		if req.CallbackToken != "" {
+			opts = append(opts, WithCallbackToken(req.CallbackToken))
+		}
+
+		client, err := NewCallbackClient(req.CallbackEndpoint, opts...)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create callback client: %w", err)
+		}
+
+		// Connect to orchestrator
+		if err := client.Connect(ctx); err != nil {
+			return nil, nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
+		}
+
+		// Parse mission context if provided
+		var mission types.MissionContext
+		if req.MissionJson != "" {
+			if err := json.Unmarshal([]byte(req.MissionJson), &mission); err != nil {
+				client.Close()
+				return nil, nil, fmt.Errorf("failed to parse mission context: %w", err)
+			}
+		}
+
+		// Parse target info if provided
+		var target types.TargetInfo
+		if req.TargetJson != "" {
+			if err := json.Unmarshal([]byte(req.TargetJson), &target); err != nil {
+				client.Close()
+				return nil, nil, fmt.Errorf("failed to parse target info: %w", err)
+			}
+		}
+
+		// Create logger and tracer
+		logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		tracer := noop.NewTracerProvider().Tracer("callback-harness")
+
+		// Create callback harness
+		harness := NewCallbackHarness(client, logger, tracer, mission, target)
+
+		// Return harness with cleanup function that closes the client
+		cleanup := func() {
+			if err := client.Close(); err != nil {
+				logger.Error("failed to close callback client", "error", err)
+			}
+		}
+
+		return harness, cleanup, nil
+	}
+
+	// No callback endpoint - return local harness for standalone operation
+	harness := newLocalHarness()
+	cleanup := func() {} // No cleanup needed for local harness
+
+	return harness, cleanup, nil
 }

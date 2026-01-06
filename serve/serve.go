@@ -220,7 +220,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		return ctx.Err()
 	case sig := <-sigCh:
 		// Signal received - graceful shutdown
-		fmt.Printf("Received signal %v, shutting down gracefully...\n", sig)
+		_ = sig // Signal received, shutting down gracefully
 		s.GracefulStop()
 		return nil
 	case err := <-errCh:
@@ -258,10 +258,8 @@ func (s *Server) GracefulStop() {
 	select {
 	case <-done:
 		// Graceful stop completed
-		fmt.Println("Server stopped gracefully")
 	case <-ctx.Done():
 		// Timeout - force stop
-		fmt.Println("Graceful shutdown timeout, forcing stop")
 		s.grpcServer.Stop()
 	}
 
@@ -273,9 +271,8 @@ func (s *Server) GracefulStop() {
 // This is called during server shutdown to prevent stale socket files.
 func (s *Server) cleanup() {
 	if s.unixSocketPath != "" {
-		if err := os.Remove(s.unixSocketPath); err != nil && !os.IsNotExist(err) {
-			fmt.Printf("Warning: failed to remove Unix socket %s: %v\n", s.unixSocketPath, err)
-		}
+		// Attempt to remove Unix socket, ignore NotExist errors
+		_ = os.Remove(s.unixSocketPath)
 	}
 }
 

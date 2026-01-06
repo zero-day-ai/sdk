@@ -1,0 +1,516 @@
+package serve
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+)
+
+// CallbackClient manages the gRPC connection to the orchestrator's HarnessCallbackService.
+// It provides thread-safe access to all harness operations via RPC callbacks.
+type CallbackClient struct {
+	// Connection management
+	conn   *grpc.ClientConn
+	client proto.HarnessCallbackServiceClient
+	mu     sync.RWMutex
+
+	// Configuration
+	endpoint string
+	tlsConf  *tls.Config
+	token    string
+
+	// Context tracking
+	taskID    string
+	agentName string
+	traceID   string
+	spanID    string
+
+	// Connection lifecycle
+	connected bool
+	closed    bool
+}
+
+// NewCallbackClient creates a new callback client with the given endpoint.
+// The client is not connected until Connect() is called.
+func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*CallbackClient, error) {
+	if endpoint == "" {
+		return nil, fmt.Errorf("endpoint cannot be empty")
+	}
+
+	client := &CallbackClient{
+		endpoint: endpoint,
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	return client, nil
+}
+
+// CallbackClientOption is a functional option for configuring CallbackClient.
+type CallbackClientOption func(*CallbackClient)
+
+// WithCallbackTLS configures TLS for the callback client connection.
+func WithCallbackTLS(conf *tls.Config) CallbackClientOption {
+	return func(c *CallbackClient) {
+		c.tlsConf = conf
+	}
+}
+
+// WithCallbackToken sets the authentication token for callback requests.
+func WithCallbackToken(token string) CallbackClientOption {
+	return func(c *CallbackClient) {
+		c.token = token
+	}
+}
+
+// Connect establishes the gRPC connection to the orchestrator.
+// This must be called before any RPC methods can be invoked.
+func (c *CallbackClient) Connect(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.closed {
+		return fmt.Errorf("client is closed")
+	}
+
+	if c.connected {
+		return nil // Already connected
+	}
+
+	// Build dial options
+	var dialOpts []grpc.DialOption
+
+	// Configure transport credentials
+	if c.tlsConf != nil {
+		creds := credentials.NewTLS(c.tlsConf)
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	// Add timeouts
+	dialOpts = append(dialOpts,
+		grpc.WithBlock(),
+		grpc.WithTimeout(10*time.Second),
+	)
+
+	// Establish connection
+	conn, err := grpc.DialContext(ctx, c.endpoint, dialOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to connect to orchestrator: %w", err)
+	}
+
+	c.conn = conn
+	c.client = proto.NewHarnessCallbackServiceClient(conn)
+	c.connected = true
+
+	return nil
+}
+
+// SetTaskContext updates the task context for subsequent RPC calls.
+// This should be called at the start of each task execution.
+func (c *CallbackClient) SetTaskContext(taskID, agentName, traceID, spanID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.taskID = taskID
+	c.agentName = agentName
+	c.traceID = traceID
+	c.spanID = spanID
+}
+
+// contextInfo builds the ContextInfo proto message with current task context.
+func (c *CallbackClient) contextInfo() *proto.ContextInfo {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return &proto.ContextInfo{
+		TaskId:    c.taskID,
+		AgentName: c.agentName,
+		TraceId:   c.traceID,
+		SpanId:    c.spanID,
+	}
+}
+
+// contextWithMetadata creates a context with authentication metadata if a token is set.
+func (c *CallbackClient) contextWithMetadata(ctx context.Context) context.Context {
+	if c.token == "" {
+		return ctx
+	}
+
+	md := metadata.New(map[string]string{
+		"authorization": "Bearer " + c.token,
+	})
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
+// Close closes the gRPC connection and cleans up resources.
+// The client cannot be reused after Close() is called.
+func (c *CallbackClient) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.closed {
+		return nil
+	}
+
+	c.closed = true
+	c.connected = false
+
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+
+	return nil
+}
+
+// IsConnected returns true if the client is connected to the orchestrator.
+func (c *CallbackClient) IsConnected() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.connected && !c.closed
+}
+
+// ============================================================================
+// LLM Operations
+// ============================================================================
+
+// LLMComplete performs an LLM completion request via the orchestrator.
+func (c *CallbackClient) LLMComplete(ctx context.Context, req *proto.LLMCompleteRequest) (*proto.LLMCompleteResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.LLMComplete(ctx, req)
+}
+
+// LLMCompleteWithTools performs an LLM completion with tool calling enabled.
+func (c *CallbackClient) LLMCompleteWithTools(ctx context.Context, req *proto.LLMCompleteWithToolsRequest) (*proto.LLMCompleteResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.LLMCompleteWithTools(ctx, req)
+}
+
+// LLMStream performs a streaming LLM completion request.
+func (c *CallbackClient) LLMStream(ctx context.Context, req *proto.LLMStreamRequest) (proto.HarnessCallbackService_LLMStreamClient, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.LLMStream(ctx, req)
+}
+
+// ============================================================================
+// Tool Operations
+// ============================================================================
+
+// CallTool invokes a tool via the orchestrator.
+func (c *CallbackClient) CallTool(ctx context.Context, req *proto.CallToolRequest) (*proto.CallToolResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.CallTool(ctx, req)
+}
+
+// ListTools retrieves the list of available tools.
+func (c *CallbackClient) ListTools(ctx context.Context, req *proto.ListToolsRequest) (*proto.ListToolsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.ListTools(ctx, req)
+}
+
+// ============================================================================
+// Plugin Operations
+// ============================================================================
+
+// QueryPlugin sends a query to a plugin via the orchestrator.
+func (c *CallbackClient) QueryPlugin(ctx context.Context, req *proto.QueryPluginRequest) (*proto.QueryPluginResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.QueryPlugin(ctx, req)
+}
+
+// ListPlugins retrieves the list of available plugins.
+func (c *CallbackClient) ListPlugins(ctx context.Context, req *proto.ListPluginsRequest) (*proto.ListPluginsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.ListPlugins(ctx, req)
+}
+
+// ============================================================================
+// Agent Operations
+// ============================================================================
+
+// DelegateToAgent delegates a task to another agent.
+func (c *CallbackClient) DelegateToAgent(ctx context.Context, req *proto.DelegateToAgentRequest) (*proto.DelegateToAgentResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.DelegateToAgent(ctx, req)
+}
+
+// ListAgents retrieves the list of available agents.
+func (c *CallbackClient) ListAgents(ctx context.Context, req *proto.ListAgentsRequest) (*proto.ListAgentsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.ListAgents(ctx, req)
+}
+
+// ============================================================================
+// Finding Operations
+// ============================================================================
+
+// SubmitFinding submits a security finding to the orchestrator.
+func (c *CallbackClient) SubmitFinding(ctx context.Context, req *proto.SubmitFindingRequest) (*proto.SubmitFindingResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.SubmitFinding(ctx, req)
+}
+
+// GetFindings retrieves findings matching the filter criteria.
+func (c *CallbackClient) GetFindings(ctx context.Context, req *proto.GetFindingsRequest) (*proto.GetFindingsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GetFindings(ctx, req)
+}
+
+// ============================================================================
+// Memory Operations
+// ============================================================================
+
+// MemoryGet retrieves a value from memory.
+func (c *CallbackClient) MemoryGet(ctx context.Context, req *proto.MemoryGetRequest) (*proto.MemoryGetResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.MemoryGet(ctx, req)
+}
+
+// MemorySet stores a value in memory.
+func (c *CallbackClient) MemorySet(ctx context.Context, req *proto.MemorySetRequest) (*proto.MemorySetResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.MemorySet(ctx, req)
+}
+
+// MemoryDelete removes a value from memory.
+func (c *CallbackClient) MemoryDelete(ctx context.Context, req *proto.MemoryDeleteRequest) (*proto.MemoryDeleteResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.MemoryDelete(ctx, req)
+}
+
+// MemoryList lists all keys matching a prefix.
+func (c *CallbackClient) MemoryList(ctx context.Context, req *proto.MemoryListRequest) (*proto.MemoryListResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.MemoryList(ctx, req)
+}
+
+// ============================================================================
+// GraphRAG Query Operations
+// ============================================================================
+
+// GraphRAGQuery performs a GraphRAG query.
+func (c *CallbackClient) GraphRAGQuery(ctx context.Context, req *proto.GraphRAGQueryRequest) (*proto.GraphRAGQueryResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GraphRAGQuery(ctx, req)
+}
+
+// FindSimilarAttacks searches for similar attack patterns.
+func (c *CallbackClient) FindSimilarAttacks(ctx context.Context, req *proto.FindSimilarAttacksRequest) (*proto.FindSimilarAttacksResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.FindSimilarAttacks(ctx, req)
+}
+
+// FindSimilarFindings searches for similar findings.
+func (c *CallbackClient) FindSimilarFindings(ctx context.Context, req *proto.FindSimilarFindingsRequest) (*proto.FindSimilarFindingsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.FindSimilarFindings(ctx, req)
+}
+
+// GetAttackChains discovers attack chains starting from a technique.
+func (c *CallbackClient) GetAttackChains(ctx context.Context, req *proto.GetAttackChainsRequest) (*proto.GetAttackChainsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GetAttackChains(ctx, req)
+}
+
+// GetRelatedFindings retrieves related findings.
+func (c *CallbackClient) GetRelatedFindings(ctx context.Context, req *proto.GetRelatedFindingsRequest) (*proto.GetRelatedFindingsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GetRelatedFindings(ctx, req)
+}
+
+// ============================================================================
+// GraphRAG Storage Operations
+// ============================================================================
+
+// StoreGraphNode stores a node in the knowledge graph.
+func (c *CallbackClient) StoreGraphNode(ctx context.Context, req *proto.StoreGraphNodeRequest) (*proto.StoreGraphNodeResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.StoreGraphNode(ctx, req)
+}
+
+// CreateGraphRelationship creates a relationship between nodes.
+func (c *CallbackClient) CreateGraphRelationship(ctx context.Context, req *proto.CreateGraphRelationshipRequest) (*proto.CreateGraphRelationshipResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.CreateGraphRelationship(ctx, req)
+}
+
+// StoreGraphBatch stores multiple nodes and relationships atomically.
+func (c *CallbackClient) StoreGraphBatch(ctx context.Context, req *proto.StoreGraphBatchRequest) (*proto.StoreGraphBatchResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.StoreGraphBatch(ctx, req)
+}
+
+// TraverseGraph walks the graph from a starting node.
+func (c *CallbackClient) TraverseGraph(ctx context.Context, req *proto.TraverseGraphRequest) (*proto.TraverseGraphResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.TraverseGraph(ctx, req)
+}
+
+// GraphRAGHealth checks the health of the GraphRAG subsystem.
+func (c *CallbackClient) GraphRAGHealth(ctx context.Context, req *proto.GraphRAGHealthRequest) (*proto.GraphRAGHealthResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GraphRAGHealth(ctx, req)
+}
+
+// ============================================================================
+// Planning Operations
+// ============================================================================
+
+// GetPlanContext retrieves the planning context from the orchestrator.
+func (c *CallbackClient) GetPlanContext(ctx context.Context, req *proto.GetPlanContextRequest) (*proto.GetPlanContextResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.GetPlanContext(ctx, req)
+}
+
+// ReportStepHints reports step hints to the orchestrator.
+func (c *CallbackClient) ReportStepHints(ctx context.Context, req *proto.ReportStepHintsRequest) (*proto.ReportStepHintsResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	return c.client.ReportStepHints(ctx, req)
+}

@@ -1,0 +1,545 @@
+syntax = "proto3";
+package gibson.harness;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/proto";
+
+// HarnessCallbackService provides the harness interface for agents executing in standalone mode.
+// The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
+service HarnessCallbackService {
+    // LLM Operations
+    rpc LLMComplete(LLMCompleteRequest) returns (LLMCompleteResponse);
+    rpc LLMCompleteWithTools(LLMCompleteWithToolsRequest) returns (LLMCompleteResponse);
+    rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamChunk);
+
+    // Tool Operations
+    rpc CallTool(CallToolRequest) returns (CallToolResponse);
+    rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+    // Plugin Operations
+    rpc QueryPlugin(QueryPluginRequest) returns (QueryPluginResponse);
+    rpc ListPlugins(ListPluginsRequest) returns (ListPluginsResponse);
+
+    // Agent Operations
+    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse);
+    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+
+    // Finding Operations
+    rpc SubmitFinding(SubmitFindingRequest) returns (SubmitFindingResponse);
+    rpc GetFindings(GetFindingsRequest) returns (GetFindingsResponse);
+
+    // Memory Operations
+    rpc MemoryGet(MemoryGetRequest) returns (MemoryGetResponse);
+    rpc MemorySet(MemorySetRequest) returns (MemorySetResponse);
+    rpc MemoryDelete(MemoryDeleteRequest) returns (MemoryDeleteResponse);
+    rpc MemoryList(MemoryListRequest) returns (MemoryListResponse);
+
+    // GraphRAG Query Operations
+    rpc GraphRAGQuery(GraphRAGQueryRequest) returns (GraphRAGQueryResponse);
+    rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse);
+    rpc FindSimilarFindings(FindSimilarFindingsRequest) returns (FindSimilarFindingsResponse);
+    rpc GetAttackChains(GetAttackChainsRequest) returns (GetAttackChainsResponse);
+    rpc GetRelatedFindings(GetRelatedFindingsRequest) returns (GetRelatedFindingsResponse);
+
+    // GraphRAG Storage Operations
+    rpc StoreGraphNode(StoreGraphNodeRequest) returns (StoreGraphNodeResponse);
+    rpc CreateGraphRelationship(CreateGraphRelationshipRequest) returns (CreateGraphRelationshipResponse);
+    rpc StoreGraphBatch(StoreGraphBatchRequest) returns (StoreGraphBatchResponse);
+    rpc TraverseGraph(TraverseGraphRequest) returns (TraverseGraphResponse);
+    rpc GraphRAGHealth(GraphRAGHealthRequest) returns (GraphRAGHealthResponse);
+
+    // Planning Operations
+    rpc GetPlanContext(GetPlanContextRequest) returns (GetPlanContextResponse);
+    rpc ReportStepHints(ReportStepHintsRequest) returns (ReportStepHintsResponse);
+}
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+// Error represents an error response from a callback operation.
+message HarnessError {
+    string code = 1;
+    string message = 2;
+    bool retryable = 3;
+}
+
+// HealthStatus represents the health status of a service.
+message HarnessHealthStatus {
+    string state = 1;      // healthy, degraded, unhealthy
+    string message = 2;
+    int64 checked_at = 3;  // Unix timestamp in milliseconds
+}
+
+message ContextInfo {
+    string task_id = 1;
+    string agent_name = 2;
+    string trace_id = 3;
+    string span_id = 4;
+}
+
+message TokenUsage {
+    int32 input_tokens = 1;
+    int32 output_tokens = 2;
+    int32 total_tokens = 3;
+}
+
+message LLMMessage {
+    string role = 1;  // system, user, assistant, tool
+    string content = 2;
+    repeated ToolCall tool_calls = 3;
+    repeated ToolResult tool_results = 4;
+    string name = 5;  // For tool messages
+}
+
+message ToolCall {
+    string id = 1;
+    string name = 2;
+    string arguments = 3;  // JSON string
+}
+
+message ToolResult {
+    string tool_call_id = 1;
+    string content = 2;
+    bool is_error = 3;
+}
+
+message ToolDef {
+    string name = 1;
+    string description = 2;
+    string parameters_json = 3;  // JSON schema
+}
+
+// ============================================================================
+// LLM Operations
+// ============================================================================
+
+message LLMCompleteRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+
+    // Completion options
+    optional double temperature = 4;
+    optional int32 max_tokens = 5;
+    optional double top_p = 6;
+    repeated string stop = 7;
+}
+
+message LLMCompleteWithToolsRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    repeated ToolDef tools = 4;
+}
+
+message LLMCompleteResponse {
+    string content = 1;
+    repeated ToolCall tool_calls = 2;
+    string finish_reason = 3;
+    TokenUsage usage = 4;
+    HarnessError error = 5;
+}
+
+message LLMStreamRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+
+    // Completion options
+    optional double temperature = 4;
+    optional int32 max_tokens = 5;
+    optional double top_p = 6;
+    repeated string stop = 7;
+}
+
+message LLMStreamChunk {
+    string delta = 1;
+    repeated ToolCall tool_calls = 2;
+    string finish_reason = 3;
+    TokenUsage usage = 4;
+    HarnessError error = 5;
+}
+
+// ============================================================================
+// Tool Operations
+// ============================================================================
+
+message CallToolRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    string input_json = 3;  // JSON-encoded map[string]any
+}
+
+message CallToolResponse {
+    string output_json = 1;  // JSON-encoded map[string]any
+    HarnessError error = 2;
+}
+
+message ListToolsRequest {
+    ContextInfo context = 1;
+}
+
+message ListToolsResponse {
+    repeated HarnessToolDescriptor tools = 1;
+    HarnessError error = 2;
+}
+
+message HarnessToolDescriptor {
+    string name = 1;
+    string description = 2;
+    string schema_json = 3;  // JSON-encoded map[string]any
+}
+
+// ============================================================================
+// Plugin Operations
+// ============================================================================
+
+message QueryPluginRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    string method = 3;
+    string params_json = 4;  // JSON-encoded map[string]any
+}
+
+message QueryPluginResponse {
+    string result_json = 1;  // JSON-encoded any
+    HarnessError error = 2;
+}
+
+message ListPluginsRequest {
+    ContextInfo context = 1;
+}
+
+message ListPluginsResponse {
+    repeated HarnessPluginDescriptor plugins = 1;
+    HarnessError error = 2;
+}
+
+message HarnessPluginDescriptor {
+    string name = 1;
+    string description = 2;
+    string version = 3;
+    repeated string methods = 4;
+}
+
+// ============================================================================
+// Agent Operations
+// ============================================================================
+
+message DelegateToAgentRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    string task_json = 3;  // JSON-encoded agent.Task
+}
+
+message DelegateToAgentResponse {
+    string result_json = 1;  // JSON-encoded agent.Result
+    HarnessError error = 2;
+}
+
+message ListAgentsRequest {
+    ContextInfo context = 1;
+}
+
+message ListAgentsResponse {
+    repeated HarnessAgentDescriptor agents = 1;
+    HarnessError error = 2;
+}
+
+message HarnessAgentDescriptor {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string capabilities = 4;
+    repeated string target_types = 5;
+    repeated string technique_types = 6;
+}
+
+// ============================================================================
+// Finding Operations
+// ============================================================================
+
+message SubmitFindingRequest {
+    ContextInfo context = 1;
+    string finding_json = 2;  // JSON-encoded agent.Finding
+}
+
+message SubmitFindingResponse {
+    HarnessError error = 1;
+}
+
+message GetFindingsRequest {
+    ContextInfo context = 1;
+    string filter_json = 2;  // JSON-encoded agent.FindingFilter
+}
+
+message GetFindingsResponse {
+    repeated string findings_json = 1;  // JSON-encoded []agent.Finding
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// Memory Operations
+// ============================================================================
+
+message MemoryGetRequest {
+    ContextInfo context = 1;
+    string key = 2;
+}
+
+message MemoryGetResponse {
+    string value_json = 1;  // JSON-encoded any
+    bool found = 2;
+    HarnessError error = 3;
+}
+
+message MemorySetRequest {
+    ContextInfo context = 1;
+    string key = 2;
+    string value_json = 3;  // JSON-encoded any
+}
+
+message MemorySetResponse {
+    HarnessError error = 1;
+}
+
+message MemoryDeleteRequest {
+    ContextInfo context = 1;
+    string key = 2;
+}
+
+message MemoryDeleteResponse {
+    HarnessError error = 1;
+}
+
+message MemoryListRequest {
+    ContextInfo context = 1;
+    string prefix = 2;
+}
+
+message MemoryListResponse {
+    repeated string keys = 1;
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// GraphRAG Query Operations
+// ============================================================================
+
+message GraphRAGQueryRequest {
+    ContextInfo context = 1;
+    string query_json = 2;  // JSON-encoded graphrag.Query
+}
+
+message GraphRAGQueryResponse {
+    repeated GraphRAGResult results = 1;
+    HarnessError error = 2;
+}
+
+message GraphRAGResult {
+    GraphNode node = 1;
+    double score = 2;
+    double vector_score = 3;
+    double graph_score = 4;
+    repeated string path = 5;
+    int32 distance = 6;
+}
+
+message GraphNode {
+    string id = 1;
+    string type = 2;
+    string properties_json = 3;  // JSON-encoded map[string]any
+    string content = 4;
+    string mission_id = 5;
+    string agent_name = 6;
+    int64 created_at = 7;  // Unix timestamp
+    int64 updated_at = 8;  // Unix timestamp
+}
+
+message FindSimilarAttacksRequest {
+    ContextInfo context = 1;
+    string content = 2;
+    int32 top_k = 3;
+}
+
+message FindSimilarAttacksResponse {
+    repeated AttackPattern attacks = 1;
+    HarnessError error = 2;
+}
+
+message AttackPattern {
+    string technique_id = 1;
+    string name = 2;
+    string description = 3;
+    repeated string tactics = 4;
+    repeated string platforms = 5;
+    double similarity = 6;
+}
+
+message FindSimilarFindingsRequest {
+    ContextInfo context = 1;
+    string finding_id = 2;
+    int32 top_k = 3;
+}
+
+message FindSimilarFindingsResponse {
+    repeated FindingNode findings = 1;
+    HarnessError error = 2;
+}
+
+message FindingNode {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    string severity = 4;
+    string category = 5;
+    double confidence = 6;
+    double similarity = 7;
+}
+
+message GetAttackChainsRequest {
+    ContextInfo context = 1;
+    string technique_id = 2;
+    int32 max_depth = 3;
+}
+
+message GetAttackChainsResponse {
+    repeated AttackChain chains = 1;
+    HarnessError error = 2;
+}
+
+message AttackChain {
+    string id = 1;
+    string name = 2;
+    string severity = 3;
+    repeated AttackStep steps = 4;
+}
+
+message AttackStep {
+    int32 order = 1;
+    string technique_id = 2;
+    string node_id = 3;
+    string description = 4;
+    double confidence = 5;
+}
+
+message GetRelatedFindingsRequest {
+    ContextInfo context = 1;
+    string finding_id = 2;
+}
+
+message GetRelatedFindingsResponse {
+    repeated FindingNode findings = 1;
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// GraphRAG Storage Operations
+// ============================================================================
+
+message StoreGraphNodeRequest {
+    ContextInfo context = 1;
+    GraphNode node = 2;
+}
+
+message StoreGraphNodeResponse {
+    string node_id = 1;
+    HarnessError error = 2;
+}
+
+message CreateGraphRelationshipRequest {
+    ContextInfo context = 1;
+    Relationship relationship = 2;
+}
+
+message CreateGraphRelationshipResponse {
+    HarnessError error = 1;
+}
+
+message Relationship {
+    string from_id = 1;
+    string to_id = 2;
+    string type = 3;
+    string properties_json = 4;  // JSON-encoded map[string]any
+    bool bidirectional = 5;
+}
+
+message StoreGraphBatchRequest {
+    ContextInfo context = 1;
+    repeated GraphNode nodes = 2;
+    repeated Relationship relationships = 3;
+}
+
+message StoreGraphBatchResponse {
+    repeated string node_ids = 1;
+    HarnessError error = 2;
+}
+
+message TraverseGraphRequest {
+    ContextInfo context = 1;
+    string start_node_id = 2;
+    TraversalOptions options = 3;
+}
+
+message TraverseGraphResponse {
+    repeated TraversalResult results = 1;
+    HarnessError error = 2;
+}
+
+message TraversalOptions {
+    int32 max_depth = 1;
+    repeated string relationship_types = 2;
+    repeated string node_types = 3;
+    string direction = 4;  // outgoing, incoming, both
+}
+
+message TraversalResult {
+    GraphNode node = 1;
+    repeated string path = 2;
+    int32 distance = 3;
+}
+
+message GraphRAGHealthRequest {
+    ContextInfo context = 1;
+}
+
+message GraphRAGHealthResponse {
+    HarnessHealthStatus status = 1;
+}
+
+// ============================================================================
+// Planning Operations
+// ============================================================================
+
+message GetPlanContextRequest {
+    ContextInfo context = 1;
+}
+
+message GetPlanContextResponse {
+    PlanContext plan_context = 1;
+    HarnessError error = 2;
+}
+
+message PlanContext {
+    string original_goal = 1;
+    int32 current_step_index = 2;
+    int32 total_steps = 3;
+    repeated string remaining_steps = 4;
+    int32 step_budget = 5;
+    int32 mission_budget_remaining = 6;
+}
+
+message ReportStepHintsRequest {
+    ContextInfo context = 1;
+    StepHints hints = 2;
+}
+
+message ReportStepHintsResponse {
+    HarnessError error = 1;
+}
+
+message StepHints {
+    double confidence = 1;
+    repeated string suggested_next = 2;
+    string replan_reason = 3;
+    repeated string key_findings = 4;
+}

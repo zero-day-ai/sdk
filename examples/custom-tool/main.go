@@ -205,7 +205,7 @@ func executeHTTP(ctx context.Context, input map[string]any) (map[string]any, err
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer sdk.CloseWithLog(resp.Body, nil, "HTTP response body")
 
 	// Read response body
 	bodyBytes, err := io.ReadAll(resp.Body)

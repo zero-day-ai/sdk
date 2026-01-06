@@ -51,6 +51,16 @@ message AgentGetSlotSchemaResponse {
 message AgentExecuteRequest {
     string task_json = 1;
     int64 timeout_ms = 2;
+    // Callback endpoint for the orchestrator's HarnessCallbackService.
+    // When provided, the agent will connect to this endpoint to access
+    // harness operations (LLM, tools, memory, etc.).
+    string callback_endpoint = 3;
+    // Optional authentication token for the callback connection.
+    string callback_token = 4;
+    // Mission context for this execution.
+    string mission_json = 5;
+    // Target information for this execution.
+    string target_json = 6;
 }
 
 message AgentExecuteResponse {
@@ -74,6 +84,16 @@ message ClientMessage {
 message StartExecutionRequest {
     string task_json = 1;
     AgentMode initial_mode = 2;
+    // Callback endpoint for the orchestrator's HarnessCallbackService.
+    // When provided, the agent will connect to this endpoint to access
+    // harness operations (LLM, tools, memory, etc.).
+    string callback_endpoint = 3;
+    // Optional authentication token for the callback connection.
+    string callback_token = 4;
+    // Mission context for this execution.
+    string mission_json = 5;
+    // Target information for this execution.
+    string target_json = 6;
 }
 
 message SteeringMessage {

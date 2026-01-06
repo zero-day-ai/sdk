@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -51,7 +52,7 @@ func PluginFunc(p plugin.Plugin, opts ...Option) error {
 	// Set health status to serving
 	srv.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
-	fmt.Printf("Plugin %s v%s listening on :%d\n", p.Name(), p.Version(), srv.Port())
+	slog.Info("plugin server started", "component", "plugin", "name", p.Name(), "version", p.Version(), "port", srv.Port())
 
 	// Register with registry if configured
 	var serviceInfo interface{}
@@ -95,14 +96,14 @@ func PluginFunc(p plugin.Plugin, opts ...Option) error {
 		// Register with the registry
 		ctx := context.Background()
 		if err := cfg.Registry.Register(ctx, serviceInfo); err != nil {
-			fmt.Printf("Warning: failed to register with registry: %v\n", err)
+			slog.Warn("failed to register with registry", "error", err, "endpoint", endpoint, "component", "plugin", "name", p.Name())
 		} else {
-			fmt.Printf("Registered with registry: %s\n", endpoint)
+			slog.Info("registered with registry", "endpoint", endpoint, "component", "plugin", "name", p.Name())
 			// Deregister on shutdown
 			defer func() {
 				ctx := context.Background()
 				if err := cfg.Registry.Deregister(ctx, serviceInfo); err != nil {
-					fmt.Printf("Warning: failed to deregister from registry: %v\n", err)
+					slog.Warn("failed to deregister from registry", "error", err, "endpoint", endpoint, "component", "plugin", "name", p.Name())
 				}
 			}()
 		}

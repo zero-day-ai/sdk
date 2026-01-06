@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/schema"
+	"github.com/zero-day-ai/sdk/serve"
 )
 
 func TestNewFramework(t *testing.T) {
@@ -259,57 +261,99 @@ func TestNewPlugin(t *testing.T) {
 }
 
 func TestServeAgent(t *testing.T) {
-	t.Run("not yet implemented", func(t *testing.T) {
-		a, err := NewAgent(
-			WithName("test-agent"),
-			WithVersion("1.0.0"),
-			WithDescription("Test"),
-			WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
-				return agent.NewSuccessResult(nil), nil
-			}),
-		)
-		if err != nil {
-			t.Fatalf("failed to create agent: %v", err)
-		}
-
-		err = ServeAgent(a, WithPort(8080))
-		if err == nil {
-			t.Error("expected error for unimplemented serve function")
-		}
-	})
+	t.Skip("ServeAgent now delegates to serve.Agent which blocks until shutdown; tested in serve package")
+	// Note: The delegation is working correctly. The serve.Agent function will block
+	// waiting for shutdown signals. Integration tests in the serve package verify this.
 }
 
 func TestServeTool(t *testing.T) {
-	t.Run("not yet implemented", func(t *testing.T) {
-		tl, err := NewTool(
-			WithToolName("test-tool"),
-			WithExecuteHandler(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return nil, nil
-			}),
-		)
-		if err != nil {
-			t.Fatalf("failed to create tool: %v", err)
-		}
-
-		err = ServeTool(tl, WithPort(8081))
-		if err == nil {
-			t.Error("expected error for unimplemented serve function")
-		}
-	})
+	t.Skip("ServeTool now delegates to serve.Tool which blocks until shutdown; tested in serve package")
+	// Note: The delegation is working correctly. The serve.Tool function will block
+	// waiting for shutdown signals. Integration tests in the serve package verify this.
 }
 
 func TestServePlugin(t *testing.T) {
-	t.Run("not yet implemented", func(t *testing.T) {
-		p, err := NewPlugin(
-			WithPluginName("test-plugin"),
-		)
-		if err != nil {
-			t.Fatalf("failed to create plugin: %v", err)
+	t.Skip("ServePlugin now delegates to serve.PluginFunc which blocks until shutdown; tested in serve package")
+	// Note: The delegation is working correctly. The serve.PluginFunc function will block
+	// waiting for shutdown signals. Integration tests in the serve package verify this.
+	// Also note: ServePlugin now accepts plugin.Plugin (the real interface) not the stub Plugin type.
+}
+
+func TestConvertServeOption(t *testing.T) {
+	t.Run("converts port option", func(t *testing.T) {
+		opt := WithPort(9090)
+		converted := convertServeOption(opt)
+
+		// Apply to a serve.Config to verify it works
+		cfg := &serve.Config{}
+		converted(cfg)
+
+		if cfg.Port != 9090 {
+			t.Errorf("expected port 9090, got %d", cfg.Port)
+		}
+	})
+
+	t.Run("converts health endpoint option", func(t *testing.T) {
+		opt := WithHealthEndpoint("/healthz")
+		converted := convertServeOption(opt)
+
+		cfg := &serve.Config{}
+		converted(cfg)
+
+		if cfg.HealthEndpoint != "/healthz" {
+			t.Errorf("expected health endpoint /healthz, got %s", cfg.HealthEndpoint)
+		}
+	})
+
+	t.Run("converts graceful shutdown option", func(t *testing.T) {
+		timeout := 60 * time.Second
+		opt := WithGracefulShutdown(timeout)
+		converted := convertServeOption(opt)
+
+		cfg := &serve.Config{}
+		converted(cfg)
+
+		if cfg.GracefulTimeout != timeout {
+			t.Errorf("expected timeout %v, got %v", timeout, cfg.GracefulTimeout)
+		}
+	})
+
+	t.Run("converts TLS option", func(t *testing.T) {
+		opt := WithTLS("/path/to/cert.pem", "/path/to/key.pem")
+		converted := convertServeOption(opt)
+
+		cfg := &serve.Config{}
+		converted(cfg)
+
+		if cfg.TLSCertFile != "/path/to/cert.pem" {
+			t.Errorf("expected cert file /path/to/cert.pem, got %s", cfg.TLSCertFile)
+		}
+		if cfg.TLSKeyFile != "/path/to/key.pem" {
+			t.Errorf("expected key file /path/to/key.pem, got %s", cfg.TLSKeyFile)
+		}
+	})
+
+	t.Run("converts multiple options", func(t *testing.T) {
+		opts := []ServeOption{
+			WithPort(8080),
+			WithHealthEndpoint("/health"),
+			WithGracefulShutdown(30 * time.Second),
 		}
 
-		err = ServePlugin(p, WithPort(8082))
-		if err == nil {
-			t.Error("expected error for unimplemented serve function")
+		cfg := &serve.Config{}
+		for _, opt := range opts {
+			converted := convertServeOption(opt)
+			converted(cfg)
+		}
+
+		if cfg.Port != 8080 {
+			t.Errorf("expected port 8080, got %d", cfg.Port)
+		}
+		if cfg.HealthEndpoint != "/health" {
+			t.Errorf("expected health endpoint /health, got %s", cfg.HealthEndpoint)
+		}
+		if cfg.GracefulTimeout != 30*time.Second {
+			t.Errorf("expected timeout 30s, got %v", cfg.GracefulTimeout)
 		}
 	})
 }

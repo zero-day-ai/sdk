@@ -4,8 +4,13 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
+	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/planning"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -42,7 +47,7 @@ type Harness interface {
 
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.
-	ListTools(ctx context.Context) ([]ToolDescriptor, error)
+	ListTools(ctx context.Context) ([]tool.Descriptor, error)
 
 	// Plugin Access Methods
 	//
@@ -54,7 +59,7 @@ type Harness interface {
 	QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error)
 
 	// ListPlugins returns descriptors for all available plugins.
-	ListPlugins(ctx context.Context) ([]PluginDescriptor, error)
+	ListPlugins(ctx context.Context) ([]plugin.Descriptor, error)
 
 	// Agent Delegation Methods
 	//
@@ -73,10 +78,10 @@ type Harness interface {
 
 	// SubmitFinding records a new security finding.
 	// The finding will be validated, stored, and included in reports.
-	SubmitFinding(ctx context.Context, f Finding) error
+	SubmitFinding(ctx context.Context, f *finding.Finding) error
 
 	// GetFindings retrieves findings matching the given filter criteria.
-	GetFindings(ctx context.Context, filter FindingFilter) ([]Finding, error)
+	GetFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
 
 	// Memory Access
 	//
@@ -84,7 +89,8 @@ type Harness interface {
 
 	// Memory returns the memory store for this agent.
 	// The agent can use this to store and retrieve state across task executions.
-	Memory() MemoryStore
+	// The store provides access to three memory tiers: Working, Mission, and LongTerm.
+	Memory() memory.Store
 
 	// Context Access
 	//
@@ -166,6 +172,23 @@ type Harness interface {
 	// GraphRAGHealth returns the health status of the GraphRAG subsystem.
 	// Use this to check availability before performing GraphRAG operations.
 	GraphRAGHealth(ctx context.Context) types.HealthStatus
+
+	// Planning Context Methods
+	//
+	// These methods provide access to planning context and allow agents to
+	// report feedback to the planning system.
+
+	// PlanContext returns the planning context for the current execution.
+	// Returns nil if no planning context is available (non-planned execution).
+	// Agents can use this to access mission goals, step budgets, and position
+	// in the overall plan.
+	PlanContext() planning.PlanningContext
+
+	// ReportStepHints allows agents to provide feedback to the planning system.
+	// Agents can report confidence levels, suggest next steps, recommend replanning,
+	// and share key findings that should influence future planning decisions.
+	// This method is a no-op if planning is not enabled.
+	ReportStepHints(ctx context.Context, hints *planning.StepHints) error
 }
 
 // StreamingHarness extends Harness with real-time event emission capabilities.
@@ -194,7 +217,7 @@ type StreamingHarness interface {
 
 	// EmitFinding emits an event when a security finding is discovered.
 	// This allows clients to receive findings in real-time as they're found.
-	EmitFinding(finding Finding) error
+	EmitFinding(finding *finding.Finding) error
 
 	// EmitStatus emits a status change event.
 	// Use this to indicate progress through different phases of execution.
@@ -259,79 +282,3 @@ type Descriptor struct {
 	TechniqueTypes []types.TechniqueType
 }
 
-// ToolDescriptor provides metadata about a tool.
-// This is a placeholder type until the tool package is implemented.
-type ToolDescriptor struct {
-	// Name is the unique identifier for the tool.
-	Name string
-
-	// Description explains what the tool does.
-	Description string
-
-	// Schema describes the tool's input and output structure.
-	Schema map[string]any
-}
-
-// PluginDescriptor provides metadata about a plugin.
-// This is a placeholder type until the plugin package is implemented.
-type PluginDescriptor struct {
-	// Name is the unique identifier for the plugin.
-	Name string
-
-	// Description explains what the plugin does.
-	Description string
-
-	// Version is the semantic version of the plugin.
-	Version string
-
-	// Methods lists the available plugin methods.
-	Methods []string
-}
-
-// Finding represents a security vulnerability or issue discovered during testing.
-// This is a placeholder type until the finding package is fully implemented.
-type Finding interface {
-	// ID returns the unique identifier for this finding.
-	ID() string
-
-	// Severity returns the severity level of this finding.
-	Severity() string
-
-	// Category returns the category of this finding.
-	Category() string
-}
-
-// FindingFilter specifies criteria for filtering findings.
-// This is a placeholder type until the finding package is fully implemented.
-type FindingFilter struct {
-	// MissionID filters by mission ID.
-	MissionID string
-
-	// AgentName filters by the agent that discovered the finding.
-	AgentName string
-
-	// MinSeverity filters by minimum severity level.
-	MinSeverity string
-
-	// Category filters by finding category.
-	Category string
-
-	// Limit limits the number of results returned.
-	Limit int
-}
-
-// MemoryStore provides persistent storage for agent state.
-// This is a placeholder type until the memory package is implemented.
-type MemoryStore interface {
-	// Get retrieves a value by key.
-	Get(ctx context.Context, key string) (any, error)
-
-	// Set stores a value with the given key.
-	Set(ctx context.Context, key string, value any) error
-
-	// Delete removes a value by key.
-	Delete(ctx context.Context, key string) error
-
-	// List returns all keys matching the given prefix.
-	List(ctx context.Context, prefix string) ([]string, error)
-}

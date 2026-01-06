@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -51,7 +53,7 @@ func Agent(a agent.Agent, opts ...Option) error {
 	// Set health status to serving
 	srv.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
-	fmt.Printf("Agent %s v%s listening on :%d\n", a.Name(), a.Version(), srv.Port())
+	slog.Info("agent server started", "component", "agent", "name", a.Name(), "version", a.Version(), "port", srv.Port())
 
 	// Register with registry if configured
 	var serviceInfo interface{}
@@ -106,14 +108,14 @@ func Agent(a agent.Agent, opts ...Option) error {
 		// Register with the registry
 		ctx := context.Background()
 		if err := cfg.Registry.Register(ctx, serviceInfo); err != nil {
-			fmt.Printf("Warning: failed to register with registry: %v\n", err)
+			slog.Warn("failed to register with registry", "error", err, "endpoint", endpoint, "component", "agent", "name", a.Name())
 		} else {
-			fmt.Printf("Registered with registry: %s\n", endpoint)
+			slog.Info("registered with registry", "endpoint", endpoint, "component", "agent", "name", a.Name())
 			// Deregister on shutdown
 			defer func() {
 				ctx := context.Background()
 				if err := cfg.Registry.Deregister(ctx, serviceInfo); err != nil {
-					fmt.Printf("Warning: failed to deregister from registry: %v\n", err)
+					slog.Warn("failed to deregister from registry", "error", err, "endpoint", endpoint, "component", "agent", "name", a.Name())
 				}
 			}()
 		}
@@ -214,11 +216,24 @@ func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecut
 		defer cancel()
 	}
 
-	// Execute the agent
-	// Note: This is a simplified implementation. In a real implementation,
-	// the harness would be provided by the framework. For now, we pass nil
-	// and agents should handle this gracefully.
-	result, err := s.agent.Execute(ctx, nil, task)
+	// Create harness if callback endpoint is provided
+	var harness agent.Harness
+	if req.CallbackEndpoint != "" {
+		callbackHarness, err := s.createCallbackHarness(ctx, req, task)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create callback harness: %v", err)
+		}
+		harness = callbackHarness
+		// Clean up callback client when done
+		defer func() {
+			if ch, ok := harness.(*CallbackHarness); ok && ch.client != nil {
+				ch.client.Close()
+			}
+		}()
+	}
+
+	// Execute the agent with the harness (may be nil if no callback endpoint)
+	result, err := s.agent.Execute(ctx, harness, task)
 
 	// Build response
 	resp := &proto.AgentExecuteResponse{}
@@ -240,6 +255,57 @@ func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecut
 	}
 
 	return resp, nil
+}
+
+// createCallbackHarness creates a CallbackHarness connected to the orchestrator.
+func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *proto.AgentExecuteRequest, task agent.Task) (*CallbackHarness, error) {
+	// Create callback client options
+	var clientOpts []CallbackClientOption
+	if req.CallbackToken != "" {
+		clientOpts = append(clientOpts, WithCallbackToken(req.CallbackToken))
+	}
+
+	// Create and connect callback client
+	client, err := NewCallbackClient(req.CallbackEndpoint, clientOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create callback client: %w", err)
+	}
+
+	if err := client.Connect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
+	}
+
+	// Set task context for callback requests
+	client.SetTaskContext(task.ID, s.agent.Name(), "", "")
+
+	// Parse mission context if provided
+	var mission types.MissionContext
+	if req.MissionJson != "" {
+		if err := json.Unmarshal([]byte(req.MissionJson), &mission); err != nil {
+			client.Close()
+			return nil, fmt.Errorf("failed to parse mission JSON: %w", err)
+		}
+	}
+
+	// Parse target info if provided
+	var target types.TargetInfo
+	if req.TargetJson != "" {
+		if err := json.Unmarshal([]byte(req.TargetJson), &target); err != nil {
+			client.Close()
+			return nil, fmt.Errorf("failed to parse target JSON: %w", err)
+		}
+	}
+
+	// Create logger for this agent execution
+	logger := slog.Default().With(
+		"agent", s.agent.Name(),
+		"task_id", task.ID,
+	)
+
+	// Create the callback harness
+	harness := NewCallbackHarness(client, logger, nil, mission, target)
+
+	return harness, nil
 }
 
 // Health returns the current health status of the agent.

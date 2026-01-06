@@ -3,6 +3,8 @@ package sdk
 import (
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 )
 
 // Sentinel errors for common SDK error conditions.
@@ -219,5 +221,32 @@ func NewInternalError(op string, err error) *SDKError {
 		Op:   op,
 		Kind: KindInternal,
 		Err:  err,
+	}
+}
+
+// CloseWithLog attempts to close the provided resource and logs any error
+// at warning level. This is intended for use in defer statements to ensure
+// cleanup errors are not silently ignored.
+//
+// The name parameter should describe the resource being closed (e.g., "file",
+// "connection", "database"). If logger is nil, slog.Default() is used.
+//
+// Example usage:
+//
+//	defer sdk.CloseWithLog(file, logger, "config file")
+//	defer sdk.CloseWithLog(conn, logger, "gRPC connection")
+func CloseWithLog(closer io.Closer, logger *slog.Logger, name string) {
+	if closer == nil {
+		return
+	}
+
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	if err := closer.Close(); err != nil {
+		logger.Warn("failed to close resource",
+			"resource", name,
+			"error", err)
 	}
 }

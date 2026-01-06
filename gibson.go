@@ -1,11 +1,14 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/serve"
 	"github.com/zero-day-ai/sdk/tool"
 )
 
@@ -102,17 +105,18 @@ func NewTool(opts ...ToolOption) (tool.Tool, error) {
 }
 
 // NewPlugin creates a new plugin with the provided options.
-// Note: Plugin infrastructure is not yet fully implemented in the SDK.
-// This function is a placeholder for future plugin support.
+// Plugins extend the SDK functionality by providing named methods that can be invoked
+// with parameters and return results. Plugins support initialization, shutdown, and health checks.
 //
-// Example (future):
+// Example:
 //
 //	plugin, err := sdk.NewPlugin(
 //	    sdk.WithPluginName("custom-llm"),
 //	    sdk.WithPluginVersion("1.0.0"),
+//	    sdk.WithPluginDescription("Custom LLM provider"),
 //	    sdk.WithMethod("complete", handler, inputSchema, outputSchema),
 //	)
-func NewPlugin(opts ...PluginOption) (Plugin, error) {
+func NewPlugin(opts ...PluginOption) (plugin.Plugin, error) {
 	cfg := &pluginConfig{}
 	for _, opt := range opts {
 		opt(cfg)
@@ -126,22 +130,72 @@ func NewPlugin(opts ...PluginOption) (Plugin, error) {
 		cfg.version = "1.0.0"
 	}
 
-	// Create stub plugin
-	return &stubPlugin{
-		name:        cfg.name,
-		version:     cfg.version,
-		description: cfg.description,
-	}, nil
+	// Create plugin using the builder
+	pluginCfg := plugin.NewConfig()
+	pluginCfg.SetName(cfg.name)
+	pluginCfg.SetVersion(cfg.version)
+	pluginCfg.SetDescription(cfg.description)
+
+	// Add methods to the plugin
+	for methodName, methodDef := range cfg.methods {
+		// Convert the handler interface to the proper MethodHandler type
+		handler, ok := methodDef.handler.(plugin.MethodHandler)
+		if !ok {
+			return nil, fmt.Errorf("invalid handler type for method %s", methodName)
+		}
+		pluginCfg.AddMethod(methodName, handler, methodDef.inputSchema, methodDef.outputSchema)
+	}
+
+	// Set init and shutdown functions if provided
+	if cfg.initFunc != nil {
+		pluginCfg.SetInitFunc(func(ctx context.Context, config map[string]any) error {
+			return cfg.initFunc()
+		})
+	}
+	if cfg.shutdownFunc != nil {
+		pluginCfg.SetShutdownFunc(func(ctx context.Context) error {
+			return cfg.shutdownFunc()
+		})
+	}
+
+	return plugin.New(pluginCfg)
+}
+
+// convertServeOption converts a public ServeOption to an internal serve.Option.
+// This bridges the public SDK API with the internal serve package implementation.
+func convertServeOption(opt ServeOption) serve.Option {
+	return func(c *serve.Config) {
+		// Create a temporary serveConfig to capture the option's values
+		tempCfg := &serveConfig{}
+		opt(tempCfg)
+
+		// Map serveConfig fields to serve.Config fields
+		if tempCfg.port != 0 {
+			c.Port = tempCfg.port
+		}
+		if tempCfg.healthEndpoint != "" {
+			c.HealthEndpoint = tempCfg.healthEndpoint
+		}
+		if tempCfg.gracefulTimeout != 0 {
+			c.GracefulTimeout = tempCfg.gracefulTimeout
+		}
+		if tempCfg.tlsCertFile != "" {
+			c.TLSCertFile = tempCfg.tlsCertFile
+		}
+		if tempCfg.tlsKeyFile != "" {
+			c.TLSKeyFile = tempCfg.tlsKeyFile
+		}
+	}
 }
 
 // ServeAgent starts a gRPC server for the agent.
 // The server exposes the agent's functionality over the network,
 // allowing the Gibson framework to communicate with it.
 //
-// Note: The serve infrastructure is not yet implemented.
-// This function is a placeholder that returns an error.
+// The server handles agent execution requests via gRPC and provides
+// health check endpoints. It supports graceful shutdown and optional TLS.
 //
-// Example (future):
+// Example:
 //
 //	err := sdk.ServeAgent(myAgent,
 //	    sdk.WithPort(8080),
@@ -149,61 +203,58 @@ func NewPlugin(opts ...PluginOption) (Plugin, error) {
 //	    sdk.WithGracefulShutdown(30*time.Second),
 //	)
 func ServeAgent(a agent.Agent, opts ...ServeOption) error {
-	cfg := &serveConfig{
-		port:           8080,
-		healthEndpoint: "/health",
-	}
-	for _, opt := range opts {
-		opt(cfg)
+	// Convert public ServeOptions to internal serve.Options
+	serveOpts := make([]serve.Option, len(opts))
+	for i, opt := range opts {
+		serveOpts[i] = convertServeOption(opt)
 	}
 
-	return fmt.Errorf("agent serving is not yet implemented")
+	// Delegate to the serve package implementation
+	return serve.Agent(a, serveOpts...)
 }
 
 // ServeTool starts a gRPC server for the tool.
 // The server exposes the tool's functionality over the network,
 // allowing agents to invoke it remotely.
 //
-// Note: The serve infrastructure is not yet implemented.
-// This function is a placeholder that returns an error.
+// The server handles tool execution requests via gRPC and provides
+// health check endpoints. It supports graceful shutdown and optional TLS.
 //
-// Example (future):
+// Example:
 //
 //	err := sdk.ServeTool(myTool,
 //	    sdk.WithPort(8081),
 //	    sdk.WithHealthEndpoint("/health"),
 //	)
 func ServeTool(t tool.Tool, opts ...ServeOption) error {
-	cfg := &serveConfig{
-		port:           8081,
-		healthEndpoint: "/health",
-	}
-	for _, opt := range opts {
-		opt(cfg)
+	// Convert public ServeOptions to internal serve.Options
+	serveOpts := make([]serve.Option, len(opts))
+	for i, opt := range opts {
+		serveOpts[i] = convertServeOption(opt)
 	}
 
-	return fmt.Errorf("tool serving is not yet implemented")
+	// Delegate to the serve package implementation
+	return serve.Tool(t, serveOpts...)
 }
 
 // ServePlugin starts a gRPC server for the plugin.
 // The server exposes the plugin's methods over the network.
 //
-// Note: The serve infrastructure is not yet implemented.
-// This function is a placeholder that returns an error.
+// The server handles plugin query requests via gRPC and provides
+// health check endpoints. It supports graceful shutdown and optional TLS.
 //
-// Example (future):
+// Example:
 //
 //	err := sdk.ServePlugin(myPlugin,
 //	    sdk.WithPort(8082),
 //	)
-func ServePlugin(p Plugin, opts ...ServeOption) error {
-	cfg := &serveConfig{
-		port:           8082,
-		healthEndpoint: "/health",
-	}
-	for _, opt := range opts {
-		opt(cfg)
+func ServePlugin(p plugin.Plugin, opts ...ServeOption) error {
+	// Convert public ServeOptions to internal serve.Options
+	serveOpts := make([]serve.Option, len(opts))
+	for i, opt := range opts {
+		serveOpts[i] = convertServeOption(opt)
 	}
 
-	return fmt.Errorf("plugin serving is not yet implemented")
+	// Delegate to the serve package implementation
+	return serve.PluginFunc(p, serveOpts...)
 }

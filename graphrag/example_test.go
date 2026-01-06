@@ -17,7 +17,8 @@ func Example() {
 
 	// Validate the node
 	if err := finding.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate node: %v\n", err)
+		return
 	}
 
 	// Create a query
@@ -28,7 +29,8 @@ func Example() {
 
 	// Validate the query
 	if err := query.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate query: %v\n", err)
+		return
 	}
 
 	fmt.Println("Node created:", finding.Type)
@@ -224,13 +226,16 @@ func Example_storingAttackData() {
 
 	// Validate all components
 	if err := finding.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate finding: %v\n", err)
+		return
 	}
 	if err := technique.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate technique: %v\n", err)
+		return
 	}
 	if err := rel.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate relationship: %v\n", err)
+		return
 	}
 
 	fmt.Println("Finding severity:", finding.Properties["severity"])
@@ -259,10 +264,12 @@ func Example_queryingSimilarPatterns() {
 
 	// Validate queries
 	if err := findingQuery.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate finding query: %v\n", err)
+		return
 	}
 	if err := techniqueQuery.Validate(); err != nil {
-		panic(err)
+		fmt.Printf("failed to validate technique query: %v\n", err)
+		return
 	}
 
 	fmt.Println("Finding query - Top K:", findingQuery.TopK)

@@ -10,8 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 	sdk "github.com/zero-day-ai/sdk"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
+	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/planning"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -399,7 +404,7 @@ func (m *mockHarness) CallTool(ctx context.Context, name string, input map[strin
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockHarness) ListTools(ctx context.Context) ([]agent.ToolDescriptor, error) {
+func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -407,7 +412,7 @@ func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method strin
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockHarness) ListPlugins(ctx context.Context) ([]agent.PluginDescriptor, error) {
+func (m *mockHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -419,15 +424,15 @@ func (m *mockHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockHarness) SubmitFinding(ctx context.Context, f agent.Finding) error {
+func (m *mockHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
 	return errors.New("not implemented")
 }
 
-func (m *mockHarness) GetFindings(ctx context.Context, filter agent.FindingFilter) ([]agent.Finding, error) {
+func (m *mockHarness) GetFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockHarness) Memory() agent.MemoryStore {
+func (m *mockHarness) Memory() memory.Store {
 	return nil
 }
 
@@ -490,4 +495,12 @@ func (m *mockHarness) TraverseGraph(ctx context.Context, startNodeID string, opt
 
 func (m *mockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
 	return types.NewHealthyStatus("ok")
+}
+
+func (m *mockHarness) PlanContext() planning.PlanningContext {
+	return nil
+}
+
+func (m *mockHarness) ReportStepHints(ctx context.Context, hints *planning.StepHints) error {
+	return nil
 }

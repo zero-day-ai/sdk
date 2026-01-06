@@ -7,7 +7,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/zero-day-ai/sdk/finding"
+	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
+	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/planning"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -15,23 +21,23 @@ import (
 
 // mockHarness is a test implementation of the Harness interface.
 type mockHarness struct {
-	completeFunc         func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
+	completeFunc          func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
 	completeWithToolsFunc func(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error)
-	streamFunc           func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
-	callToolFunc         func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
-	listToolsFunc        func(ctx context.Context) ([]ToolDescriptor, error)
-	queryPluginFunc      func(ctx context.Context, name string, method string, params map[string]any) (any, error)
-	listPluginsFunc      func(ctx context.Context) ([]PluginDescriptor, error)
-	delegateToAgentFunc  func(ctx context.Context, name string, task Task) (Result, error)
-	listAgentsFunc       func(ctx context.Context) ([]Descriptor, error)
-	submitFindingFunc    func(ctx context.Context, f Finding) error
-	getFindingsFunc      func(ctx context.Context, filter FindingFilter) ([]Finding, error)
-	memory               MemoryStore
-	mission              types.MissionContext
-	target               types.TargetInfo
-	tracer               trace.Tracer
-	logger               *slog.Logger
-	tokenUsage           llm.TokenTracker
+	streamFunc            func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
+	callToolFunc          func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
+	listToolsFunc         func(ctx context.Context) ([]tool.Descriptor, error)
+	queryPluginFunc       func(ctx context.Context, name string, method string, params map[string]any) (any, error)
+	listPluginsFunc       func(ctx context.Context) ([]plugin.Descriptor, error)
+	delegateToAgentFunc   func(ctx context.Context, name string, task Task) (Result, error)
+	listAgentsFunc        func(ctx context.Context) ([]Descriptor, error)
+	submitFindingFunc     func(ctx context.Context, f *finding.Finding) error
+	getFindingsFunc       func(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
+	memoryStore           memory.Store
+	mission               types.MissionContext
+	target                types.TargetInfo
+	tracer                trace.Tracer
+	logger                *slog.Logger
+	tokenUsage            llm.TokenTracker
 }
 
 func (m *mockHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
@@ -71,11 +77,11 @@ func (m *mockHarness) CallTool(ctx context.Context, name string, input map[strin
 	return map[string]any{"result": "success"}, nil
 }
 
-func (m *mockHarness) ListTools(ctx context.Context) ([]ToolDescriptor, error) {
+func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	if m.listToolsFunc != nil {
 		return m.listToolsFunc(ctx)
 	}
-	return []ToolDescriptor{
+	return []tool.Descriptor{
 		{Name: "tool1", Description: "Test tool 1"},
 		{Name: "tool2", Description: "Test tool 2"},
 	}, nil
@@ -88,11 +94,11 @@ func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method strin
 	return map[string]any{"result": "plugin response"}, nil
 }
 
-func (m *mockHarness) ListPlugins(ctx context.Context) ([]PluginDescriptor, error) {
+func (m *mockHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor, error) {
 	if m.listPluginsFunc != nil {
 		return m.listPluginsFunc(ctx)
 	}
-	return []PluginDescriptor{
+	return []plugin.Descriptor{
 		{Name: "plugin1", Description: "Test plugin", Version: "1.0.0"},
 	}, nil
 }
@@ -113,23 +119,23 @@ func (m *mockHarness) ListAgents(ctx context.Context) ([]Descriptor, error) {
 	}, nil
 }
 
-func (m *mockHarness) SubmitFinding(ctx context.Context, f Finding) error {
+func (m *mockHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
 	if m.submitFindingFunc != nil {
 		return m.submitFindingFunc(ctx, f)
 	}
 	return nil
 }
 
-func (m *mockHarness) GetFindings(ctx context.Context, filter FindingFilter) ([]Finding, error) {
+func (m *mockHarness) GetFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	if m.getFindingsFunc != nil {
 		return m.getFindingsFunc(ctx, filter)
 	}
-	return []Finding{}, nil
+	return []*finding.Finding{}, nil
 }
 
-func (m *mockHarness) Memory() MemoryStore {
-	if m.memory != nil {
-		return m.memory
+func (m *mockHarness) Memory() memory.Store {
+	if m.memoryStore != nil {
+		return m.memoryStore
 	}
 	return &mockMemoryStore{}
 }
@@ -163,12 +169,82 @@ func (m *mockHarness) TokenUsage() llm.TokenTracker {
 	return llm.NewTokenTracker()
 }
 
-// mockMemoryStore is a simple in-memory implementation of MemoryStore.
+// GraphRAG methods - stubs for testing
+func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", nil
+}
+
+func (m *mockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
+	return nil
+}
+
+func (m *mockHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
+	return nil, nil
+}
+
+func (m *mockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
+	return types.NewHealthyStatus("mock healthy")
+}
+
+// Planning methods - stubs for testing
+func (m *mockHarness) PlanContext() planning.PlanningContext {
+	return nil
+}
+
+func (m *mockHarness) ReportStepHints(ctx context.Context, hints *planning.StepHints) error {
+	return nil
+}
+
+// mockMemoryStore implements memory.Store for testing.
 type mockMemoryStore struct {
+	working *mockWorkingMemory
+}
+
+func (m *mockMemoryStore) Working() memory.WorkingMemory {
+	if m.working == nil {
+		m.working = &mockWorkingMemory{data: make(map[string]any)}
+	}
+	return m.working
+}
+
+func (m *mockMemoryStore) Mission() memory.MissionMemory {
+	return &stubMissionMemory{}
+}
+
+func (m *mockMemoryStore) LongTerm() memory.LongTermMemory {
+	return &stubLongTermMemory{}
+}
+
+// mockWorkingMemory implements memory.WorkingMemory for testing.
+type mockWorkingMemory struct {
 	data map[string]any
 }
 
-func (m *mockMemoryStore) Get(ctx context.Context, key string) (any, error) {
+func (m *mockWorkingMemory) Get(ctx context.Context, key string) (any, error) {
 	if m.data == nil {
 		return nil, errors.New("key not found")
 	}
@@ -179,7 +255,7 @@ func (m *mockMemoryStore) Get(ctx context.Context, key string) (any, error) {
 	return val, nil
 }
 
-func (m *mockMemoryStore) Set(ctx context.Context, key string, value any) error {
+func (m *mockWorkingMemory) Set(ctx context.Context, key string, value any) error {
 	if m.data == nil {
 		m.data = make(map[string]any)
 	}
@@ -187,7 +263,7 @@ func (m *mockMemoryStore) Set(ctx context.Context, key string, value any) error 
 	return nil
 }
 
-func (m *mockMemoryStore) Delete(ctx context.Context, key string) error {
+func (m *mockWorkingMemory) Delete(ctx context.Context, key string) error {
 	if m.data == nil {
 		return nil
 	}
@@ -195,29 +271,59 @@ func (m *mockMemoryStore) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (m *mockMemoryStore) List(ctx context.Context, prefix string) ([]string, error) {
+func (m *mockWorkingMemory) Clear(ctx context.Context) error {
+	m.data = make(map[string]any)
+	return nil
+}
+
+func (m *mockWorkingMemory) Keys(ctx context.Context) ([]string, error) {
 	if m.data == nil {
 		return []string{}, nil
 	}
 	var keys []string
 	for k := range m.data {
-		if len(prefix) == 0 || len(k) >= len(prefix) && k[:len(prefix)] == prefix {
-			keys = append(keys, k)
-		}
+		keys = append(keys, k)
 	}
 	return keys, nil
 }
 
-// mockFinding is a simple implementation of Finding for testing.
-type mockFinding struct {
-	id       string
-	severity string
-	category string
+// stubMissionMemory is a stub for mission memory
+type stubMissionMemory struct{}
+
+func (s *stubMissionMemory) Get(ctx context.Context, key string) (*memory.Item, error) {
+	return nil, memory.ErrNotImplemented
 }
 
-func (m *mockFinding) ID() string       { return m.id }
-func (m *mockFinding) Severity() string { return m.severity }
-func (m *mockFinding) Category() string { return m.category }
+func (s *stubMissionMemory) Set(ctx context.Context, key string, value any, metadata map[string]any) error {
+	return memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) Delete(ctx context.Context, key string) error {
+	return memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) Search(ctx context.Context, query string, limit int) ([]memory.Result, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) History(ctx context.Context, limit int) ([]memory.Item, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+// stubLongTermMemory is a stub for long-term memory
+type stubLongTermMemory struct{}
+
+func (s *stubLongTermMemory) Store(ctx context.Context, content string, metadata map[string]any) (string, error) {
+	return "", memory.ErrNotImplemented
+}
+
+func (s *stubLongTermMemory) Search(ctx context.Context, query string, topK int, filters map[string]any) ([]memory.Result, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubLongTermMemory) Delete(ctx context.Context, id string) error {
+	return memory.ErrNotImplemented
+}
 
 func TestMockHarness_Complete(t *testing.T) {
 	harness := &mockHarness{}
@@ -381,13 +487,13 @@ func TestMockHarness_SubmitFinding(t *testing.T) {
 	harness := &mockHarness{}
 	ctx := context.Background()
 
-	finding := &mockFinding{
-		id:       "finding-1",
-		severity: "high",
-		category: "jailbreak",
+	f := &finding.Finding{
+		ID:       "finding-1",
+		Severity: finding.SeverityHigh,
+		Category: finding.CategoryJailbreak,
 	}
 
-	err := harness.SubmitFinding(ctx, finding)
+	err := harness.SubmitFinding(ctx, f)
 	if err != nil {
 		t.Errorf("SubmitFinding() error = %v", err)
 	}
@@ -397,7 +503,7 @@ func TestMockHarness_GetFindings(t *testing.T) {
 	harness := &mockHarness{}
 	ctx := context.Background()
 
-	filter := FindingFilter{
+	filter := finding.Filter{
 		MissionID: "mission-1",
 	}
 
@@ -419,28 +525,33 @@ func TestMockHarness_Memory(t *testing.T) {
 		t.Fatal("Memory() returned nil")
 	}
 
-	// Test memory operations
-	err := mem.Set(ctx, "key1", "value1")
-	if err != nil {
-		t.Errorf("Memory.Set() error = %v", err)
+	// Test working memory operations through the tiered API
+	working := mem.Working()
+	if working == nil {
+		t.Fatal("Memory().Working() returned nil")
 	}
 
-	val, err := mem.Get(ctx, "key1")
+	err := working.Set(ctx, "key1", "value1")
 	if err != nil {
-		t.Errorf("Memory.Get() error = %v", err)
+		t.Errorf("Memory.Working().Set() error = %v", err)
+	}
+
+	val, err := working.Get(ctx, "key1")
+	if err != nil {
+		t.Errorf("Memory.Working().Get() error = %v", err)
 	}
 	if val != "value1" {
-		t.Errorf("Memory.Get() = %v, want 'value1'", val)
+		t.Errorf("Memory.Working().Get() = %v, want 'value1'", val)
 	}
 
-	err = mem.Delete(ctx, "key1")
+	err = working.Delete(ctx, "key1")
 	if err != nil {
-		t.Errorf("Memory.Delete() error = %v", err)
+		t.Errorf("Memory.Working().Delete() error = %v", err)
 	}
 
-	_, err = mem.Get(ctx, "key1")
+	_, err = working.Get(ctx, "key1")
 	if err == nil {
-		t.Error("Memory.Get() after delete should return error")
+		t.Error("Memory.Working().Get() after delete should return error")
 	}
 }
 
@@ -487,8 +598,8 @@ func TestMockHarness_Observability(t *testing.T) {
 	}
 }
 
-func TestMockMemoryStore_List(t *testing.T) {
-	mem := &mockMemoryStore{}
+func TestMockMemoryStore_Keys(t *testing.T) {
+	mem := &mockWorkingMemory{data: make(map[string]any)}
 	ctx := context.Background()
 
 	// Set some keys
@@ -496,21 +607,12 @@ func TestMockMemoryStore_List(t *testing.T) {
 	mem.Set(ctx, "app:key2", "value2")
 	mem.Set(ctx, "other:key3", "value3")
 
-	// List with prefix
-	keys, err := mem.List(ctx, "app:")
+	// Get all keys
+	keys, err := mem.Keys(ctx)
 	if err != nil {
-		t.Errorf("List() error = %v", err)
+		t.Errorf("Keys() error = %v", err)
 	}
-	if len(keys) != 2 {
-		t.Errorf("List() returned %d keys, want 2", len(keys))
-	}
-
-	// List all
-	allKeys, err := mem.List(ctx, "")
-	if err != nil {
-		t.Errorf("List() error = %v", err)
-	}
-	if len(allKeys) != 3 {
-		t.Errorf("List() returned %d keys, want 3", len(allKeys))
+	if len(keys) != 3 {
+		t.Errorf("Keys() returned %d keys, want 3", len(keys))
 	}
 }

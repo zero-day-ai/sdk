@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // JSON represents a JSON Schema definition.
@@ -85,6 +86,12 @@ func Enum(values ...any) JSON {
 // Validate validates the given value against this JSON schema.
 // It returns an error if the value does not conform to the schema.
 func (s JSON) Validate(value any) error {
+	return s.validateWithRegistry(value, nil, make(map[string]bool))
+}
+
+// validateWithRegistry validates the given value against this JSON schema with $ref support.
+// It tracks visited refs to detect circular references.
+func (s JSON) validateWithRegistry(value any, registry map[string]JSON, visited map[string]bool) error {
 	// Handle nil values
 	if value == nil {
 		if s.Type != "" {
@@ -93,9 +100,36 @@ func (s JSON) Validate(value any) error {
 		return nil
 	}
 
-	// Handle $ref (not fully implemented, would need a schema registry)
+	// Handle $ref
 	if s.Ref != "" {
-		return fmt.Errorf("$ref validation not implemented")
+		// Parse the ref - we only support local refs (#/definitions/X)
+		if !strings.HasPrefix(s.Ref, "#/definitions/") {
+			return fmt.Errorf("unsupported $ref format: %s (only #/definitions/X is supported)", s.Ref)
+		}
+
+		// Extract definition name
+		defName := strings.TrimPrefix(s.Ref, "#/definitions/")
+
+		// Check for circular reference
+		if visited[s.Ref] {
+			return fmt.Errorf("circular $ref detected: %s", s.Ref)
+		}
+
+		// Look up definition in registry
+		if registry == nil {
+			return fmt.Errorf("$ref %s cannot be resolved: no schema registry provided", s.Ref)
+		}
+
+		refSchema, exists := registry[defName]
+		if !exists {
+			return fmt.Errorf("$ref %s cannot be resolved: definition not found", s.Ref)
+		}
+
+		// Mark as visited and validate against referenced schema
+		visited[s.Ref] = true
+		defer delete(visited, s.Ref)
+
+		return refSchema.validateWithRegistry(value, registry, visited)
 	}
 
 	// Validate enum
@@ -121,9 +155,9 @@ func (s JSON) Validate(value any) error {
 	case "boolean":
 		return s.validateBoolean(value)
 	case "array":
-		return s.validateArray(value)
+		return s.validateArrayWithRegistry(value, registry, visited)
 	case "object":
-		return s.validateObject(value)
+		return s.validateObjectWithRegistry(value, registry, visited)
 	}
 
 	return nil
@@ -270,6 +304,11 @@ func (s JSON) validateBoolean(value any) error {
 
 // validateArray validates array-specific constraints.
 func (s JSON) validateArray(value any) error {
+	return s.validateArrayWithRegistry(value, nil, make(map[string]bool))
+}
+
+// validateArrayWithRegistry validates array-specific constraints with $ref support.
+func (s JSON) validateArrayWithRegistry(value any, registry map[string]JSON, visited map[string]bool) error {
 	v := reflect.ValueOf(value)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return fmt.Errorf("expected array, got %T", value)
@@ -279,7 +318,7 @@ func (s JSON) validateArray(value any) error {
 	if s.Items != nil {
 		for i := 0; i < v.Len(); i++ {
 			item := v.Index(i).Interface()
-			if err := s.Items.Validate(item); err != nil {
+			if err := s.Items.validateWithRegistry(item, registry, visited); err != nil {
 				return fmt.Errorf("item %d: %w", i, err)
 			}
 		}
@@ -290,6 +329,11 @@ func (s JSON) validateArray(value any) error {
 
 // validateObject validates object-specific constraints.
 func (s JSON) validateObject(value any) error {
+	return s.validateObjectWithRegistry(value, nil, make(map[string]bool))
+}
+
+// validateObjectWithRegistry validates object-specific constraints with $ref support.
+func (s JSON) validateObjectWithRegistry(value any, registry map[string]JSON, visited map[string]bool) error {
 	// Convert value to map for validation
 	var objMap map[string]any
 
@@ -317,7 +361,7 @@ func (s JSON) validateObject(value any) error {
 	// Validate properties
 	for key, val := range objMap {
 		if propSchema, exists := s.Properties[key]; exists {
-			if err := propSchema.Validate(val); err != nil {
+			if err := propSchema.validateWithRegistry(val, registry, visited); err != nil {
 				return fmt.Errorf("property %s: %w", key, err)
 			}
 		}

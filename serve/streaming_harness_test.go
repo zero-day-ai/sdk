@@ -13,8 +13,13 @@ import (
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
+	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/planning"
+	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -80,28 +85,28 @@ func (m *mockServerStream) Context() context.Context        { return context.Bac
 func (m *mockServerStream) SendMsg(msg interface{}) error   { return nil }
 func (m *mockServerStream) RecvMsg(msg interface{}) error   { return nil }
 
-// mockHarness is a minimal implementation of agent.Harness for testing.
-type mockHarness struct {
+// mockStreamHarness is a minimal implementation of agent.Harness for testing.
+type mockStreamHarness struct {
 	callToolFunc      func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
-	submitFindingFunc func(ctx context.Context, f agent.Finding) error
+	submitFindingFunc func(ctx context.Context, f *finding.Finding) error
 	completeFunc      func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
 	streamFunc        func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
 	logger            *slog.Logger
 	tracer            trace.Tracer
 }
 
-func (m *mockHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
+func (m *mockStreamHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
 	if m.completeFunc != nil {
 		return m.completeFunc(ctx, slot, messages, opts...)
 	}
 	return &llm.CompletionResponse{Content: "mock response", FinishReason: "stop"}, nil
 }
 
-func (m *mockHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
+func (m *mockStreamHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
 	return &llm.CompletionResponse{Content: "mock response", FinishReason: "stop"}, nil
 }
 
-func (m *mockHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
+func (m *mockStreamHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
 	if m.streamFunc != nil {
 		return m.streamFunc(ctx, slot, messages)
 	}
@@ -111,147 +116,163 @@ func (m *mockHarness) Stream(ctx context.Context, slot string, messages []llm.Me
 	return ch, nil
 }
 
-func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+func (m *mockStreamHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 	if m.callToolFunc != nil {
 		return m.callToolFunc(ctx, name, input)
 	}
 	return map[string]any{"result": "success"}, nil
 }
 
-func (m *mockHarness) ListTools(ctx context.Context) ([]agent.ToolDescriptor, error) {
-	return []agent.ToolDescriptor{}, nil
+func (m *mockStreamHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
+	return []tool.Descriptor{}, nil
 }
 
-func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
+func (m *mockStreamHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) ListPlugins(ctx context.Context) ([]agent.PluginDescriptor, error) {
-	return []agent.PluginDescriptor{}, nil
+func (m *mockStreamHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor, error) {
+	return []plugin.Descriptor{}, nil
 }
 
-func (m *mockHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
+func (m *mockStreamHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
 	return agent.NewSuccessResult("delegated"), nil
 }
 
-func (m *mockHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
+func (m *mockStreamHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
 	return []agent.Descriptor{}, nil
 }
 
-func (m *mockHarness) SubmitFinding(ctx context.Context, f agent.Finding) error {
+func (m *mockStreamHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
 	if m.submitFindingFunc != nil {
 		return m.submitFindingFunc(ctx, f)
 	}
 	return nil
 }
 
-func (m *mockHarness) GetFindings(ctx context.Context, filter agent.FindingFilter) ([]agent.Finding, error) {
-	return []agent.Finding{}, nil
+func (m *mockStreamHarness) GetFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
 }
 
-func (m *mockHarness) Memory() agent.MemoryStore {
-	return &mockMemoryStore{}
+func (m *mockStreamHarness) Memory() memory.Store {
+	return &mockStreamMemoryStore{}
 }
 
-func (m *mockHarness) Mission() types.MissionContext {
+func (m *mockStreamHarness) Mission() types.MissionContext {
 	return types.MissionContext{ID: "mission-1"}
 }
 
-func (m *mockHarness) Target() types.TargetInfo {
+func (m *mockStreamHarness) Target() types.TargetInfo {
 	return types.TargetInfo{ID: "target-1"}
 }
 
-func (m *mockHarness) Tracer() trace.Tracer {
+func (m *mockStreamHarness) Tracer() trace.Tracer {
 	if m.tracer != nil {
 		return m.tracer
 	}
 	return noop.NewTracerProvider().Tracer("test")
 }
 
-func (m *mockHarness) Logger() *slog.Logger {
+func (m *mockStreamHarness) Logger() *slog.Logger {
 	if m.logger != nil {
 		return m.logger
 	}
 	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
 
-func (m *mockHarness) TokenUsage() llm.TokenTracker {
+func (m *mockStreamHarness) TokenUsage() llm.TokenTracker {
 	return llm.NewTokenTracker()
 }
 
-func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+func (m *mockStreamHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
+func (m *mockStreamHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error) {
+func (m *mockStreamHarness) FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error) {
+func (m *mockStreamHarness) GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
+func (m *mockStreamHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+func (m *mockStreamHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "", nil
 }
 
-func (m *mockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
+func (m *mockStreamHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
 	return nil
 }
 
-func (m *mockHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
+func (m *mockStreamHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
+func (m *mockStreamHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
 	return nil, nil
 }
 
-func (m *mockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
+func (m *mockStreamHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
 	return types.HealthStatus{}
 }
 
-// mockMemoryStore is a minimal implementation of agent.MemoryStore.
-type mockMemoryStore struct{}
+func (m *mockStreamHarness) PlanContext() planning.PlanningContext {
+	return nil
+}
 
-func (m *mockMemoryStore) Get(ctx context.Context, key string) (any, error) {
+func (m *mockStreamHarness) ReportStepHints(ctx context.Context, hints *planning.StepHints) error {
+	return nil
+}
+
+// mockStreamMemoryStore implements memory.Store for testing.
+type mockStreamMemoryStore struct{}
+
+func (m *mockStreamMemoryStore) Working() memory.WorkingMemory {
+	return &mockStreamWorkingMemory{}
+}
+
+func (m *mockStreamMemoryStore) Mission() memory.MissionMemory {
+	return nil
+}
+
+func (m *mockStreamMemoryStore) LongTerm() memory.LongTermMemory {
+	return nil
+}
+
+// mockStreamWorkingMemory implements memory.WorkingMemory for testing.
+type mockStreamWorkingMemory struct{}
+
+func (m *mockStreamWorkingMemory) Get(ctx context.Context, key string) (any, error) {
 	return nil, errors.New("not found")
 }
 
-func (m *mockMemoryStore) Set(ctx context.Context, key string, value any) error {
+func (m *mockStreamWorkingMemory) Set(ctx context.Context, key string, value any) error {
 	return nil
 }
 
-func (m *mockMemoryStore) Delete(ctx context.Context, key string) error {
+func (m *mockStreamWorkingMemory) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (m *mockMemoryStore) List(ctx context.Context, prefix string) ([]string, error) {
+func (m *mockStreamWorkingMemory) Clear(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockStreamWorkingMemory) Keys(ctx context.Context) ([]string, error) {
 	return []string{}, nil
 }
 
-// mockFinding implements agent.Finding for testing.
-type mockFinding struct {
-	id       string
-	severity string
-	category string
-}
-
-func (m *mockFinding) ID() string       { return m.id }
-func (m *mockFinding) Severity() string { return m.severity }
-func (m *mockFinding) Category() string { return m.category }
-
 // TestNewStreamingHarness verifies that NewStreamingHarness creates a valid harness.
 func TestNewStreamingHarness(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 	mode := proto.AgentMode_AGENT_MODE_AUTONOMOUS
@@ -310,7 +331,7 @@ func TestEmitOutput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseHarness := &mockHarness{}
+			baseHarness := &mockStreamHarness{}
 			stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 			steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -349,7 +370,7 @@ func TestEmitOutput(t *testing.T) {
 
 // TestEmitToolCall verifies that EmitToolCall sends correct events.
 func TestEmitToolCall(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -423,7 +444,7 @@ func TestEmitToolResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseHarness := &mockHarness{}
+			baseHarness := &mockStreamHarness{}
 			stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 			steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -462,19 +483,19 @@ func TestEmitToolResult(t *testing.T) {
 
 // TestEmitFinding verifies that EmitFinding sends correct events.
 func TestEmitFinding(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
-	finding := &mockFinding{
-		id:       "finding-123",
-		severity: "high",
-		category: "rbac_misconfiguration",
+	f := &finding.Finding{
+		ID:       "finding-123",
+		Severity: finding.SeverityHigh,
+		Category: finding.CategoryInformationDisclosure,
 	}
 
-	err := sh.EmitFinding(finding)
+	err := sh.EmitFinding(f)
 	if err != nil {
 		t.Errorf("EmitFinding() error = %v, want nil", err)
 	}
@@ -525,7 +546,7 @@ func TestEmitStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseHarness := &mockHarness{}
+			baseHarness := &mockStreamHarness{}
 			stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 			steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -579,7 +600,7 @@ func TestEmitError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseHarness := &mockHarness{}
+			baseHarness := &mockStreamHarness{}
 			stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 			steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -617,7 +638,7 @@ func TestEmitError(t *testing.T) {
 // TestCallToolInterception verifies that CallTool emits tool call and result events.
 func TestCallToolInterception(t *testing.T) {
 	toolCalled := false
-	baseHarness := &mockHarness{
+	baseHarness := &mockStreamHarness{
 		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 			toolCalled = true
 			return map[string]any{"result": "success"}, nil
@@ -679,7 +700,7 @@ func TestCallToolInterception(t *testing.T) {
 // TestCallToolInterceptionWithError verifies that tool errors are properly emitted.
 func TestCallToolInterceptionWithError(t *testing.T) {
 	expectedErr := errors.New("tool execution failed")
-	baseHarness := &mockHarness{
+	baseHarness := &mockStreamHarness{
 		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 			return nil, expectedErr
 		},
@@ -715,8 +736,8 @@ func TestCallToolInterceptionWithError(t *testing.T) {
 // TestSubmitFindingInterception verifies that SubmitFinding emits finding events.
 func TestSubmitFindingInterception(t *testing.T) {
 	findingSubmitted := false
-	baseHarness := &mockHarness{
-		submitFindingFunc: func(ctx context.Context, f agent.Finding) error {
+	baseHarness := &mockStreamHarness{
+		submitFindingFunc: func(ctx context.Context, f *finding.Finding) error {
 			findingSubmitted = true
 			return nil
 		},
@@ -727,14 +748,14 @@ func TestSubmitFindingInterception(t *testing.T) {
 
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
-	finding := &mockFinding{
-		id:       "finding-123",
-		severity: "high",
-		category: "rbac",
+	f := &finding.Finding{
+		ID:       "finding-123",
+		Severity: finding.SeverityHigh,
+		Category: finding.CategoryInformationDisclosure,
 	}
 
 	ctx := context.Background()
-	err := sh.SubmitFinding(ctx, finding)
+	err := sh.SubmitFinding(ctx, f)
 	if err != nil {
 		t.Errorf("SubmitFinding() error = %v, want nil", err)
 	}
@@ -760,7 +781,7 @@ func TestSubmitFindingInterception(t *testing.T) {
 
 // TestCompleteInterception verifies that Complete emits output events.
 func TestCompleteInterception(t *testing.T) {
-	baseHarness := &mockHarness{
+	baseHarness := &mockStreamHarness{
 		completeFunc: func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
 			return &llm.CompletionResponse{
 				Content:      "LLM response content",
@@ -811,7 +832,7 @@ func TestStreamInterception(t *testing.T) {
 		{Delta: "chunk3", FinishReason: "stop"},
 	}
 
-	baseHarness := &mockHarness{
+	baseHarness := &mockStreamHarness{
 		streamFunc: func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
 			ch := make(chan llm.StreamChunk, len(chunks))
 			for _, chunk := range chunks {
@@ -864,7 +885,7 @@ func TestStreamInterception(t *testing.T) {
 
 // TestSequenceNumberAtomicity verifies that sequence numbers are unique under concurrent access.
 func TestSequenceNumberAtomicity(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -909,7 +930,7 @@ func TestSequenceNumberAtomicity(t *testing.T) {
 
 // TestSteeringAndModeAccessors verifies Steering() and Mode() methods.
 func TestSteeringAndModeAccessors(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 	mode := proto.AgentMode_AGENT_MODE_INTERACTIVE
@@ -967,7 +988,7 @@ func TestSteeringAndModeAccessors(t *testing.T) {
 
 // TestSetModeConcurrency verifies that SetMode is thread-safe.
 func TestSetModeConcurrency(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -1026,7 +1047,7 @@ func TestSetModeConcurrency(t *testing.T) {
 
 // TestSendErrorHandling verifies that send errors are logged but don't panic.
 func TestSendErrorHandling(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{
 		ServerStream: &mockServerStream{},
 		sendErr:      errors.New("stream closed"),
@@ -1050,7 +1071,7 @@ func TestSendErrorHandling(t *testing.T) {
 
 // TestEmitMethodsSequenceOrdering verifies that multiple emit calls maintain sequence order.
 func TestEmitMethodsSequenceOrdering(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -1061,7 +1082,7 @@ func TestEmitMethodsSequenceOrdering(t *testing.T) {
 	sh.EmitStatus("running", "running message")
 	sh.EmitToolCall("tool1", map[string]any{}, "call-1")
 	sh.EmitToolResult(map[string]any{"result": "done"}, nil, "call-1")
-	sh.EmitFinding(&mockFinding{id: "f1", severity: "high", category: "test"})
+	sh.EmitFinding(&finding.Finding{ID: "f1", Severity: finding.SeverityHigh, Category: finding.CategoryJailbreak})
 	sh.EmitError(errors.New("error"), "ERR context")
 	sh.EmitOutput("output2", true)
 
@@ -1081,7 +1102,7 @@ func TestEmitMethodsSequenceOrdering(t *testing.T) {
 
 // TestHarnessDelegation verifies that the streaming harness properly delegates to underlying harness.
 func TestHarnessDelegation(t *testing.T) {
-	baseHarness := &mockHarness{}
+	baseHarness := &mockStreamHarness{}
 	stream := &mockBidiStream{ServerStream: &mockServerStream{}}
 	steeringCh := make(chan *proto.SteeringMessage, 10)
 
@@ -1139,7 +1160,7 @@ func TestHarnessDelegation(t *testing.T) {
 // TestConcurrentEmitsAndDelegation verifies thread-safety of concurrent operations.
 func TestConcurrentEmitsAndDelegation(t *testing.T) {
 	var callCount int64
-	baseHarness := &mockHarness{
+	baseHarness := &mockStreamHarness{
 		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 			atomic.AddInt64(&callCount, 1)
 			return map[string]any{"result": "ok"}, nil

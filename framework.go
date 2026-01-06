@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/finding"
+	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -153,32 +154,17 @@ type ToolRegistry interface {
 type PluginRegistry interface {
 	// Register adds a plugin to the registry.
 	// Returns an error if a plugin with the same name already exists.
-	Register(p Plugin) error
+	Register(p plugin.Plugin) error
 
 	// Get retrieves a plugin by name.
 	// Returns an error if the plugin is not found.
-	Get(name string) (Plugin, error)
+	Get(name string) (plugin.Plugin, error)
 
 	// List returns descriptors for all registered plugins.
-	List() []PluginDescriptor
+	List() []plugin.Descriptor
 
 	// Unregister removes a plugin from the registry.
 	Unregister(name string) error
-}
-
-// Plugin represents a plugin component.
-// Note: Full plugin infrastructure is not yet implemented.
-type Plugin interface {
-	Name() string
-	Version() string
-	Description() string
-}
-
-// PluginDescriptor provides metadata about a plugin.
-type PluginDescriptor struct {
-	Name        string
-	Version     string
-	Description string
 }
 
 // defaultFramework is the concrete implementation of Framework.
@@ -637,18 +623,18 @@ func (r *toolRegistry) Unregister(name string) error {
 // pluginRegistry is the concrete implementation of PluginRegistry.
 type pluginRegistry struct {
 	logger  *slog.Logger
-	plugins map[string]Plugin
+	plugins map[string]plugin.Plugin
 	mu      sync.RWMutex
 }
 
 func newPluginRegistry(logger *slog.Logger) *pluginRegistry {
 	return &pluginRegistry{
 		logger:  logger,
-		plugins: make(map[string]Plugin),
+		plugins: make(map[string]plugin.Plugin),
 	}
 }
 
-func (r *pluginRegistry) Register(p Plugin) error {
+func (r *pluginRegistry) Register(p plugin.Plugin) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -664,7 +650,7 @@ func (r *pluginRegistry) Register(p Plugin) error {
 	return nil
 }
 
-func (r *pluginRegistry) Get(name string) (Plugin, error) {
+func (r *pluginRegistry) Get(name string) (plugin.Plugin, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -675,17 +661,13 @@ func (r *pluginRegistry) Get(name string) (Plugin, error) {
 	return p, nil
 }
 
-func (r *pluginRegistry) List() []PluginDescriptor {
+func (r *pluginRegistry) List() []plugin.Descriptor {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	descriptors := make([]PluginDescriptor, 0, len(r.plugins))
+	descriptors := make([]plugin.Descriptor, 0, len(r.plugins))
 	for _, p := range r.plugins {
-		descriptors = append(descriptors, PluginDescriptor{
-			Name:        p.Name(),
-			Version:     p.Version(),
-			Description: p.Description(),
-		})
+		descriptors = append(descriptors, plugin.ToDescriptor(p))
 	}
 	return descriptors
 }
@@ -701,22 +683,4 @@ func (r *pluginRegistry) Unregister(name string) error {
 	delete(r.plugins, name)
 	r.logger.Info("plugin unregistered", slog.String("name", name))
 	return nil
-}
-
-// stubPlugin is a placeholder plugin implementation.
-type stubPlugin struct {
-	name        string
-	version     string
-	description string
-}
-
-func (p *stubPlugin) Name() string        { return p.name }
-func (p *stubPlugin) Version() string     { return p.version }
-func (p *stubPlugin) Description() string { return p.description }
-
-// agent.Descriptor is needed by the agent registry.
-// It should be defined in the agent package, but we'll add it here for completeness.
-func init() {
-	// This ensures the framework compiles.
-	// The actual Descriptor type should be in the agent package.
 }

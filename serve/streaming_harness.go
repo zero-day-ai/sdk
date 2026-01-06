@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/llm"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -171,14 +172,14 @@ func (h *streamingHarness) EmitToolResult(output map[string]any, err error, call
 }
 
 // EmitFinding emits a security finding discovered during testing
-func (h *streamingHarness) EmitFinding(finding agent.Finding) error {
+func (h *streamingHarness) EmitFinding(f *finding.Finding) error {
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
 	// Serialize finding to JSON
-	findingJSON, err := json.Marshal(finding)
+	findingJSON, err := json.Marshal(f)
 	if err != nil {
-		h.logger.Error("failed to marshal finding", "error", err, "finding_id", finding.ID())
+		h.logger.Error("failed to marshal finding", "error", err, "finding_id", f.ID)
 		return err
 	}
 
@@ -311,10 +312,10 @@ func (h *streamingHarness) CallTool(ctx context.Context, name string, input map[
 }
 
 // SubmitFinding overrides the base harness SubmitFinding to emit events automatically
-func (h *streamingHarness) SubmitFinding(ctx context.Context, f agent.Finding) error {
+func (h *streamingHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
 	// Emit finding event before submitting
 	if err := h.EmitFinding(f); err != nil {
-		h.logger.Warn("failed to emit finding event", "error", err, "finding_id", f.ID())
+		h.logger.Warn("failed to emit finding event", "error", err, "finding_id", f.ID)
 	}
 
 	// Delegate to underlying harness
