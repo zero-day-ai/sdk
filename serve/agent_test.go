@@ -34,6 +34,10 @@ func (m *mockAgent) Capabilities() []agent.Capability {
 	return []agent.Capability{agent.CapabilityPromptInjection}
 }
 
+func (m *mockAgent) TargetSchemas() []types.TargetSchema {
+	return []types.TargetSchema{}
+}
+
 func (m *mockAgent) TargetTypes() []types.TargetType {
 	return []types.TargetType{types.TargetTypeLLMChat}
 }

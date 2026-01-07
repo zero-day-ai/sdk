@@ -25,8 +25,8 @@ func TestNewCallbackHarness(t *testing.T) {
 	}
 
 	target := types.TargetInfo{
-		URL:  "http://target.example.com",
-		Type: "web",
+		Connection: map[string]any{"url": "http://target.example.com"},
+		Type:       "web",
 	}
 
 	harness := NewCallbackHarness(client, logger, nil, mission, target)
@@ -34,8 +34,9 @@ func TestNewCallbackHarness(t *testing.T) {
 	assert.NotNil(t, harness)
 	assert.Equal(t, mission.ID, harness.Mission().ID)
 	assert.Equal(t, mission.Name, harness.Mission().Name)
-	assert.Equal(t, target.URL, harness.Target().URL)
-	assert.Equal(t, target.Type, harness.Target().Type)
+	resultTarget := harness.Target()
+	assert.Equal(t, "http://target.example.com", resultTarget.URL())
+	assert.Equal(t, target.Type, resultTarget.Type)
 }
 
 // TestCallbackHarnessLogger tests the Logger method.
@@ -100,14 +101,14 @@ func TestCallbackHarnessTarget(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	target := types.TargetInfo{
-		URL:  "http://example.com",
-		Type: "api",
+		Connection: map[string]any{"url": "http://example.com"},
+		Type:       "api",
 	}
 
 	harness := NewCallbackHarness(client, logger, nil, types.MissionContext{}, target)
 
 	result := harness.Target()
-	assert.Equal(t, target.URL, result.URL)
+	assert.Equal(t, "http://example.com", result.URL())
 	assert.Equal(t, target.Type, result.Type)
 }
 

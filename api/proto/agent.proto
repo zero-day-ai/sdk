@@ -14,13 +14,21 @@ service AgentService {
 
 message AgentGetDescriptorRequest {}
 
+message TargetSchemaProto {
+    string type = 1;
+    string version = 2;
+    string schema_json = 3;
+    string description = 4;
+}
+
 message AgentDescriptor {
     string name = 1;
     string version = 2;
     string description = 3;
     repeated string capabilities = 4;
-    repeated string target_types = 5;
+    repeated TargetSchemaProto target_schemas = 5;
     repeated string technique_types = 6;
+    repeated string target_types = 7 [deprecated = true];
 }
 
 message AgentSlotDefinition {

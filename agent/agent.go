@@ -27,6 +27,12 @@ type Agent interface {
 	// These indicate what types of vulnerabilities the agent can discover.
 	Capabilities() []Capability
 
+	// TargetSchemas returns the target schemas this agent supports.
+	// This defines the connection parameter requirements for each target type.
+	// Returns nil or empty slice to accept any target type (opt-out validation).
+	TargetSchemas() []types.TargetSchema
+
+	// Deprecated: Use TargetSchemas() instead.
 	// TargetTypes returns the types of AI systems this agent can test.
 	// This helps the framework match agents to appropriate targets.
 	TargetTypes() []types.TargetType

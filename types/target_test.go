@@ -60,12 +60,24 @@ func TestTargetInfo_Validate(t *testing.T) {
 		errMsg  string
 	}{
 		{
-			name: "valid target",
+			name: "valid target with Connection",
 			target: TargetInfo{
 				ID:   "target-1",
 				Name: "Test Target",
-				URL:  "https://api.example.com",
-				Type: TargetTypeLLMAPI,
+				Connection: map[string]any{
+					"url": "https://api.example.com",
+				},
+				Type: "llm_api",
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid target with deprecated URL",
+			target: TargetInfo{
+				ID:            "target-1",
+				Name:          "Test Target",
+				DeprecatedURL: "https://api.example.com",
+				Type:          "llm_api",
 			},
 			wantErr: false,
 		},
@@ -73,8 +85,10 @@ func TestTargetInfo_Validate(t *testing.T) {
 			name: "missing ID",
 			target: TargetInfo{
 				Name: "Test Target",
-				URL:  "https://api.example.com",
-				Type: TargetTypeLLMAPI,
+				Connection: map[string]any{
+					"url": "https://api.example.com",
+				},
+				Type: "llm_api",
 			},
 			wantErr: true,
 			errMsg:  "ID",
@@ -82,30 +96,34 @@ func TestTargetInfo_Validate(t *testing.T) {
 		{
 			name: "missing name",
 			target: TargetInfo{
-				ID:   "target-1",
-				URL:  "https://api.example.com",
-				Type: TargetTypeLLMAPI,
+				ID: "target-1",
+				Connection: map[string]any{
+					"url": "https://api.example.com",
+				},
+				Type: "llm_api",
 			},
 			wantErr: true,
 			errMsg:  "Name",
 		},
 		{
-			name: "missing URL",
+			name: "missing URL and Connection",
 			target: TargetInfo{
 				ID:   "target-1",
 				Name: "Test Target",
-				Type: TargetTypeLLMAPI,
+				Type: "llm_api",
 			},
 			wantErr: true,
-			errMsg:  "URL",
+			errMsg:  "URL/Connection",
 		},
 		{
 			name: "invalid type",
 			target: TargetInfo{
 				ID:   "target-1",
 				Name: "Test Target",
-				URL:  "https://api.example.com",
-				Type: TargetType("invalid"),
+				Connection: map[string]any{
+					"url": "https://api.example.com",
+				},
+				Type: "",
 			},
 			wantErr: true,
 			errMsg:  "Type",
@@ -133,7 +151,7 @@ func TestTargetInfo_Validate(t *testing.T) {
 
 func TestTargetInfo_GetHeader(t *testing.T) {
 	target := &TargetInfo{
-		Headers: map[string]string{
+		DeprecatedHeaders: map[string]string{
 			"Authorization": "Bearer token123",
 			"Content-Type":  "application/json",
 		},
@@ -264,12 +282,12 @@ func TestTargetInfo_SetMetadata(t *testing.T) {
 
 func TestTargetInfo_JSONMarshaling(t *testing.T) {
 	original := TargetInfo{
-		ID:       "target-1",
-		Name:     "Test Target",
-		URL:      "https://api.example.com",
-		Type:     TargetTypeLLMAPI,
-		Provider: "openai",
-		Headers: map[string]string{
+		ID:            "target-1",
+		Name:          "Test Target",
+		DeprecatedURL: "https://api.example.com",
+		Type:          "llm_api",
+		Provider:      "openai",
+		DeprecatedHeaders: map[string]string{
 			"Authorization": "Bearer token123",
 		},
 		Metadata: map[string]any{
@@ -299,8 +317,8 @@ func TestTargetInfo_JSONMarshaling(t *testing.T) {
 		t.Errorf("Name = %v, want %v", unmarshaled.Name, original.Name)
 	}
 
-	if unmarshaled.URL != original.URL {
-		t.Errorf("URL = %v, want %v", unmarshaled.URL, original.URL)
+	if unmarshaled.DeprecatedURL != original.DeprecatedURL {
+		t.Errorf("DeprecatedURL = %v, want %v", unmarshaled.DeprecatedURL, original.DeprecatedURL)
 	}
 
 	if unmarshaled.Type != original.Type {
@@ -311,14 +329,137 @@ func TestTargetInfo_JSONMarshaling(t *testing.T) {
 		t.Errorf("Provider = %v, want %v", unmarshaled.Provider, original.Provider)
 	}
 
-	// Verify headers
-	if unmarshaled.Headers["Authorization"] != "Bearer token123" {
-		t.Errorf("Headers[Authorization] = %v, want %v", unmarshaled.Headers["Authorization"], "Bearer token123")
+	// Verify headers via deprecated field
+	if unmarshaled.DeprecatedHeaders["Authorization"] != "Bearer token123" {
+		t.Errorf("Headers[Authorization] = %v, want %v", unmarshaled.DeprecatedHeaders["Authorization"], "Bearer token123")
 	}
 
 	// Verify metadata
 	if unmarshaled.Metadata["model"] != "gpt-4" {
 		t.Errorf("Metadata[model] = %v, want %v", unmarshaled.Metadata["model"], "gpt-4")
+	}
+}
+
+func TestTargetInfo_URL_Method(t *testing.T) {
+	tests := []struct {
+		name   string
+		target TargetInfo
+		want   string
+	}{
+		{
+			name: "URL from Connection map",
+			target: TargetInfo{
+				Connection: map[string]any{
+					"url": "https://api.example.com",
+				},
+			},
+			want: "https://api.example.com",
+		},
+		{
+			name: "URL from deprecated field",
+			target: TargetInfo{
+				DeprecatedURL: "https://legacy.example.com",
+			},
+			want: "https://legacy.example.com",
+		},
+		{
+			name: "Connection URL takes precedence",
+			target: TargetInfo{
+				Connection: map[string]any{
+					"url": "https://new.example.com",
+				},
+				DeprecatedURL: "https://old.example.com",
+			},
+			want: "https://new.example.com",
+		},
+		{
+			name:   "empty when neither provided",
+			target: TargetInfo{},
+			want:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.target.URL(); got != tt.want {
+				t.Errorf("URL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTargetInfo_GetConnection(t *testing.T) {
+	target := TargetInfo{
+		Connection: map[string]any{
+			"url":     "https://api.example.com",
+			"cluster": "prod",
+			"port":    8080,
+		},
+	}
+
+	tests := []struct {
+		name    string
+		key     string
+		wantVal any
+		wantOk  bool
+	}{
+		{"string value", "url", "https://api.example.com", true},
+		{"another string", "cluster", "prod", true},
+		{"int value", "port", 8080, true},
+		{"non-existent key", "missing", nil, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotVal, gotOk := target.GetConnection(tt.key)
+			if gotOk != tt.wantOk {
+				t.Errorf("GetConnection(%v) ok = %v, want %v", tt.key, gotOk, tt.wantOk)
+			}
+			if tt.wantOk && gotVal != tt.wantVal {
+				t.Errorf("GetConnection(%v) = %v, want %v", tt.key, gotVal, tt.wantVal)
+			}
+		})
+	}
+
+	// Test with nil Connection
+	emptyTarget := TargetInfo{}
+	if _, ok := emptyTarget.GetConnection("any"); ok {
+		t.Error("GetConnection on nil Connection should return false")
+	}
+}
+
+func TestTargetInfo_GetConnectionString(t *testing.T) {
+	target := TargetInfo{
+		Connection: map[string]any{
+			"url":     "https://api.example.com",
+			"cluster": "prod",
+			"port":    8080,
+		},
+	}
+
+	tests := []struct {
+		name string
+		key  string
+		want string
+	}{
+		{"existing string", "url", "https://api.example.com"},
+		{"another string", "cluster", "prod"},
+		{"non-string value", "port", ""}, // Should return empty for non-string
+		{"non-existent key", "missing", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := target.GetConnectionString(tt.key); got != tt.want {
+				t.Errorf("GetConnectionString(%v) = %v, want %v", tt.key, got, tt.want)
+			}
+		})
+	}
+
+	// Test with nil Connection
+	emptyTarget := TargetInfo{}
+	if got := emptyTarget.GetConnectionString("any"); got != "" {
+		t.Errorf("GetConnectionString on nil Connection = %v, want empty string", got)
 	}
 }
 

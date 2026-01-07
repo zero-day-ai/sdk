@@ -16,7 +16,8 @@ type Config struct {
 	version               string
 	description           string
 	capabilities          []Capability
-	targetTypes           []types.TargetType
+	targetSchemas         []types.TargetSchema
+	targetTypes           []types.TargetType // Deprecated: use targetSchemas
 	techniqueTypes        []types.TechniqueType
 	llmSlots              []llm.SlotDefinition
 	executeFunc           ExecuteFunc
@@ -51,6 +52,7 @@ type HealthFunc func(ctx context.Context) types.HealthStatus
 func NewConfig() *Config {
 	return &Config{
 		capabilities:   []Capability{},
+		targetSchemas:  []types.TargetSchema{},
 		targetTypes:    []types.TargetType{},
 		techniqueTypes: []types.TechniqueType{},
 		llmSlots:       []llm.SlotDefinition{},
@@ -90,12 +92,28 @@ func (c *Config) AddCapability(cap Capability) *Config {
 	return c
 }
 
+// SetTargetSchemas sets the target schemas the agent supports.
+// Use this to define connection parameter requirements for each target type.
+func (c *Config) SetTargetSchemas(schemas []types.TargetSchema) *Config {
+	c.targetSchemas = schemas
+	return c
+}
+
+// AddTargetSchema adds a single target schema to the agent.
+// Use this to declare support for a specific target type with connection parameters.
+func (c *Config) AddTargetSchema(schema types.TargetSchema) *Config {
+	c.targetSchemas = append(c.targetSchemas, schema)
+	return c
+}
+
+// Deprecated: Use SetTargetSchemas instead.
 // SetTargetTypes sets the types of targets the agent can test.
 func (c *Config) SetTargetTypes(types []types.TargetType) *Config {
 	c.targetTypes = types
 	return c
 }
 
+// Deprecated: Use AddTargetSchema instead.
 // AddTargetType adds a single target type to the agent.
 func (c *Config) AddTargetType(t types.TargetType) *Config {
 	c.targetTypes = append(c.targetTypes, t)
@@ -226,6 +244,7 @@ func New(cfg *Config) (Agent, error) {
 		version:              cfg.version,
 		description:          cfg.description,
 		capabilities:         cfg.capabilities,
+		targetSchemas:        cfg.targetSchemas,
 		targetTypes:          cfg.targetTypes,
 		techniqueTypes:       cfg.techniqueTypes,
 		llmSlots:             cfg.llmSlots,
@@ -246,6 +265,7 @@ type sdkAgent struct {
 	version              string
 	description          string
 	capabilities         []Capability
+	targetSchemas        []types.TargetSchema
 	targetTypes          []types.TargetType
 	techniqueTypes       []types.TechniqueType
 	llmSlots             []llm.SlotDefinition
@@ -276,7 +296,13 @@ func (a *sdkAgent) Capabilities() []Capability {
 	return a.capabilities
 }
 
+// TargetSchemas returns the target schemas this agent supports.
+func (a *sdkAgent) TargetSchemas() []types.TargetSchema {
+	return a.targetSchemas
+}
+
 // TargetTypes returns the types of targets the agent can test.
+// Deprecated: Use TargetSchemas() instead.
 func (a *sdkAgent) TargetTypes() []types.TargetType {
 	return a.targetTypes
 }

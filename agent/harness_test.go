@@ -563,7 +563,7 @@ func TestMockHarness_MissionAndTarget(t *testing.T) {
 	target := types.TargetInfo{
 		ID:   "target-1",
 		Name: "Test Target",
-		Type: types.TargetTypeLLMChat,
+		Type: string(types.TargetTypeLLMChat),
 	}
 
 	harness := &mockHarness{
