@@ -175,3 +175,50 @@ func (c MissionConstraints) WithRequireEvidence(require bool) MissionConstraints
 	c.RequireEvidence = require
 	return c
 }
+
+// MissionExecutionContext extends mission tracking with run history and execution state.
+// It supports resumable missions, run continuity, and accumulated metrics across multiple executions.
+type MissionExecutionContext struct {
+	// Core identification
+	MissionID   string `json:"mission_id"`
+	MissionName string `json:"mission_name"`
+	RunNumber   int    `json:"run_number"`
+
+	// Execution context
+	IsResumed       bool   `json:"is_resumed"`
+	ResumedFromNode string `json:"resumed_from_node,omitempty"`
+
+	// Run linkage
+	PreviousRunID     string `json:"previous_run_id,omitempty"`
+	PreviousRunStatus string `json:"previous_run_status,omitempty"`
+
+	// Accumulated stats
+	TotalFindingsAllRuns int `json:"total_findings_all_runs"`
+
+	// Memory configuration
+	MemoryContinuity string `json:"memory_continuity"`
+
+	// Existing constraint fields
+	Constraints MissionConstraints `json:"constraints"`
+}
+
+// MissionRunSummary provides a summary view of a mission execution run.
+// Used for history queries and tracking execution patterns across multiple runs.
+type MissionRunSummary struct {
+	MissionID     string     `json:"mission_id"`
+	RunNumber     int        `json:"run_number"`
+	Status        string     `json:"status"`
+	FindingsCount int        `json:"findings_count"`
+	CreatedAt     time.Time  `json:"created_at"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
+}
+
+// HasPreviousRun returns true if this execution has a previous run to reference.
+func (m *MissionExecutionContext) HasPreviousRun() bool {
+	return m.PreviousRunID != ""
+}
+
+// IsFirstRun returns true if this is the first execution of the mission.
+func (m *MissionExecutionContext) IsFirstRun() bool {
+	return m.RunNumber == 1
+}

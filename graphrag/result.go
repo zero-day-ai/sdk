@@ -1,5 +1,7 @@
 package graphrag
 
+import "time"
+
 // Result represents a single result from a GraphRAG query.
 // It contains the matched node along with scoring information and path details.
 type Result struct {
@@ -20,6 +22,24 @@ type Result struct {
 
 	// Distance is the number of hops from the query origin to this node
 	Distance int `json:"distance"`
+
+	// RunMetadata contains run provenance information if requested via IncludeRunMetadata.
+	// This field will be nil if the query did not request run metadata or if the node
+	// has no mission context.
+	RunMetadata *RunMetadata `json:"run_metadata,omitempty"`
+}
+
+// RunMetadata contains run provenance information for a graph node result.
+// This provides visibility into when and where a node was discovered.
+type RunMetadata struct {
+	// MissionName is the name of the mission that discovered this node
+	MissionName string `json:"mission_name"`
+
+	// RunNumber is the sequential run number of the mission
+	RunNumber int `json:"run_number"`
+
+	// DiscoveredAt is the timestamp when the node was first created
+	DiscoveredAt time.Time `json:"discovered_at"`
 }
 
 // TraversalResult represents a single result from a graph traversal operation.

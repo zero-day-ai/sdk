@@ -269,6 +269,24 @@ func (m *mockMissionMemory) History(ctx context.Context, limit int) ([]Item, err
 	return items, nil
 }
 
+// GetPreviousRunValue implements the continuity interface.
+// This mock always returns ErrNoPreviousRun for simplicity.
+func (m *mockMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, ErrNoPreviousRun
+}
+
+// GetValueHistory implements the continuity interface.
+// This mock always returns an empty slice for simplicity.
+func (m *mockMissionMemory) GetValueHistory(ctx context.Context, key string) ([]HistoricalValue, error) {
+	return []HistoricalValue{}, nil
+}
+
+// ContinuityMode implements the continuity interface.
+// This mock always returns MemoryIsolated.
+func (m *mockMissionMemory) ContinuityMode() MemoryContinuityMode {
+	return MemoryIsolated
+}
+
 // mockLongTermMemory is a mock implementation of LongTermMemory.
 type mockLongTermMemory struct {
 	mu      sync.RWMutex

@@ -189,6 +189,35 @@ type Harness interface {
 	// and share key findings that should influence future planning decisions.
 	// This method is a no-op if planning is not enabled.
 	ReportStepHints(ctx context.Context, hints *planning.StepHints) error
+
+	// Mission Execution Context Methods
+	//
+	// These methods provide access to extended mission context including
+	// run history, resume status, and cross-run queries.
+
+	// MissionExecutionContext returns the full execution context for the current run
+	// including run number, resume status, and previous run info.
+	// This provides more detail than Mission() for agents that need run awareness.
+	MissionExecutionContext() types.MissionExecutionContext
+
+	// GetMissionRunHistory returns all runs for this mission name.
+	// Returns runs in chronological order (oldest first).
+	// Returns empty slice if this is the first run.
+	GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error)
+
+	// GetPreviousRunFindings returns findings from the immediate prior run.
+	// Returns empty slice if no prior run exists.
+	// Use this to avoid re-discovering known vulnerabilities.
+	GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
+
+	// GetAllRunFindings returns findings from all runs of this mission.
+	// Useful for comprehensive analysis across the mission's history.
+	GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
+
+	// QueryGraphRAGScoped executes a GraphRAG query with explicit scope.
+	// This is a convenience method that sets scope before calling QueryGraphRAG.
+	// Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
+	QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error)
 }
 
 // StreamingHarness extends Harness with real-time event emission capabilities.

@@ -373,3 +373,57 @@ func Example_missionIsolation() {
 	// Finding 2 type: finding
 	// Query mission: mission-alpha
 }
+
+// ExampleMissionScope demonstrates using mission scopes to control query result filtering.
+func ExampleMissionScope() {
+	// Default scope includes all missions (backwards compatible)
+	defaultScope := graphrag.DefaultMissionScope
+	fmt.Println("Default scope:", defaultScope.String())
+
+	// Query only current run
+	currentRunScope := graphrag.ScopeCurrentRun
+	fmt.Println("Current run scope:", currentRunScope.String())
+	fmt.Println("Current run valid:", currentRunScope.IsValid())
+
+	// Query all runs of same mission
+	sameMissionScope := graphrag.ScopeSameMission
+	fmt.Println("Same mission scope:", sameMissionScope.String())
+
+	// Query across all missions
+	allScope := graphrag.ScopeAll
+	fmt.Println("All scope:", allScope.String())
+
+	// Output:
+	// Default scope: all
+	// Current run scope: current_run
+	// Current run valid: true
+	// Same mission scope: same_mission
+	// All scope: all
+}
+
+// ExampleParseMissionScope demonstrates parsing and validating mission scopes.
+func ExampleParseMissionScope() {
+	// Parse valid scope
+	scope, err := graphrag.ParseMissionScope("current_run")
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+	fmt.Println("Parsed scope:", scope.String())
+
+	// Validate scope
+	if err := scope.Validate(); err != nil {
+		fmt.Printf("validation error: %v\n", err)
+		return
+	}
+	fmt.Println("Scope is valid:", scope.IsValid())
+
+	// Get all available scopes
+	allScopes := graphrag.AllMissionScopes()
+	fmt.Println("Available scopes:", len(allScopes))
+
+	// Output:
+	// Parsed scope: current_run
+	// Scope is valid: true
+	// Available scopes: 3
+}

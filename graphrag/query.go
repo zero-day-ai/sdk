@@ -35,6 +35,22 @@ type Query struct {
 
 	// GraphWeight is the weight for graph structure scoring
 	GraphWeight float64 `json:"graph_weight"`
+
+	// MissionScope defines the scope for filtering results by mission context.
+	// Default: ScopeAll (backwards compatible - no filtering)
+	MissionScope MissionScope `json:"mission_scope,omitempty"`
+
+	// MissionName is the mission name for ScopeSameMission queries.
+	// Only used when MissionScope is ScopeSameMission.
+	MissionName string `json:"mission_name,omitempty"`
+
+	// RunNumber specifies a specific mission run to query.
+	// Optional - if nil, queries all runs within the scope.
+	RunNumber *int `json:"run_number,omitempty"`
+
+	// IncludeRunMetadata indicates whether to include run provenance information
+	// in query results (mission name, run number, discovery timestamp).
+	IncludeRunMetadata bool `json:"include_run_metadata,omitempty"`
 }
 
 // NewQuery creates a new Query with the given text and sensible defaults.
@@ -117,6 +133,34 @@ func (q *Query) WithWeights(vector, graph float64) *Query {
 	return q
 }
 
+// WithMissionScope sets the mission scope for filtering query results.
+// Returns the Query for method chaining.
+func (q *Query) WithMissionScope(scope MissionScope) *Query {
+	q.MissionScope = scope
+	return q
+}
+
+// WithMissionName sets the mission name for ScopeSameMission queries.
+// Returns the Query for method chaining.
+func (q *Query) WithMissionName(name string) *Query {
+	q.MissionName = name
+	return q
+}
+
+// WithRunNumber sets a specific run number to query.
+// Returns the Query for method chaining.
+func (q *Query) WithRunNumber(num int) *Query {
+	q.RunNumber = &num
+	return q
+}
+
+// WithIncludeRunMetadata sets whether to include run provenance information in results.
+// Returns the Query for method chaining.
+func (q *Query) WithIncludeRunMetadata(include bool) *Query {
+	q.IncludeRunMetadata = include
+	return q
+}
+
 // Validate ensures the Query is properly configured.
 // Returns an error if:
 //   - Both Text and Embedding are provided
@@ -172,6 +216,23 @@ func (q *Query) Validate() error {
 	weightSum := q.VectorWeight + q.GraphWeight
 	if weightSum < 1.0-epsilon || weightSum > 1.0+epsilon {
 		return fmt.Errorf("VectorWeight + GraphWeight must equal 1.0, got %f", weightSum)
+	}
+
+	// Validate MissionScope if set (zero value "" is valid and defaults to ScopeAll)
+	if q.MissionScope != "" {
+		if err := q.MissionScope.Validate(); err != nil {
+			return fmt.Errorf("invalid MissionScope: %w", err)
+		}
+	}
+
+	// If MissionScope is ScopeSameMission, validate MissionName is set
+	if q.MissionScope == ScopeSameMission && q.MissionName == "" {
+		return errors.New("MissionName must be set when MissionScope is 'same_mission'")
+	}
+
+	// Validate RunNumber if set (nil is valid - means all runs)
+	if q.RunNumber != nil && *q.RunNumber < 1 {
+		return fmt.Errorf("RunNumber must be greater than 0, got %d", *q.RunNumber)
 	}
 
 	return nil

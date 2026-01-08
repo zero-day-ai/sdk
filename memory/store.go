@@ -21,6 +21,14 @@ var (
 
 	// ErrNotImplemented is returned when an operation is not supported by the implementation.
 	ErrNotImplemented = errors.New("memory: operation not implemented")
+
+	// ErrNoPreviousRun is returned when attempting to access prior run data
+	// but no prior run exists.
+	ErrNoPreviousRun = errors.New("memory: no previous run exists")
+
+	// ErrContinuityNotSupported is returned when attempting continuity operations
+	// in isolated mode.
+	ErrContinuityNotSupported = errors.New("memory: memory continuity not supported in isolated mode")
 )
 
 // Store provides access to the three-tier memory system.
@@ -177,6 +185,26 @@ type MissionMemory interface {
 	// Items are ordered by UpdatedAt in descending order (most recent first).
 	// Returns an empty slice if no items exist.
 	History(ctx context.Context, limit int) ([]Item, error)
+
+	// Memory Continuity Methods
+	//
+	// These methods enable access to memory across mission runs
+	// when memory continuity is configured.
+
+	// GetPreviousRunValue retrieves a value from the prior run's memory.
+	// Only works if continuity mode is 'inherit' or 'shared'.
+	// Returns ErrNoPreviousRun if no prior run exists.
+	// Returns ErrContinuityNotSupported if mode is 'isolated'.
+	GetPreviousRunValue(ctx context.Context, key string) (any, error)
+
+	// GetValueHistory returns values for a key across all runs.
+	// Returns in chronological order with run metadata.
+	// Returns empty slice if key was never stored.
+	GetValueHistory(ctx context.Context, key string) ([]HistoricalValue, error)
+
+	// ContinuityMode returns the current memory continuity mode.
+	// Returns MemoryIsolated if not explicitly configured.
+	ContinuityMode() MemoryContinuityMode
 }
 
 // LongTermMemory provides vector-based semantic storage that persists

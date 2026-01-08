@@ -30,11 +30,12 @@ type CallbackHarness struct {
 	tokenTracker llm.TokenTracker
 
 	// Context
-	logger       *slog.Logger
-	tracer       trace.Tracer
-	mission      types.MissionContext
-	target       types.TargetInfo
-	planContext  planning.PlanningContext
+	logger         *slog.Logger
+	tracer         trace.Tracer
+	mission        types.MissionContext
+	target         types.TargetInfo
+	planContext    planning.PlanningContext
+	missionExecCtx types.MissionExecutionContext
 
 	// Caching for list operations
 	cacheMu      sync.RWMutex
@@ -67,6 +68,12 @@ func NewCallbackHarness(
 // This should be called by the orchestrator when executing a planned mission.
 func (h *CallbackHarness) SetPlanContext(ctx planning.PlanningContext) {
 	h.planContext = ctx
+}
+
+// SetMissionExecutionContext sets the mission execution context for this harness.
+// This should be called by the orchestrator when executing a mission with run history.
+func (h *CallbackHarness) SetMissionExecutionContext(ctx types.MissionExecutionContext) {
+	h.missionExecCtx = ctx
 }
 
 // ============================================================================
@@ -917,6 +924,70 @@ func (h *CallbackHarness) ReportStepHints(ctx context.Context, hints *planning.S
 	}
 
 	return nil
+}
+
+// ============================================================================
+// Mission Execution Context Operations
+// ============================================================================
+
+// MissionExecutionContext returns the full execution context for the current run
+// including run number, resume status, and previous run info.
+func (h *CallbackHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return h.missionExecCtx
+}
+
+// GetMissionRunHistory returns all runs for this mission name.
+// Returns runs in chronological order (oldest first).
+// Returns empty slice if this is the first run.
+//
+// Note: This method requires orchestrator callback support. Currently returns
+// empty slice until proto and callback client are updated.
+func (h *CallbackHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	// TODO: Implement callback to orchestrator once proto is defined
+	// For now, return empty slice - orchestrator support pending
+	h.logger.Debug("GetMissionRunHistory called - orchestrator callback not yet implemented")
+	return []types.MissionRunSummary{}, nil
+}
+
+// GetPreviousRunFindings returns findings from the immediate prior run.
+// Returns empty slice if no prior run exists.
+// Use this to avoid re-discovering known vulnerabilities.
+//
+// Note: This method requires orchestrator callback support. Currently returns
+// empty slice until proto and callback client are updated.
+func (h *CallbackHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	// TODO: Implement callback to orchestrator once proto is defined
+	// For now, return empty slice - orchestrator support pending
+	h.logger.Debug("GetPreviousRunFindings called - orchestrator callback not yet implemented")
+	return []*finding.Finding{}, nil
+}
+
+// GetAllRunFindings returns findings from all runs of this mission.
+// Useful for comprehensive analysis across the mission's history.
+//
+// Note: This method requires orchestrator callback support. Currently returns
+// empty slice until proto and callback client are updated.
+func (h *CallbackHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	// TODO: Implement callback to orchestrator once proto is defined
+	// For now, return empty slice - orchestrator support pending
+	h.logger.Debug("GetAllRunFindings called - orchestrator callback not yet implemented")
+	return []*finding.Finding{}, nil
+}
+
+// QueryGraphRAGScoped executes a GraphRAG query with explicit scope.
+// This modifies the query to include scope and delegates to QueryGraphRAG.
+// Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
+func (h *CallbackHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	// Apply scope to query
+	query.MissionScope = scope
+
+	// Add mission context for scoped queries
+	if scope == graphrag.ScopeCurrentRun || scope == graphrag.ScopeSameMission {
+		query.MissionID = h.mission.ID
+		query.MissionName = h.mission.Name
+	}
+
+	return h.QueryGraphRAG(ctx, query)
 }
 
 // ============================================================================

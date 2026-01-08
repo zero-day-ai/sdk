@@ -209,6 +209,18 @@ func (m *callbackMissionMemory) History(ctx context.Context, limit int) ([]memor
 	return nil, memory.ErrNotImplemented
 }
 
+func (m *callbackMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (m *callbackMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (m *callbackMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return memory.MemoryIsolated
+}
+
 // ============================================================================
 // Long-Term Memory Implementation (Stub)
 // ============================================================================

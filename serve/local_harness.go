@@ -258,6 +258,39 @@ func (h *LocalHarness) ReportStepHints(ctx context.Context, hints *planning.Step
 }
 
 // ============================================================================
+// Mission Execution Context Operations (Not Available)
+// ============================================================================
+
+// MissionExecutionContext returns an empty execution context.
+func (h *LocalHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+// GetMissionRunHistory returns an empty slice in standalone mode.
+func (h *LocalHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	h.logger.Warn("GetMissionRunHistory not available in standalone mode")
+	return []types.MissionRunSummary{}, nil
+}
+
+// GetPreviousRunFindings returns an empty slice in standalone mode.
+func (h *LocalHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	h.logger.Warn("GetPreviousRunFindings not available in standalone mode")
+	return []*finding.Finding{}, nil
+}
+
+// GetAllRunFindings returns an empty slice in standalone mode.
+func (h *LocalHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	h.logger.Warn("GetAllRunFindings not available in standalone mode")
+	return []*finding.Finding{}, nil
+}
+
+// QueryGraphRAGScoped returns an error indicating GraphRAG is not available.
+func (h *LocalHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	h.logger.Warn("QueryGraphRAGScoped not available in standalone mode", "scope", scope)
+	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
+// ============================================================================
 // In-Memory Storage Implementation
 // ============================================================================
 
@@ -380,6 +413,18 @@ func (s *stubMissionMemory) Search(ctx context.Context, query string, limit int)
 
 func (s *stubMissionMemory) History(ctx context.Context, limit int) ([]memory.Item, error) {
 	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return memory.MemoryIsolated
 }
 
 // ============================================================================

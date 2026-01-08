@@ -310,6 +310,18 @@ func (s *stubMissionMemory) History(ctx context.Context, limit int) ([]memory.It
 	return nil, memory.ErrNotImplemented
 }
 
+func (s *stubMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return nil, memory.ErrNotImplemented
+}
+
+func (s *stubMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return memory.MemoryIsolated
+}
+
 // stubLongTermMemory is a stub for long-term memory
 type stubLongTermMemory struct{}
 

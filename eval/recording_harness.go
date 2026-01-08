@@ -14,6 +14,7 @@ import (
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
@@ -530,6 +531,18 @@ func (m *recordingMissionMemory) History(ctx context.Context, limit int) ([]memo
 	return m.inner.History(ctx, limit)
 }
 
+func (m *recordingMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return m.inner.GetPreviousRunValue(ctx, key)
+}
+
+func (m *recordingMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return m.inner.GetValueHistory(ctx, key)
+}
+
+func (m *recordingMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return m.inner.ContinuityMode()
+}
+
 // ============================================================================
 // Long-Term Memory Recording (Stub - delegates without detailed recording)
 // ============================================================================
@@ -846,4 +859,140 @@ func (r *RecordingHarness) TraverseGraph(ctx context.Context, startNodeID string
 func (r *RecordingHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
 	// No recording for health checks
 	return r.inner.GraphRAGHealth(ctx)
+}
+
+// ============================================================================
+// Planning Operations
+// ============================================================================
+
+// PlanContext returns the planning context for the current execution.
+func (r *RecordingHarness) PlanContext() planning.PlanningContext {
+	// No recording for context access
+	return r.inner.PlanContext()
+}
+
+// ReportStepHints allows agents to provide feedback to the planning system and records it.
+func (r *RecordingHarness) ReportStepHints(ctx context.Context, hints *planning.StepHints) error {
+	startTime := time.Now()
+
+	err := r.inner.ReportStepHints(ctx, hints)
+
+	duration := time.Since(startTime)
+	step := TrajectoryStep{
+		Type:      "planning",
+		Name:      "report_step_hints",
+		Input:     hints,
+		StartTime: startTime,
+		Duration:  duration,
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return err
+}
+
+// ============================================================================
+// Mission Execution Context Operations
+// ============================================================================
+
+// MissionExecutionContext returns the full execution context for the current run.
+func (r *RecordingHarness) MissionExecutionContext() types.MissionExecutionContext {
+	// No recording for context access
+	return r.inner.MissionExecutionContext()
+}
+
+// GetMissionRunHistory returns all runs for this mission name.
+func (r *RecordingHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	startTime := time.Now()
+
+	history, err := r.inner.GetMissionRunHistory(ctx)
+
+	duration := time.Since(startTime)
+	step := TrajectoryStep{
+		Type:      "mission",
+		Name:      "get_run_history",
+		Output:    history,
+		StartTime: startTime,
+		Duration:  duration,
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return history, err
+}
+
+// GetPreviousRunFindings returns findings from the immediate prior run.
+func (r *RecordingHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	startTime := time.Now()
+
+	findings, err := r.inner.GetPreviousRunFindings(ctx, filter)
+
+	duration := time.Since(startTime)
+	step := TrajectoryStep{
+		Type:      "mission",
+		Name:      "get_previous_run_findings",
+		Input:     filter,
+		Output:    findings,
+		StartTime: startTime,
+		Duration:  duration,
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return findings, err
+}
+
+// GetAllRunFindings returns findings from all runs of this mission.
+func (r *RecordingHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	startTime := time.Now()
+
+	findings, err := r.inner.GetAllRunFindings(ctx, filter)
+
+	duration := time.Since(startTime)
+	step := TrajectoryStep{
+		Type:      "mission",
+		Name:      "get_all_run_findings",
+		Input:     filter,
+		Output:    findings,
+		StartTime: startTime,
+		Duration:  duration,
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return findings, err
+}
+
+// QueryGraphRAGScoped executes a GraphRAG query with explicit scope and records it.
+func (r *RecordingHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	startTime := time.Now()
+
+	results, err := r.inner.QueryGraphRAGScoped(ctx, query, scope)
+
+	duration := time.Since(startTime)
+	step := TrajectoryStep{
+		Type: "graphrag",
+		Name: "query_scoped",
+		Input: map[string]any{
+			"query": query,
+			"scope": scope.String(),
+		},
+		Output:    results,
+		StartTime: startTime,
+		Duration:  duration,
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return results, err
 }
