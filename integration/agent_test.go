@@ -504,3 +504,24 @@ func (m *mockHarness) PlanContext() planning.PlanningContext {
 func (m *mockHarness) ReportStepHints(ctx context.Context, hints *planning.StepHints) error {
 	return nil
 }
+
+// Mission Execution Context methods - stubs for testing
+func (m *mockHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+func (m *mockHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	return []types.MissionRunSummary{}, nil
+}
+
+func (m *mockHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	return nil, nil
+}

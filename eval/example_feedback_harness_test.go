@@ -256,6 +256,26 @@ func (e *exampleHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus 
 	return types.HealthStatus{Status: "healthy"}
 }
 
+func (e *exampleHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+func (e *exampleHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	return []types.MissionRunSummary{}, nil
+}
+
+func (e *exampleHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (e *exampleHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (e *exampleHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 type exampleScorer struct{}
 
 func (s *exampleScorer) Name() string {

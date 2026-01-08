@@ -232,6 +232,27 @@ func (m *mockStreamHarness) ReportStepHints(ctx context.Context, hints *planning
 	return nil
 }
 
+// Mission Execution Context methods - stubs for testing
+func (m *mockStreamHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+func (m *mockStreamHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	return []types.MissionRunSummary{}, nil
+}
+
+func (m *mockStreamHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockStreamHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockStreamHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 // mockStreamMemoryStore implements memory.Store for testing.
 type mockStreamMemoryStore struct{}
 

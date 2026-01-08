@@ -162,6 +162,27 @@ func (m *mockHarness) ReportStepHints(ctx context.Context, hints *planning.StepH
 	return nil
 }
 
+// Mission Execution Context methods - stubs for testing
+func (m *mockHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+func (m *mockHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	return []types.MissionRunSummary{}, nil
+}
+
+func (m *mockHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 // mockMemoryStore is a minimal mock implementation of memory.Store.
 type mockMemoryStore struct {
 	workingData map[string]any
@@ -244,6 +265,18 @@ func (m *mockMissionMemory) Search(ctx context.Context, query string, limit int)
 
 func (m *mockMissionMemory) History(ctx context.Context, limit int) ([]memory.Item, error) {
 	return nil, nil
+}
+
+func (m *mockMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, memory.ErrNotFound
+}
+
+func (m *mockMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return nil, nil
+}
+
+func (m *mockMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return memory.MemoryIsolated
 }
 
 // mockLongTermMemory implements memory.LongTermMemory

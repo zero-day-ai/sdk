@@ -146,6 +146,26 @@ func (m *minimalMockHarness) GraphRAGHealth(ctx context.Context) types.HealthSta
 	return types.HealthStatus{}
 }
 
+func (m *minimalMockHarness) MissionExecutionContext() types.MissionExecutionContext {
+	return types.MissionExecutionContext{}
+}
+
+func (m *minimalMockHarness) GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error) {
+	return []types.MissionRunSummary{}, nil
+}
+
+func (m *minimalMockHarness) GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *minimalMockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
+	return []*finding.Finding{}, nil
+}
+
+func (m *minimalMockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 type minimalMemoryStore struct{}
 
 func (m *minimalMemoryStore) Working() memory.WorkingMemory   { return &minimalWorkingMemory{} }
@@ -166,6 +186,18 @@ func (m *minimalMissionMemory) Search(ctx context.Context, query string, limit i
 }
 func (m *minimalMissionMemory) History(ctx context.Context, limit int) ([]memory.Item, error) {
 	return nil, nil
+}
+
+func (m *minimalMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
+	return nil, memory.ErrNotFound
+}
+
+func (m *minimalMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
+	return nil, nil
+}
+
+func (m *minimalMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
+	return memory.MemoryIsolated
 }
 
 type minimalLongTermMemory struct{}
