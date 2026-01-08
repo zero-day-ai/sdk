@@ -30,6 +30,7 @@ type CallbackClient struct {
 	// Context tracking
 	taskID    string
 	agentName string
+	missionID string
 	traceID   string
 	spanID    string
 
@@ -120,12 +121,13 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 
 // SetTaskContext updates the task context for subsequent RPC calls.
 // This should be called at the start of each task execution.
-func (c *CallbackClient) SetTaskContext(taskID, agentName, traceID, spanID string) {
+func (c *CallbackClient) SetTaskContext(taskID, agentName, missionID, traceID, spanID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.taskID = taskID
 	c.agentName = agentName
+	c.missionID = missionID
 	c.traceID = traceID
 	c.spanID = spanID
 }
@@ -138,6 +140,7 @@ func (c *CallbackClient) contextInfo() *proto.ContextInfo {
 	return &proto.ContextInfo{
 		TaskId:    c.taskID,
 		AgentName: c.agentName,
+		MissionId: c.missionID,
 		TraceId:   c.traceID,
 		SpanId:    c.spanID,
 	}

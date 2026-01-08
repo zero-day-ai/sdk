@@ -285,13 +285,9 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 	}
 
 	// Set task context for callback requests
-	// Format taskID as "missionID:taskID" so the callback service can extract
-	// the mission ID for mission-based harness lookup (keyed by missionID:agentName)
-	taskIDForCallback := task.ID
-	if mission.ID != "" {
-		taskIDForCallback = mission.ID + ":" + task.ID
-	}
-	client.SetTaskContext(taskIDForCallback, s.agent.Name(), "", "")
+	// Pass mission ID explicitly so the callback service can use it directly
+	// for mission-based harness lookup (keyed by missionID:agentName)
+	client.SetTaskContext(task.ID, s.agent.Name(), mission.ID, "", "")
 
 	// Parse target info if provided
 	var target types.TargetInfo

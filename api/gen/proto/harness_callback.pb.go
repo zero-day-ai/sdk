@@ -149,6 +149,7 @@ type ContextInfo struct {
 	AgentName     string                 `protobuf:"bytes,2,opt,name=agent_name,json=agentName,proto3" json:"agent_name,omitempty"`
 	TraceId       string                 `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
 	SpanId        string                 `protobuf:"bytes,4,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	MissionId     string                 `protobuf:"bytes,5,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -207,6 +208,13 @@ func (x *ContextInfo) GetTraceId() string {
 func (x *ContextInfo) GetSpanId() string {
 	if x != nil {
 		return x.SpanId
+	}
+	return ""
+}
+
+func (x *ContextInfo) GetMissionId() string {
+	if x != nil {
+		return x.MissionId
 	}
 	return ""
 }
@@ -4514,13 +4522,15 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1d\n" +
 	"\n" +
-	"checked_at\x18\x03 \x01(\x03R\tcheckedAt\"y\n" +
+	"checked_at\x18\x03 \x01(\x03R\tcheckedAt\"\x98\x01\n" +
 	"\vContextInfo\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
 	"agent_name\x18\x02 \x01(\tR\tagentName\x12\x19\n" +
 	"\btrace_id\x18\x03 \x01(\tR\atraceId\x12\x17\n" +
-	"\aspan_id\x18\x04 \x01(\tR\x06spanId\"w\n" +
+	"\aspan_id\x18\x04 \x01(\tR\x06spanId\x12\x1d\n" +
+	"\n" +
+	"mission_id\x18\x05 \x01(\tR\tmissionId\"w\n" +
 	"\n" +
 	"TokenUsage\x12!\n" +
 	"\finput_tokens\x18\x01 \x01(\x05R\vinputTokens\x12#\n" +

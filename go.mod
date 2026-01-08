@@ -38,3 +38,5 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
+
+replace github.com/zero-day-ai/sdk => /home/anthony/Code/zero-day.ai/opensource/sdk

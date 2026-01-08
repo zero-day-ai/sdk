@@ -49,10 +49,11 @@ func TestCallbackClientSetTaskContext(t *testing.T) {
 	client, err := NewCallbackClient("localhost:50051")
 	require.NoError(t, err)
 
-	client.SetTaskContext("task-123", "test-agent", "trace-456", "span-789")
+	client.SetTaskContext("task-123", "test-agent", "mission-abc", "trace-456", "span-789")
 
 	assert.Equal(t, "task-123", client.taskID)
 	assert.Equal(t, "test-agent", client.agentName)
+	assert.Equal(t, "mission-abc", client.missionID)
 	assert.Equal(t, "trace-456", client.traceID)
 	assert.Equal(t, "span-789", client.spanID)
 }
@@ -62,12 +63,13 @@ func TestCallbackClientContextInfo(t *testing.T) {
 	client, err := NewCallbackClient("localhost:50051")
 	require.NoError(t, err)
 
-	client.SetTaskContext("task-123", "test-agent", "trace-456", "span-789")
+	client.SetTaskContext("task-123", "test-agent", "mission-abc", "trace-456", "span-789")
 
 	ctx := client.contextInfo()
 	assert.NotNil(t, ctx)
 	assert.Equal(t, "task-123", ctx.TaskId)
 	assert.Equal(t, "test-agent", ctx.AgentName)
+	assert.Equal(t, "mission-abc", ctx.MissionId)
 	assert.Equal(t, "trace-456", ctx.TraceId)
 	assert.Equal(t, "span-789", ctx.SpanId)
 }
@@ -123,7 +125,7 @@ func TestCallbackClientConcurrency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(n int) {
 			taskID := time.Now().String()
-			client.SetTaskContext(taskID, "agent", "", "")
+			client.SetTaskContext(taskID, "agent", "", "", "")
 			done <- true
 		}(i)
 	}
