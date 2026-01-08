@@ -343,6 +343,85 @@ func TestMissionConstraints_FluentAPI(t *testing.T) {
 	}
 }
 
+func TestMissionContext_UnmarshalJSON_ConstraintsFormats(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		wantErr bool
+	}{
+		{
+			name: "constraints as struct",
+			json: `{
+				"id": "mission-1",
+				"name": "Test Mission",
+				"constraints": {
+					"max_duration": 7200000000000,
+					"max_findings": 50,
+					"severity_threshold": "high",
+					"require_evidence": true
+				}
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "constraints as empty array (Gibson harness format)",
+			json: `{
+				"id": "mission-1",
+				"name": "Test Mission",
+				"constraints": []
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "constraints as string array (Gibson harness format)",
+			json: `{
+				"id": "mission-1",
+				"name": "Test Mission",
+				"constraints": ["no-prod-access", "max-10-findings"]
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "constraints as null",
+			json: `{
+				"id": "mission-1",
+				"name": "Test Mission",
+				"constraints": null
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "constraints missing",
+			json: `{
+				"id": "mission-1",
+				"name": "Test Mission"
+			}`,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var mission MissionContext
+			err := json.Unmarshal([]byte(tt.json), &mission)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if mission.ID != "mission-1" {
+					t.Errorf("ID = %v, want mission-1", mission.ID)
+				}
+				if mission.Name != "Test Mission" {
+					t.Errorf("Name = %v, want Test Mission", mission.Name)
+				}
+			}
+		})
+	}
+}
+
 func TestMissionContext_JSONMarshaling(t *testing.T) {
 	original := MissionContext{
 		ID:           "mission-1",

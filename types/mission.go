@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // MissionContext contains the operational context for a security testing mission.
 // It provides agents with mission parameters, constraints, and tracking information.
@@ -54,6 +57,51 @@ func (m *MissionContext) Validate() error {
 		return &ValidationError{Field: "Name", Message: "mission name is required"}
 	}
 
+	return nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for MissionContext.
+// This handles the case where the 'constraints' field can be either:
+// - A MissionConstraints struct (SDK native format)
+// - An array of strings (Gibson's harness.MissionContext format)
+// When constraints is an array of strings, it is ignored and an empty
+// MissionConstraints struct is used instead.
+func (m *MissionContext) UnmarshalJSON(data []byte) error {
+	// Use an alias to avoid infinite recursion
+	type Alias MissionContext
+	aux := &struct {
+		Constraints json.RawMessage `json:"constraints"`
+		*Alias
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// If constraints is empty or null, use default empty struct
+	if len(aux.Constraints) == 0 || string(aux.Constraints) == "null" {
+		m.Constraints = MissionConstraints{}
+		return nil
+	}
+
+	// Try to unmarshal as MissionConstraints struct first
+	var constraints MissionConstraints
+	if err := json.Unmarshal(aux.Constraints, &constraints); err != nil {
+		// If that fails, check if it's an array (Gibson's format)
+		var constraintsArray []string
+		if arrErr := json.Unmarshal(aux.Constraints, &constraintsArray); arrErr == nil {
+			// It's an array - use empty constraints struct
+			// The array format is just string labels, not actual constraint values
+			m.Constraints = MissionConstraints{}
+			return nil
+		}
+		// Not a struct or array - return the original error
+		return err
+	}
+
+	m.Constraints = constraints
 	return nil
 }
 
