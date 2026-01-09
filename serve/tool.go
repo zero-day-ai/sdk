@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -16,11 +17,28 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Tool starts a gRPC server for a tool.
-// It creates a server, registers the tool service, and serves requests
-// until a shutdown signal is received or an error occurs.
+// SubprocessModeEnvVar is the environment variable that indicates subprocess execution mode.
+// When set to "subprocess", the tool will run in subprocess mode instead of starting a gRPC server.
+const SubprocessModeEnvVar = "GIBSON_TOOL_MODE"
+
+// SubprocessModeValue is the value of GIBSON_TOOL_MODE that triggers subprocess mode.
+const SubprocessModeValue = "subprocess"
+
+// SchemaFlag is the command-line flag used to request schema output.
+const SchemaFlag = "--schema"
+
+// Tool serves a tool implementation.
 //
-// Example:
+// The execution mode is automatically detected based on environment and command-line flags:
+//
+// 1. Schema Mode: If --schema flag is passed, outputs tool schema to stdout and exits.
+// 2. Subprocess Mode: If GIBSON_TOOL_MODE=subprocess, runs in subprocess mode (stdin/stdout JSON).
+// 3. gRPC Server Mode: Otherwise, starts a gRPC server for traditional RPC communication.
+//
+// For subprocess mode, input is read as JSON from stdin and output is written as JSON to stdout.
+// Errors are written to stderr and result in a non-zero exit code.
+//
+// Example (gRPC mode):
 //
 //	tool := &MyTool{}
 //	err := serve.Tool(tool,
@@ -30,7 +48,46 @@ import (
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
+//
+// Example (subprocess mode - automatic):
+//
+//	// When invoked with GIBSON_TOOL_MODE=subprocess:
+//	// echo '{"target": "localhost"}' | GIBSON_TOOL_MODE=subprocess ./mytool
+//	// Or with --schema flag:
+//	// ./mytool --schema
 func Tool(t tool.Tool, opts ...Option) error {
+	// Check for --schema flag first (regardless of mode)
+	if hasSchemaFlag() {
+		return OutputSchema(t)
+	}
+
+	// Check for subprocess mode via environment variable
+	if isSubprocessMode() {
+		return RunSubprocess(t)
+	}
+
+	// Default: gRPC server mode
+	return serveToolGRPC(t, opts...)
+}
+
+// hasSchemaFlag checks if --schema was passed as a command-line argument.
+func hasSchemaFlag() bool {
+	for _, arg := range os.Args[1:] {
+		if arg == SchemaFlag {
+			return true
+		}
+	}
+	return false
+}
+
+// isSubprocessMode checks if GIBSON_TOOL_MODE=subprocess is set.
+func isSubprocessMode() bool {
+	return os.Getenv(SubprocessModeEnvVar) == SubprocessModeValue
+}
+
+// serveToolGRPC starts the tool as a gRPC server.
+// This is the traditional mode where the tool listens on a port and handles RPC requests.
+func serveToolGRPC(t tool.Tool, opts ...Option) error {
 	// Build configuration
 	cfg := DefaultConfig()
 	for _, opt := range opts {

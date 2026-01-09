@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -319,4 +320,111 @@ func TestToolServiceServer_Health(t *testing.T) {
 			assert.Greater(t, resp.CheckedAt, int64(0))
 		})
 	}
+}
+
+// Tests for subprocess mode detection
+
+func TestHasSchemaFlag(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		expected bool
+	}{
+		{
+			name:     "with --schema flag",
+			args:     []string{"tool", "--schema"},
+			expected: true,
+		},
+		{
+			name:     "with --schema flag among other args",
+			args:     []string{"tool", "--verbose", "--schema", "--debug"},
+			expected: true,
+		},
+		{
+			name:     "without --schema flag",
+			args:     []string{"tool"},
+			expected: false,
+		},
+		{
+			name:     "with similar but different flag",
+			args:     []string{"tool", "--schemas", "--schema-file=foo"},
+			expected: false,
+		},
+		{
+			name:     "empty args",
+			args:     []string{"tool"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save original os.Args
+			originalArgs := os.Args
+			defer func() { os.Args = originalArgs }()
+
+			os.Args = tt.args
+			result := hasSchemaFlag()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsSubprocessMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		envValue string
+		expected bool
+	}{
+		{
+			name:     "GIBSON_TOOL_MODE=subprocess",
+			envValue: "subprocess",
+			expected: true,
+		},
+		{
+			name:     "GIBSON_TOOL_MODE=grpc",
+			envValue: "grpc",
+			expected: false,
+		},
+		{
+			name:     "GIBSON_TOOL_MODE not set",
+			envValue: "",
+			expected: false,
+		},
+		{
+			name:     "GIBSON_TOOL_MODE=SUBPROCESS (case sensitive)",
+			envValue: "SUBPROCESS",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and restore env
+			originalValue := os.Getenv(SubprocessModeEnvVar)
+			defer func() {
+				if originalValue == "" {
+					os.Unsetenv(SubprocessModeEnvVar)
+				} else {
+					os.Setenv(SubprocessModeEnvVar, originalValue)
+				}
+			}()
+
+			if tt.envValue == "" {
+				os.Unsetenv(SubprocessModeEnvVar)
+			} else {
+				os.Setenv(SubprocessModeEnvVar, tt.envValue)
+			}
+
+			result := isSubprocessMode()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestToolConstants(t *testing.T) {
+	// Verify constants match expected values
+	assert.Equal(t, "GIBSON_TOOL_MODE", SubprocessModeEnvVar)
+	assert.Equal(t, "subprocess", SubprocessModeValue)
+	assert.Equal(t, "--schema", SchemaFlag)
 }
