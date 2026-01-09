@@ -106,6 +106,14 @@ func (m *mockStreamHarness) CompleteWithTools(ctx context.Context, slot string, 
 	return &llm.CompletionResponse{Content: "mock response", FinishReason: "stop"}, nil
 }
 
+func (m *mockStreamHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return map[string]any{"result": "mock structured"}, nil
+}
+
+func (m *mockStreamHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return m.CompleteStructured(ctx, slot, messages, schema)
+}
+
 func (m *mockStreamHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
 	if m.streamFunc != nil {
 		return m.streamFunc(ctx, slot, messages)

@@ -69,6 +69,10 @@ message AgentExecuteRequest {
     string mission_json = 5;
     // Target information for this execution.
     string target_json = 6;
+    // Trace ID for distributed tracing (propagated from orchestrator).
+    string trace_id = 7;
+    // Parent span ID for distributed tracing (propagated from orchestrator).
+    string parent_span_id = 8;
 }
 
 message AgentExecuteResponse {

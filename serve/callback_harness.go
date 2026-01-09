@@ -17,6 +17,8 @@ import (
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -54,7 +56,7 @@ func NewCallbackHarness(
 ) *CallbackHarness {
 	return &CallbackHarness{
 		client:       client,
-		memory:       NewCallbackMemoryStore(client),
+		memory:       NewCallbackMemoryStore(client, tracer),
 		tokenTracker: NewCallbackTokenTracker(),
 		logger:       logger,
 		tracer:       tracer,
@@ -116,6 +118,17 @@ func (h *CallbackHarness) Memory() memory.Store {
 
 // Complete performs a single LLM completion request via the orchestrator.
 func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
+	// Start span for LLM completion
+	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gen_ai.system", "anthropic"),
+			attribute.String("gen_ai.request.model", slot),
+			attribute.Int("gen_ai.request.message_count", len(messages)),
+		),
+	)
+	defer span.End()
+
 	// Build completion request with options
 	req := llm.NewCompletionRequest(messages, opts...)
 
@@ -129,25 +142,33 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 	if req.Temperature != nil {
 		temp := *req.Temperature
 		protoReq.Temperature = &temp
+		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", float64(temp)))
 	}
 	if req.MaxTokens != nil {
 		maxTokens := int32(*req.MaxTokens)
 		protoReq.MaxTokens = &maxTokens
+		span.SetAttributes(attribute.Int("gen_ai.request.max_tokens", int(*req.MaxTokens)))
 	}
 	if req.TopP != nil {
 		topP := *req.TopP
 		protoReq.TopP = &topP
+		span.SetAttributes(attribute.Float64("gen_ai.request.top_p", float64(topP)))
 	}
 	protoReq.Stop = req.Stop
 
 	// Call orchestrator
 	resp, err := h.client.LLMComplete(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM complete callback failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return nil, fmt.Errorf("LLM complete error: %s", resp.Error.Message)
+		err := fmt.Errorf("LLM complete error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	// Convert response
@@ -162,6 +183,13 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 		},
 	}
 
+	// Record token usage in span
+	span.SetAttributes(
+		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
+		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
+		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
+	)
+
 	// Track token usage
 	h.tokenTracker.Add(slot, result.Usage)
 
@@ -170,6 +198,18 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 
 // CompleteWithTools performs a completion with tool calling enabled.
 func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
+	// Start span for LLM completion with tools
+	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gen_ai.system", "anthropic"),
+			attribute.String("gen_ai.request.model", slot),
+			attribute.Int("gen_ai.request.message_count", len(messages)),
+			attribute.Int("gen_ai.request.tool_count", len(tools)),
+		),
+	)
+	defer span.End()
+
 	protoReq := &proto.LLMCompleteWithToolsRequest{
 		Slot:     slot,
 		Messages: h.messagesToProto(messages),
@@ -178,11 +218,16 @@ func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, me
 
 	resp, err := h.client.LLMCompleteWithTools(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM complete with tools callback failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return nil, fmt.Errorf("LLM complete with tools error: %s", resp.Error.Message)
+		err := fmt.Errorf("LLM complete with tools error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	result := &llm.CompletionResponse{
@@ -196,14 +241,81 @@ func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, me
 		},
 	}
 
+	// Record token usage in span
+	span.SetAttributes(
+		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
+		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
+		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
+		attribute.Int("gen_ai.response.tool_call_count", len(result.ToolCalls)),
+	)
+
 	// Track token usage
 	h.tokenTracker.Add(slot, result.Usage)
 
 	return result, nil
 }
 
+// CompleteStructured performs a completion with provider-native structured output.
+// This forwards the request to the orchestrator which handles schema conversion
+// and provider-specific structured output mechanisms.
+func (h *CallbackHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	// Serialize the schema to JSON for transmission
+	schemaJSON, err := json.Marshal(schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal schema: %w", err)
+	}
+
+	protoReq := &proto.LLMCompleteStructuredRequest{
+		Slot:       slot,
+		Messages:   h.messagesToProto(messages),
+		SchemaJson: string(schemaJSON),
+	}
+
+	resp, err := h.client.LLMCompleteStructured(ctx, protoReq)
+	if err != nil {
+		return nil, fmt.Errorf("LLM complete structured callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return nil, fmt.Errorf("LLM complete structured error: %s", resp.Error.Message)
+	}
+
+	// Deserialize the result
+	var result any
+	if err := json.Unmarshal([]byte(resp.ResultJson), &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal structured result: %w", err)
+	}
+
+	// Track token usage if available
+	if resp.Usage != nil {
+		usage := llm.TokenUsage{
+			InputTokens:  int(resp.Usage.InputTokens),
+			OutputTokens: int(resp.Usage.OutputTokens),
+			TotalTokens:  int(resp.Usage.TotalTokens),
+		}
+		h.tokenTracker.Add(slot, usage)
+	}
+
+	return result, nil
+}
+
+// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
+func (h *CallbackHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return h.CompleteStructured(ctx, slot, messages, schema)
+}
+
 // Stream performs a streaming completion request.
 func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
+	// Start span for streaming LLM completion
+	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.stream",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gen_ai.system", "anthropic"),
+			attribute.String("gen_ai.request.model", slot),
+			attribute.Int("gen_ai.request.message_count", len(messages)),
+		),
+	)
+
 	protoReq := &proto.LLMStreamRequest{
 		Slot:     slot,
 		Messages: h.messagesToProto(messages),
@@ -211,6 +323,9 @@ func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []ll
 
 	stream, err := h.client.LLMStream(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		return nil, fmt.Errorf("LLM stream callback failed: %w", err)
 	}
 
@@ -220,16 +335,24 @@ func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []ll
 	// Spawn goroutine to receive stream chunks
 	go func() {
 		defer close(chunkChan)
+		defer span.End()
 
 		for {
 			protoChunk, err := stream.Recv()
 			if err != nil {
 				// Stream ended (could be EOF or error)
+				if err.Error() != "EOF" {
+					span.RecordError(err)
+					span.SetStatus(codes.Error, err.Error())
+				}
 				return
 			}
 
 			if protoChunk.Error != nil {
 				h.logger.Error("stream chunk error", "error", protoChunk.Error.Message)
+				err := fmt.Errorf("stream chunk error: %s", protoChunk.Error.Message)
+				span.RecordError(err)
+				span.SetStatus(codes.Error, protoChunk.Error.Message)
 				return
 			}
 
@@ -250,6 +373,12 @@ func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []ll
 				// Track token usage on final chunk
 				if chunk.FinishReason != "" {
 					h.tokenTracker.Add(slot, usage)
+					// Record final token usage in span
+					span.SetAttributes(
+						attribute.Int("gen_ai.usage.input_tokens", usage.InputTokens),
+						attribute.Int("gen_ai.usage.output_tokens", usage.OutputTokens),
+						attribute.String("gen_ai.response.finish_reason", chunk.FinishReason),
+					)
 				}
 			}
 
@@ -270,9 +399,20 @@ func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []ll
 
 // CallTool invokes a tool by name with the given input parameters.
 func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+	// Start span for tool call
+	ctx, span := h.tracer.Start(ctx, "gen_ai.tool",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.tool.name", name),
+		),
+	)
+	defer span.End()
+
 	// Serialize input
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to marshal tool input: %w", err)
 	}
 
@@ -283,16 +423,23 @@ func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[s
 
 	resp, err := h.client.CallTool(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("call tool callback failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return nil, fmt.Errorf("call tool error: %s", resp.Error.Message)
+		err := fmt.Errorf("call tool error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	// Deserialize output
 	var output map[string]any
 	if err := json.Unmarshal([]byte(resp.OutputJson), &output); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to unmarshal tool output: %w", err)
 	}
 
@@ -586,9 +733,21 @@ func (h *CallbackHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, e
 
 // SubmitFinding records a new security finding.
 func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
+	// Start span for finding submission
+	ctx, span := h.tracer.Start(ctx, "gibson.finding.submit",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.finding.title", f.Title),
+			attribute.String("gibson.finding.severity", string(f.Severity)),
+		),
+	)
+	defer span.End()
+
 	// Serialize finding
 	findingJSON, err := json.Marshal(f)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed to marshal finding: %w", err)
 	}
 
@@ -598,11 +757,16 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 	resp, err := h.client.SubmitFinding(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("submit finding callback failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return fmt.Errorf("submit finding error: %s", resp.Error.Message)
+		err := fmt.Errorf("submit finding error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return err
 	}
 
 	return nil
@@ -648,9 +812,21 @@ func (h *CallbackHarness) GetFindings(ctx context.Context, filter finding.Filter
 
 // QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
 func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	// Start span for GraphRAG query
+	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.graphrag.query_text", query.Text),
+			attribute.Int("gibson.graphrag.top_k", query.TopK),
+		),
+	)
+	defer span.End()
+
 	// Serialize query
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to marshal query: %w", err)
 	}
 
@@ -660,11 +836,16 @@ func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Quer
 
 	resp, err := h.client.GraphRAGQuery(ctx, protoReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("GraphRAG query callback failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return nil, fmt.Errorf("GraphRAG query error: %s", resp.Error.Message)
+		err := fmt.Errorf("GraphRAG query error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	// Convert results
@@ -679,6 +860,11 @@ func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Quer
 			Distance:    int(protoResult.Distance),
 		}
 	}
+
+	// Record result count in span
+	span.SetAttributes(
+		attribute.Int("gibson.graphrag.result_count", len(results)),
+	)
 
 	return results, nil
 }

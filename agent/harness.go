@@ -50,6 +50,18 @@ type Harness interface {
 	// The channel will be closed when the stream completes or an error occurs.
 	Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
 
+	// CompleteStructured performs a completion with provider-native structured output.
+	// The response schema is derived from the provided struct type.
+	// For Anthropic: uses tool_use pattern (schema becomes a tool definition)
+	// For OpenAI: uses response_format with json_schema
+	// The prompt should be natural language - no JSON instructions needed.
+	// Returns a pointer to the populated struct or an error.
+	// The schema parameter should be an instance of the struct type (e.g., MyStruct{}).
+	CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
+
+	// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
+	CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
+
 	// Tool Access Methods
 	//
 	// These methods provide access to external tools (e.g., HTTP client, shell, browser).

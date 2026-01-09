@@ -612,11 +612,7 @@ type AgentExecuteRequest struct {
 	// Mission context for this execution.
 	MissionJson string `protobuf:"bytes,5,opt,name=mission_json,json=missionJson,proto3" json:"mission_json,omitempty"`
 	// Target information for this execution.
-	TargetJson string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
-	// Trace ID for distributed tracing (propagated from orchestrator).
-	TraceId string `protobuf:"bytes,7,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
-	// Parent span ID for distributed tracing (propagated from orchestrator).
-	ParentSpanId  string `protobuf:"bytes,8,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
+	TargetJson    string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -689,20 +685,6 @@ func (x *AgentExecuteRequest) GetMissionJson() string {
 func (x *AgentExecuteRequest) GetTargetJson() string {
 	if x != nil {
 		return x.TargetJson
-	}
-	return ""
-}
-
-func (x *AgentExecuteRequest) GetTraceId() string {
-	if x != nil {
-		return x.TraceId
-	}
-	return ""
-}
-
-func (x *AgentExecuteRequest) GetParentSpanId() string {
-	if x != nil {
-		return x.ParentSpanId
 	}
 	return ""
 }
@@ -1820,7 +1802,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x11required_features\x18\x02 \x03(\tR\x10requiredFeatures\"\x1b\n" +
 	"\x19AgentGetSlotSchemaRequest\"U\n" +
 	"\x1aAgentGetSlotSchemaResponse\x127\n" +
-	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\xaa\x02\n" +
+	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\xe9\x01\n" +
 	"\x13AgentExecuteRequest\x12\x1b\n" +
 	"\ttask_json\x18\x01 \x01(\tR\btaskJson\x12\x1d\n" +
 	"\n" +
@@ -1829,9 +1811,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x12!\n" +
 	"\fmission_json\x18\x05 \x01(\tR\vmissionJson\x12\x1f\n" +
 	"\vtarget_json\x18\x06 \x01(\tR\n" +
-	"targetJson\x12\x19\n" +
-	"\btrace_id\x18\a \x01(\tR\atraceId\x12$\n" +
-	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\"c\n" +
+	"targetJson\"c\n" +
 	"\x14AgentExecuteResponse\x12\x1f\n" +
 	"\vresult_json\x18\x01 \x01(\tR\n" +
 	"resultJson\x12*\n" +

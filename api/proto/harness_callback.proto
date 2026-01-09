@@ -8,6 +8,7 @@ service HarnessCallbackService {
     // LLM Operations
     rpc LLMComplete(LLMCompleteRequest) returns (LLMCompleteResponse);
     rpc LLMCompleteWithTools(LLMCompleteWithToolsRequest) returns (LLMCompleteResponse);
+    rpc LLMCompleteStructured(LLMCompleteStructuredRequest) returns (LLMCompleteStructuredResponse);
     rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamChunk);
 
     // Tool Operations
@@ -49,6 +50,10 @@ service HarnessCallbackService {
     // Planning Operations
     rpc GetPlanContext(GetPlanContextRequest) returns (GetPlanContextResponse);
     rpc ReportStepHints(ReportStepHintsRequest) returns (ReportStepHintsResponse);
+
+    // Distributed Tracing Operations
+    rpc RecordSpan(RecordSpanRequest) returns (RecordSpanResponse);
+    rpc RecordSpans(RecordSpansRequest) returns (RecordSpansResponse);
 }
 
 // ============================================================================
@@ -130,6 +135,19 @@ message LLMCompleteWithToolsRequest {
     string slot = 2;
     repeated LLMMessage messages = 3;
     repeated ToolDef tools = 4;
+}
+
+message LLMCompleteStructuredRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    string schema_json = 4;  // JSON-encoded schema (Go struct as JSON)
+}
+
+message LLMCompleteStructuredResponse {
+    string result_json = 1;  // JSON-encoded structured result
+    TokenUsage usage = 2;
+    HarnessError error = 3;
 }
 
 message LLMCompleteResponse {
@@ -543,4 +561,82 @@ message StepHints {
     repeated string suggested_next = 2;
     string replan_reason = 3;
     repeated string key_findings = 4;
+}
+
+// ============================================================================
+// Distributed Tracing Operations
+// ============================================================================
+
+// SpanKind represents the role of a span in a distributed trace.
+enum SpanKind {
+    SPAN_KIND_UNSPECIFIED = 0;
+    SPAN_KIND_INTERNAL = 1;
+    SPAN_KIND_SERVER = 2;
+    SPAN_KIND_CLIENT = 3;
+    SPAN_KIND_PRODUCER = 4;
+    SPAN_KIND_CONSUMER = 5;
+}
+
+// StatusCode represents the status of a span.
+enum StatusCode {
+    STATUS_CODE_UNSET = 0;
+    STATUS_CODE_OK = 1;
+    STATUS_CODE_ERROR = 2;
+}
+
+// AnyValue represents a dynamically typed value used in attributes.
+message AnyValue {
+    oneof value {
+        string string_value = 1;
+        bool bool_value = 2;
+        int64 int_value = 3;
+        double double_value = 4;
+        bytes bytes_value = 5;
+    }
+}
+
+// KeyValue represents a key-value pair used in span attributes.
+message KeyValue {
+    string key = 1;
+    AnyValue value = 2;
+}
+
+// SpanEvent represents a single event within a span.
+message SpanEvent {
+    string name = 1;
+    int64 time_unix_nano = 2;
+    repeated KeyValue attributes = 3;
+}
+
+// Span represents a single span in a distributed trace.
+message Span {
+    string trace_id = 1;
+    string span_id = 2;
+    string parent_span_id = 3;
+    int64 start_time_unix_nano = 4;
+    int64 end_time_unix_nano = 5;
+    string name = 6;
+    SpanKind kind = 7;
+    StatusCode status_code = 8;
+    string status_message = 9;
+    repeated KeyValue attributes = 10;
+    repeated SpanEvent events = 11;
+}
+
+message RecordSpanRequest {
+    ContextInfo context = 1;
+    Span span = 2;
+}
+
+message RecordSpanResponse {
+    HarnessError error = 1;
+}
+
+message RecordSpansRequest {
+    ContextInfo context = 1;
+    repeated Span spans = 2;
+}
+
+message RecordSpansResponse {
+    HarnessError error = 1;
 }

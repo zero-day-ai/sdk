@@ -47,8 +47,6 @@ const (
 	HarnessCallbackService_GraphRAGHealth_FullMethodName          = "/gibson.harness.HarnessCallbackService/GraphRAGHealth"
 	HarnessCallbackService_GetPlanContext_FullMethodName          = "/gibson.harness.HarnessCallbackService/GetPlanContext"
 	HarnessCallbackService_ReportStepHints_FullMethodName         = "/gibson.harness.HarnessCallbackService/ReportStepHints"
-	HarnessCallbackService_RecordSpan_FullMethodName              = "/gibson.harness.HarnessCallbackService/RecordSpan"
-	HarnessCallbackService_RecordSpans_FullMethodName             = "/gibson.harness.HarnessCallbackService/RecordSpans"
 )
 
 // HarnessCallbackServiceClient is the client API for HarnessCallbackService service.
@@ -95,9 +93,6 @@ type HarnessCallbackServiceClient interface {
 	// Planning Operations
 	GetPlanContext(ctx context.Context, in *GetPlanContextRequest, opts ...grpc.CallOption) (*GetPlanContextResponse, error)
 	ReportStepHints(ctx context.Context, in *ReportStepHintsRequest, opts ...grpc.CallOption) (*ReportStepHintsResponse, error)
-	// Distributed Tracing Operations
-	RecordSpan(ctx context.Context, in *RecordSpanRequest, opts ...grpc.CallOption) (*RecordSpanResponse, error)
-	RecordSpans(ctx context.Context, in *RecordSpansRequest, opts ...grpc.CallOption) (*RecordSpansResponse, error)
 }
 
 type harnessCallbackServiceClient struct {
@@ -397,26 +392,6 @@ func (c *harnessCallbackServiceClient) ReportStepHints(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *harnessCallbackServiceClient) RecordSpan(ctx context.Context, in *RecordSpanRequest, opts ...grpc.CallOption) (*RecordSpanResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RecordSpanResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_RecordSpan_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) RecordSpans(ctx context.Context, in *RecordSpansRequest, opts ...grpc.CallOption) (*RecordSpansResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RecordSpansResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_RecordSpans_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // HarnessCallbackServiceServer is the server API for HarnessCallbackService service.
 // All implementations must embed UnimplementedHarnessCallbackServiceServer
 // for forward compatibility.
@@ -461,9 +436,6 @@ type HarnessCallbackServiceServer interface {
 	// Planning Operations
 	GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error)
 	ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error)
-	// Distributed Tracing Operations
-	RecordSpan(context.Context, *RecordSpanRequest) (*RecordSpanResponse, error)
-	RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error)
 	mustEmbedUnimplementedHarnessCallbackServiceServer()
 }
 
@@ -557,12 +529,6 @@ func (UnimplementedHarnessCallbackServiceServer) GetPlanContext(context.Context,
 }
 func (UnimplementedHarnessCallbackServiceServer) ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportStepHints not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) RecordSpan(context.Context, *RecordSpanRequest) (*RecordSpanResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RecordSpan not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RecordSpans not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) mustEmbedUnimplementedHarnessCallbackServiceServer() {
 }
@@ -1083,42 +1049,6 @@ func _HarnessCallbackService_ReportStepHints_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HarnessCallbackService_RecordSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordSpanRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).RecordSpan(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_RecordSpan_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).RecordSpan(ctx, req.(*RecordSpanRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_RecordSpans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordSpansRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).RecordSpans(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_RecordSpans_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).RecordSpans(ctx, req.(*RecordSpansRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // HarnessCallbackService_ServiceDesc is the grpc.ServiceDesc for HarnessCallbackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1233,14 +1163,6 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportStepHints",
 			Handler:    _HarnessCallbackService_ReportStepHints_Handler,
-		},
-		{
-			MethodName: "RecordSpan",
-			Handler:    _HarnessCallbackService_RecordSpan_Handler,
-		},
-		{
-			MethodName: "RecordSpans",
-			Handler:    _HarnessCallbackService_RecordSpans_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

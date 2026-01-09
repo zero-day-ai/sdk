@@ -108,6 +108,17 @@ func (h *LocalHarness) Stream(ctx context.Context, slot string, messages []llm.M
 	return nil, fmt.Errorf("LLM operations not available in standalone mode (no orchestrator connected)")
 }
 
+// CompleteStructured returns an error indicating LLM operations are not available.
+func (h *LocalHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	h.logger.Warn("LLM CompleteStructured not available in standalone mode", "slot", slot)
+	return nil, fmt.Errorf("LLM operations not available in standalone mode (no orchestrator connected)")
+}
+
+// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
+func (h *LocalHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return h.CompleteStructured(ctx, slot, messages, schema)
+}
+
 // ============================================================================
 // Tool Operations (Not Available)
 // ============================================================================

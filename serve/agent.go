@@ -12,6 +12,9 @@ import (
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/types"
+	"go.opentelemetry.io/otel/sdk/trace"
+	otelTrace "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -218,16 +221,23 @@ func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecut
 
 	// Create harness if callback endpoint is provided
 	var harness agent.Harness
+	var tracerProvider *trace.TracerProvider
 	if req.CallbackEndpoint != "" {
-		callbackHarness, err := s.createCallbackHarness(ctx, req, task)
+		callbackHarness, tp, err := s.createCallbackHarness(ctx, req, task)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create callback harness: %v", err)
 		}
 		harness = callbackHarness
-		// Clean up callback client when done
+		tracerProvider = tp
+		// Clean up callback client and tracer provider when done
 		defer func() {
 			if ch, ok := harness.(*CallbackHarness); ok && ch.client != nil {
 				ch.client.Close()
+			}
+			if tracerProvider != nil {
+				if err := tracerProvider.Shutdown(context.Background()); err != nil {
+					slog.Warn("failed to shutdown tracer provider", "error", err)
+				}
 			}
 		}()
 	}
@@ -258,7 +268,7 @@ func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecut
 }
 
 // createCallbackHarness creates a CallbackHarness connected to the orchestrator.
-func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *proto.AgentExecuteRequest, task agent.Task) (*CallbackHarness, error) {
+func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *proto.AgentExecuteRequest, task agent.Task) (*CallbackHarness, *trace.TracerProvider, error) {
 	// Create callback client options
 	var clientOpts []CallbackClientOption
 	if req.CallbackToken != "" {
@@ -268,11 +278,11 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 	// Create and connect callback client
 	client, err := NewCallbackClient(req.CallbackEndpoint, clientOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create callback client: %w", err)
+		return nil, nil, fmt.Errorf("failed to create callback client: %w", err)
 	}
 
 	if err := client.Connect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
+		return nil, nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
 	}
 
 	// Parse mission context if provided
@@ -280,21 +290,21 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 	if req.MissionJson != "" {
 		if err := json.Unmarshal([]byte(req.MissionJson), &mission); err != nil {
 			client.Close()
-			return nil, fmt.Errorf("failed to parse mission JSON: %w", err)
+			return nil, nil, fmt.Errorf("failed to parse mission JSON: %w", err)
 		}
 	}
 
 	// Set task context for callback requests
 	// Pass mission ID explicitly so the callback service can use it directly
 	// for mission-based harness lookup (keyed by missionID:agentName)
-	client.SetTaskContext(task.ID, s.agent.Name(), mission.ID, "", "")
+	client.SetTaskContext(task.ID, s.agent.Name(), mission.ID, req.TraceId, req.ParentSpanId)
 
 	// Parse target info if provided
 	var target types.TargetInfo
 	if req.TargetJson != "" {
 		if err := json.Unmarshal([]byte(req.TargetJson), &target); err != nil {
 			client.Close()
-			return nil, fmt.Errorf("failed to parse target JSON: %w", err)
+			return nil, nil, fmt.Errorf("failed to parse target JSON: %w", err)
 		}
 	}
 
@@ -304,10 +314,27 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 		"task_id", task.ID,
 	)
 
-	// Create the callback harness
-	harness := NewCallbackHarness(client, logger, nil, mission, target)
+	// Create tracer based on whether trace context is present
+	var tracer otelTrace.Tracer
+	var tracerProvider *trace.TracerProvider
+	if req.TraceId != "" {
+		// Create real tracer with proxy exporter
+		tracerProvider = NewProxyTracerProvider(client, req.TraceId, req.ParentSpanId, logger)
+		tracer = tracerProvider.Tracer("gibson-agent")
+		logger.Debug("created real tracer for distributed tracing",
+			"trace_id", req.TraceId,
+			"parent_span_id", req.ParentSpanId,
+		)
+	} else {
+		// Use no-op tracer when no trace context is provided
+		tracer = noop.NewTracerProvider().Tracer("gibson-agent")
+		logger.Debug("created no-op tracer (no trace context)")
+	}
 
-	return harness, nil
+	// Create the callback harness
+	harness := NewCallbackHarness(client, logger, tracer, mission, target)
+
+	return harness, tracerProvider, nil
 }
 
 // Health returns the current health status of the agent.

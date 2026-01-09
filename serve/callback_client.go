@@ -241,6 +241,21 @@ func (c *CallbackClient) LLMCompleteWithTools(ctx context.Context, req *proto.LL
 	return resp, nil
 }
 
+// LLMCompleteStructured performs an LLM completion with structured output via the orchestrator.
+func (c *CallbackClient) LLMCompleteStructured(ctx context.Context, req *proto.LLMCompleteStructuredRequest) (*proto.LLMCompleteStructuredResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("LLMCompleteStructured: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.LLMCompleteStructured(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LLMCompleteStructured: %w", err)
+	}
+	return resp, nil
+}
+
 // LLMStream performs a streaming LLM completion request.
 func (c *CallbackClient) LLMStream(ctx context.Context, req *proto.LLMStreamRequest) (proto.HarnessCallbackService_LLMStreamClient, error) {
 	if !c.IsConnected() {
@@ -647,6 +662,25 @@ func (c *CallbackClient) ReportStepHints(ctx context.Context, req *proto.ReportS
 	resp, err := c.client.ReportStepHints(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("ReportStepHints: %w", err)
+	}
+	return resp, nil
+}
+
+// ============================================================================
+// Tracing Operations
+// ============================================================================
+
+// RecordSpans sends a batch of spans to the orchestrator for distributed tracing.
+func (c *CallbackClient) RecordSpans(ctx context.Context, req *proto.RecordSpansRequest) (*proto.RecordSpansResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("RecordSpans: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.RecordSpans(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("RecordSpans: %w", err)
 	}
 	return resp, nil
 }

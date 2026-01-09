@@ -21,115 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// SpanKind represents the role of a span in a distributed trace.
-type SpanKind int32
-
-const (
-	SpanKind_SPAN_KIND_UNSPECIFIED SpanKind = 0
-	SpanKind_SPAN_KIND_INTERNAL    SpanKind = 1
-	SpanKind_SPAN_KIND_SERVER      SpanKind = 2
-	SpanKind_SPAN_KIND_CLIENT      SpanKind = 3
-	SpanKind_SPAN_KIND_PRODUCER    SpanKind = 4
-	SpanKind_SPAN_KIND_CONSUMER    SpanKind = 5
-)
-
-// Enum value maps for SpanKind.
-var (
-	SpanKind_name = map[int32]string{
-		0: "SPAN_KIND_UNSPECIFIED",
-		1: "SPAN_KIND_INTERNAL",
-		2: "SPAN_KIND_SERVER",
-		3: "SPAN_KIND_CLIENT",
-		4: "SPAN_KIND_PRODUCER",
-		5: "SPAN_KIND_CONSUMER",
-	}
-	SpanKind_value = map[string]int32{
-		"SPAN_KIND_UNSPECIFIED": 0,
-		"SPAN_KIND_INTERNAL":    1,
-		"SPAN_KIND_SERVER":      2,
-		"SPAN_KIND_CLIENT":      3,
-		"SPAN_KIND_PRODUCER":    4,
-		"SPAN_KIND_CONSUMER":    5,
-	}
-)
-
-func (x SpanKind) Enum() *SpanKind {
-	p := new(SpanKind)
-	*p = x
-	return p
-}
-
-func (x SpanKind) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SpanKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_harness_callback_proto_enumTypes[0].Descriptor()
-}
-
-func (SpanKind) Type() protoreflect.EnumType {
-	return &file_harness_callback_proto_enumTypes[0]
-}
-
-func (x SpanKind) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SpanKind.Descriptor instead.
-func (SpanKind) EnumDescriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{0}
-}
-
-// StatusCode represents the status of a span.
-type StatusCode int32
-
-const (
-	StatusCode_STATUS_CODE_UNSET StatusCode = 0
-	StatusCode_STATUS_CODE_OK    StatusCode = 1
-	StatusCode_STATUS_CODE_ERROR StatusCode = 2
-)
-
-// Enum value maps for StatusCode.
-var (
-	StatusCode_name = map[int32]string{
-		0: "STATUS_CODE_UNSET",
-		1: "STATUS_CODE_OK",
-		2: "STATUS_CODE_ERROR",
-	}
-	StatusCode_value = map[string]int32{
-		"STATUS_CODE_UNSET": 0,
-		"STATUS_CODE_OK":    1,
-		"STATUS_CODE_ERROR": 2,
-	}
-)
-
-func (x StatusCode) Enum() *StatusCode {
-	p := new(StatusCode)
-	*p = x
-	return p
-}
-
-func (x StatusCode) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (StatusCode) Descriptor() protoreflect.EnumDescriptor {
-	return file_harness_callback_proto_enumTypes[1].Descriptor()
-}
-
-func (StatusCode) Type() protoreflect.EnumType {
-	return &file_harness_callback_proto_enumTypes[1]
-}
-
-func (x StatusCode) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use StatusCode.Descriptor instead.
-func (StatusCode) EnumDescriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{1}
-}
-
 // Error represents an error response from a callback operation.
 type HarnessError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -4746,568 +4637,6 @@ func (x *StepHints) GetKeyFindings() []string {
 	return nil
 }
 
-// AnyValue represents a dynamically typed value used in attributes.
-type AnyValue struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Value:
-	//
-	//	*AnyValue_StringValue
-	//	*AnyValue_BoolValue
-	//	*AnyValue_IntValue
-	//	*AnyValue_DoubleValue
-	//	*AnyValue_BytesValue
-	Value         isAnyValue_Value `protobuf_oneof:"value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AnyValue) Reset() {
-	*x = AnyValue{}
-	mi := &file_harness_callback_proto_msgTypes[77]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AnyValue) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AnyValue) ProtoMessage() {}
-
-func (x *AnyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[77]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AnyValue.ProtoReflect.Descriptor instead.
-func (*AnyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{77}
-}
-
-func (x *AnyValue) GetValue() isAnyValue_Value {
-	if x != nil {
-		return x.Value
-	}
-	return nil
-}
-
-func (x *AnyValue) GetStringValue() string {
-	if x != nil {
-		if x, ok := x.Value.(*AnyValue_StringValue); ok {
-			return x.StringValue
-		}
-	}
-	return ""
-}
-
-func (x *AnyValue) GetBoolValue() bool {
-	if x != nil {
-		if x, ok := x.Value.(*AnyValue_BoolValue); ok {
-			return x.BoolValue
-		}
-	}
-	return false
-}
-
-func (x *AnyValue) GetIntValue() int64 {
-	if x != nil {
-		if x, ok := x.Value.(*AnyValue_IntValue); ok {
-			return x.IntValue
-		}
-	}
-	return 0
-}
-
-func (x *AnyValue) GetDoubleValue() float64 {
-	if x != nil {
-		if x, ok := x.Value.(*AnyValue_DoubleValue); ok {
-			return x.DoubleValue
-		}
-	}
-	return 0
-}
-
-func (x *AnyValue) GetBytesValue() []byte {
-	if x != nil {
-		if x, ok := x.Value.(*AnyValue_BytesValue); ok {
-			return x.BytesValue
-		}
-	}
-	return nil
-}
-
-type isAnyValue_Value interface {
-	isAnyValue_Value()
-}
-
-type AnyValue_StringValue struct {
-	StringValue string `protobuf:"bytes,1,opt,name=string_value,json=stringValue,proto3,oneof"`
-}
-
-type AnyValue_BoolValue struct {
-	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof"`
-}
-
-type AnyValue_IntValue struct {
-	IntValue int64 `protobuf:"varint,3,opt,name=int_value,json=intValue,proto3,oneof"`
-}
-
-type AnyValue_DoubleValue struct {
-	DoubleValue float64 `protobuf:"fixed64,4,opt,name=double_value,json=doubleValue,proto3,oneof"`
-}
-
-type AnyValue_BytesValue struct {
-	BytesValue []byte `protobuf:"bytes,5,opt,name=bytes_value,json=bytesValue,proto3,oneof"`
-}
-
-func (*AnyValue_StringValue) isAnyValue_Value() {}
-
-func (*AnyValue_BoolValue) isAnyValue_Value() {}
-
-func (*AnyValue_IntValue) isAnyValue_Value() {}
-
-func (*AnyValue_DoubleValue) isAnyValue_Value() {}
-
-func (*AnyValue_BytesValue) isAnyValue_Value() {}
-
-// KeyValue represents a key-value pair used in span attributes.
-type KeyValue struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value         *AnyValue              `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *KeyValue) Reset() {
-	*x = KeyValue{}
-	mi := &file_harness_callback_proto_msgTypes[78]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *KeyValue) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*KeyValue) ProtoMessage() {}
-
-func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[78]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
-func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{78}
-}
-
-func (x *KeyValue) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *KeyValue) GetValue() *AnyValue {
-	if x != nil {
-		return x.Value
-	}
-	return nil
-}
-
-// SpanEvent represents a single event within a span.
-type SpanEvent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	TimeUnixNano  int64                  `protobuf:"varint,2,opt,name=time_unix_nano,json=timeUnixNano,proto3" json:"time_unix_nano,omitempty"`
-	Attributes    []*KeyValue            `protobuf:"bytes,3,rep,name=attributes,proto3" json:"attributes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SpanEvent) Reset() {
-	*x = SpanEvent{}
-	mi := &file_harness_callback_proto_msgTypes[79]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SpanEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SpanEvent) ProtoMessage() {}
-
-func (x *SpanEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[79]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SpanEvent.ProtoReflect.Descriptor instead.
-func (*SpanEvent) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{79}
-}
-
-func (x *SpanEvent) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *SpanEvent) GetTimeUnixNano() int64 {
-	if x != nil {
-		return x.TimeUnixNano
-	}
-	return 0
-}
-
-func (x *SpanEvent) GetAttributes() []*KeyValue {
-	if x != nil {
-		return x.Attributes
-	}
-	return nil
-}
-
-// Span represents a single span in a distributed trace.
-type Span struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	TraceId           string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
-	SpanId            string                 `protobuf:"bytes,2,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
-	ParentSpanId      string                 `protobuf:"bytes,3,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
-	StartTimeUnixNano int64                  `protobuf:"varint,4,opt,name=start_time_unix_nano,json=startTimeUnixNano,proto3" json:"start_time_unix_nano,omitempty"`
-	EndTimeUnixNano   int64                  `protobuf:"varint,5,opt,name=end_time_unix_nano,json=endTimeUnixNano,proto3" json:"end_time_unix_nano,omitempty"`
-	Name              string                 `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
-	Kind              SpanKind               `protobuf:"varint,7,opt,name=kind,proto3,enum=gibson.harness.SpanKind" json:"kind,omitempty"`
-	StatusCode        StatusCode             `protobuf:"varint,8,opt,name=status_code,json=statusCode,proto3,enum=gibson.harness.StatusCode" json:"status_code,omitempty"`
-	StatusMessage     string                 `protobuf:"bytes,9,opt,name=status_message,json=statusMessage,proto3" json:"status_message,omitempty"`
-	Attributes        []*KeyValue            `protobuf:"bytes,10,rep,name=attributes,proto3" json:"attributes,omitempty"`
-	Events            []*SpanEvent           `protobuf:"bytes,11,rep,name=events,proto3" json:"events,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *Span) Reset() {
-	*x = Span{}
-	mi := &file_harness_callback_proto_msgTypes[80]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Span) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Span) ProtoMessage() {}
-
-func (x *Span) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[80]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Span.ProtoReflect.Descriptor instead.
-func (*Span) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{80}
-}
-
-func (x *Span) GetTraceId() string {
-	if x != nil {
-		return x.TraceId
-	}
-	return ""
-}
-
-func (x *Span) GetSpanId() string {
-	if x != nil {
-		return x.SpanId
-	}
-	return ""
-}
-
-func (x *Span) GetParentSpanId() string {
-	if x != nil {
-		return x.ParentSpanId
-	}
-	return ""
-}
-
-func (x *Span) GetStartTimeUnixNano() int64 {
-	if x != nil {
-		return x.StartTimeUnixNano
-	}
-	return 0
-}
-
-func (x *Span) GetEndTimeUnixNano() int64 {
-	if x != nil {
-		return x.EndTimeUnixNano
-	}
-	return 0
-}
-
-func (x *Span) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Span) GetKind() SpanKind {
-	if x != nil {
-		return x.Kind
-	}
-	return SpanKind_SPAN_KIND_UNSPECIFIED
-}
-
-func (x *Span) GetStatusCode() StatusCode {
-	if x != nil {
-		return x.StatusCode
-	}
-	return StatusCode_STATUS_CODE_UNSET
-}
-
-func (x *Span) GetStatusMessage() string {
-	if x != nil {
-		return x.StatusMessage
-	}
-	return ""
-}
-
-func (x *Span) GetAttributes() []*KeyValue {
-	if x != nil {
-		return x.Attributes
-	}
-	return nil
-}
-
-func (x *Span) GetEvents() []*SpanEvent {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
-type RecordSpanRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Span          *Span                  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RecordSpanRequest) Reset() {
-	*x = RecordSpanRequest{}
-	mi := &file_harness_callback_proto_msgTypes[81]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordSpanRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordSpanRequest) ProtoMessage() {}
-
-func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[81]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordSpanRequest.ProtoReflect.Descriptor instead.
-func (*RecordSpanRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{81}
-}
-
-func (x *RecordSpanRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *RecordSpanRequest) GetSpan() *Span {
-	if x != nil {
-		return x.Span
-	}
-	return nil
-}
-
-type RecordSpanResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Error         *HarnessError          `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RecordSpanResponse) Reset() {
-	*x = RecordSpanResponse{}
-	mi := &file_harness_callback_proto_msgTypes[82]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordSpanResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordSpanResponse) ProtoMessage() {}
-
-func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[82]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordSpanResponse.ProtoReflect.Descriptor instead.
-func (*RecordSpanResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{82}
-}
-
-func (x *RecordSpanResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
-}
-
-type RecordSpansRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Spans         []*Span                `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RecordSpansRequest) Reset() {
-	*x = RecordSpansRequest{}
-	mi := &file_harness_callback_proto_msgTypes[83]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordSpansRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordSpansRequest) ProtoMessage() {}
-
-func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[83]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordSpansRequest.ProtoReflect.Descriptor instead.
-func (*RecordSpansRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{83}
-}
-
-func (x *RecordSpansRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *RecordSpansRequest) GetSpans() []*Span {
-	if x != nil {
-		return x.Spans
-	}
-	return nil
-}
-
-type RecordSpansResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Error         *HarnessError          `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RecordSpansResponse) Reset() {
-	*x = RecordSpansResponse{}
-	mi := &file_harness_callback_proto_msgTypes[84]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordSpansResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordSpansResponse) ProtoMessage() {}
-
-func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[84]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordSpansResponse.ProtoReflect.Descriptor instead.
-func (*RecordSpansResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{84}
-}
-
-func (x *RecordSpansResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
-}
-
 var File_harness_callback_proto protoreflect.FileDescriptor
 
 const file_harness_callback_proto_rawDesc = "" +
@@ -5670,63 +4999,7 @@ const file_harness_callback_proto_rawDesc = "" +
 	"confidence\x12%\n" +
 	"\x0esuggested_next\x18\x02 \x03(\tR\rsuggestedNext\x12#\n" +
 	"\rreplan_reason\x18\x03 \x01(\tR\freplanReason\x12!\n" +
-	"\fkey_findings\x18\x04 \x03(\tR\vkeyFindings\"\xc0\x01\n" +
-	"\bAnyValue\x12#\n" +
-	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x12\x1f\n" +
-	"\n" +
-	"bool_value\x18\x02 \x01(\bH\x00R\tboolValue\x12\x1d\n" +
-	"\tint_value\x18\x03 \x01(\x03H\x00R\bintValue\x12#\n" +
-	"\fdouble_value\x18\x04 \x01(\x01H\x00R\vdoubleValue\x12!\n" +
-	"\vbytes_value\x18\x05 \x01(\fH\x00R\n" +
-	"bytesValueB\a\n" +
-	"\x05value\"L\n" +
-	"\bKeyValue\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.gibson.harness.AnyValueR\x05value\"\x7f\n" +
-	"\tSpanEvent\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
-	"\x0etime_unix_nano\x18\x02 \x01(\x03R\ftimeUnixNano\x128\n" +
-	"\n" +
-	"attributes\x18\x03 \x03(\v2\x18.gibson.harness.KeyValueR\n" +
-	"attributes\"\xd1\x03\n" +
-	"\x04Span\x12\x19\n" +
-	"\btrace_id\x18\x01 \x01(\tR\atraceId\x12\x17\n" +
-	"\aspan_id\x18\x02 \x01(\tR\x06spanId\x12$\n" +
-	"\x0eparent_span_id\x18\x03 \x01(\tR\fparentSpanId\x12/\n" +
-	"\x14start_time_unix_nano\x18\x04 \x01(\x03R\x11startTimeUnixNano\x12+\n" +
-	"\x12end_time_unix_nano\x18\x05 \x01(\x03R\x0fendTimeUnixNano\x12\x12\n" +
-	"\x04name\x18\x06 \x01(\tR\x04name\x12,\n" +
-	"\x04kind\x18\a \x01(\x0e2\x18.gibson.harness.SpanKindR\x04kind\x12;\n" +
-	"\vstatus_code\x18\b \x01(\x0e2\x1a.gibson.harness.StatusCodeR\n" +
-	"statusCode\x12%\n" +
-	"\x0estatus_message\x18\t \x01(\tR\rstatusMessage\x128\n" +
-	"\n" +
-	"attributes\x18\n" +
-	" \x03(\v2\x18.gibson.harness.KeyValueR\n" +
-	"attributes\x121\n" +
-	"\x06events\x18\v \x03(\v2\x19.gibson.harness.SpanEventR\x06events\"t\n" +
-	"\x11RecordSpanRequest\x125\n" +
-	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x12(\n" +
-	"\x04span\x18\x02 \x01(\v2\x14.gibson.harness.SpanR\x04span\"H\n" +
-	"\x12RecordSpanResponse\x122\n" +
-	"\x05error\x18\x01 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"w\n" +
-	"\x12RecordSpansRequest\x125\n" +
-	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x12*\n" +
-	"\x05spans\x18\x02 \x03(\v2\x14.gibson.harness.SpanR\x05spans\"I\n" +
-	"\x13RecordSpansResponse\x122\n" +
-	"\x05error\x18\x01 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error*\x99\x01\n" +
-	"\bSpanKind\x12\x19\n" +
-	"\x15SPAN_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
-	"\x12SPAN_KIND_INTERNAL\x10\x01\x12\x14\n" +
-	"\x10SPAN_KIND_SERVER\x10\x02\x12\x14\n" +
-	"\x10SPAN_KIND_CLIENT\x10\x03\x12\x16\n" +
-	"\x12SPAN_KIND_PRODUCER\x10\x04\x12\x16\n" +
-	"\x12SPAN_KIND_CONSUMER\x10\x05*N\n" +
-	"\n" +
-	"StatusCode\x12\x15\n" +
-	"\x11STATUS_CODE_UNSET\x10\x00\x12\x12\n" +
-	"\x0eSTATUS_CODE_OK\x10\x01\x12\x15\n" +
-	"\x11STATUS_CODE_ERROR\x10\x022\xb3\x16\n" +
+	"\fkey_findings\x18\x04 \x03(\tR\vkeyFindings2\x86\x15\n" +
 	"\x16HarnessCallbackService\x12V\n" +
 	"\vLLMComplete\x12\".gibson.harness.LLMCompleteRequest\x1a#.gibson.harness.LLMCompleteResponse\x12h\n" +
 	"\x14LLMCompleteWithTools\x12+.gibson.harness.LLMCompleteWithToolsRequest\x1a#.gibson.harness.LLMCompleteResponse\x12t\n" +
@@ -5757,10 +5030,7 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\rTraverseGraph\x12$.gibson.harness.TraverseGraphRequest\x1a%.gibson.harness.TraverseGraphResponse\x12_\n" +
 	"\x0eGraphRAGHealth\x12%.gibson.harness.GraphRAGHealthRequest\x1a&.gibson.harness.GraphRAGHealthResponse\x12_\n" +
 	"\x0eGetPlanContext\x12%.gibson.harness.GetPlanContextRequest\x1a&.gibson.harness.GetPlanContextResponse\x12b\n" +
-	"\x0fReportStepHints\x12&.gibson.harness.ReportStepHintsRequest\x1a'.gibson.harness.ReportStepHintsResponse\x12S\n" +
-	"\n" +
-	"RecordSpan\x12!.gibson.harness.RecordSpanRequest\x1a\".gibson.harness.RecordSpanResponse\x12V\n" +
-	"\vRecordSpans\x12\".gibson.harness.RecordSpansRequest\x1a#.gibson.harness.RecordSpansResponseB*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
+	"\x0fReportStepHints\x12&.gibson.harness.ReportStepHintsRequest\x1a'.gibson.harness.ReportStepHintsResponseB*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
 
 var (
 	file_harness_callback_proto_rawDescOnce sync.Once
@@ -5774,261 +5044,234 @@ func file_harness_callback_proto_rawDescGZIP() []byte {
 	return file_harness_callback_proto_rawDescData
 }
 
-var file_harness_callback_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 85)
+var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 77)
 var file_harness_callback_proto_goTypes = []any{
-	(SpanKind)(0),                           // 0: gibson.harness.SpanKind
-	(StatusCode)(0),                         // 1: gibson.harness.StatusCode
-	(*HarnessError)(nil),                    // 2: gibson.harness.HarnessError
-	(*HarnessHealthStatus)(nil),             // 3: gibson.harness.HarnessHealthStatus
-	(*ContextInfo)(nil),                     // 4: gibson.harness.ContextInfo
-	(*TokenUsage)(nil),                      // 5: gibson.harness.TokenUsage
-	(*LLMMessage)(nil),                      // 6: gibson.harness.LLMMessage
-	(*ToolCall)(nil),                        // 7: gibson.harness.ToolCall
-	(*ToolResult)(nil),                      // 8: gibson.harness.ToolResult
-	(*ToolDef)(nil),                         // 9: gibson.harness.ToolDef
-	(*LLMCompleteRequest)(nil),              // 10: gibson.harness.LLMCompleteRequest
-	(*LLMCompleteWithToolsRequest)(nil),     // 11: gibson.harness.LLMCompleteWithToolsRequest
-	(*LLMCompleteStructuredRequest)(nil),    // 12: gibson.harness.LLMCompleteStructuredRequest
-	(*LLMCompleteStructuredResponse)(nil),   // 13: gibson.harness.LLMCompleteStructuredResponse
-	(*LLMCompleteResponse)(nil),             // 14: gibson.harness.LLMCompleteResponse
-	(*LLMStreamRequest)(nil),                // 15: gibson.harness.LLMStreamRequest
-	(*LLMStreamChunk)(nil),                  // 16: gibson.harness.LLMStreamChunk
-	(*CallToolRequest)(nil),                 // 17: gibson.harness.CallToolRequest
-	(*CallToolResponse)(nil),                // 18: gibson.harness.CallToolResponse
-	(*ListToolsRequest)(nil),                // 19: gibson.harness.ListToolsRequest
-	(*ListToolsResponse)(nil),               // 20: gibson.harness.ListToolsResponse
-	(*HarnessToolDescriptor)(nil),           // 21: gibson.harness.HarnessToolDescriptor
-	(*QueryPluginRequest)(nil),              // 22: gibson.harness.QueryPluginRequest
-	(*QueryPluginResponse)(nil),             // 23: gibson.harness.QueryPluginResponse
-	(*ListPluginsRequest)(nil),              // 24: gibson.harness.ListPluginsRequest
-	(*ListPluginsResponse)(nil),             // 25: gibson.harness.ListPluginsResponse
-	(*HarnessPluginDescriptor)(nil),         // 26: gibson.harness.HarnessPluginDescriptor
-	(*DelegateToAgentRequest)(nil),          // 27: gibson.harness.DelegateToAgentRequest
-	(*DelegateToAgentResponse)(nil),         // 28: gibson.harness.DelegateToAgentResponse
-	(*ListAgentsRequest)(nil),               // 29: gibson.harness.ListAgentsRequest
-	(*ListAgentsResponse)(nil),              // 30: gibson.harness.ListAgentsResponse
-	(*HarnessAgentDescriptor)(nil),          // 31: gibson.harness.HarnessAgentDescriptor
-	(*SubmitFindingRequest)(nil),            // 32: gibson.harness.SubmitFindingRequest
-	(*SubmitFindingResponse)(nil),           // 33: gibson.harness.SubmitFindingResponse
-	(*GetFindingsRequest)(nil),              // 34: gibson.harness.GetFindingsRequest
-	(*GetFindingsResponse)(nil),             // 35: gibson.harness.GetFindingsResponse
-	(*MemoryGetRequest)(nil),                // 36: gibson.harness.MemoryGetRequest
-	(*MemoryGetResponse)(nil),               // 37: gibson.harness.MemoryGetResponse
-	(*MemorySetRequest)(nil),                // 38: gibson.harness.MemorySetRequest
-	(*MemorySetResponse)(nil),               // 39: gibson.harness.MemorySetResponse
-	(*MemoryDeleteRequest)(nil),             // 40: gibson.harness.MemoryDeleteRequest
-	(*MemoryDeleteResponse)(nil),            // 41: gibson.harness.MemoryDeleteResponse
-	(*MemoryListRequest)(nil),               // 42: gibson.harness.MemoryListRequest
-	(*MemoryListResponse)(nil),              // 43: gibson.harness.MemoryListResponse
-	(*GraphRAGQueryRequest)(nil),            // 44: gibson.harness.GraphRAGQueryRequest
-	(*GraphRAGQueryResponse)(nil),           // 45: gibson.harness.GraphRAGQueryResponse
-	(*GraphRAGResult)(nil),                  // 46: gibson.harness.GraphRAGResult
-	(*GraphNode)(nil),                       // 47: gibson.harness.GraphNode
-	(*FindSimilarAttacksRequest)(nil),       // 48: gibson.harness.FindSimilarAttacksRequest
-	(*FindSimilarAttacksResponse)(nil),      // 49: gibson.harness.FindSimilarAttacksResponse
-	(*AttackPattern)(nil),                   // 50: gibson.harness.AttackPattern
-	(*FindSimilarFindingsRequest)(nil),      // 51: gibson.harness.FindSimilarFindingsRequest
-	(*FindSimilarFindingsResponse)(nil),     // 52: gibson.harness.FindSimilarFindingsResponse
-	(*FindingNode)(nil),                     // 53: gibson.harness.FindingNode
-	(*GetAttackChainsRequest)(nil),          // 54: gibson.harness.GetAttackChainsRequest
-	(*GetAttackChainsResponse)(nil),         // 55: gibson.harness.GetAttackChainsResponse
-	(*AttackChain)(nil),                     // 56: gibson.harness.AttackChain
-	(*AttackStep)(nil),                      // 57: gibson.harness.AttackStep
-	(*GetRelatedFindingsRequest)(nil),       // 58: gibson.harness.GetRelatedFindingsRequest
-	(*GetRelatedFindingsResponse)(nil),      // 59: gibson.harness.GetRelatedFindingsResponse
-	(*StoreGraphNodeRequest)(nil),           // 60: gibson.harness.StoreGraphNodeRequest
-	(*StoreGraphNodeResponse)(nil),          // 61: gibson.harness.StoreGraphNodeResponse
-	(*CreateGraphRelationshipRequest)(nil),  // 62: gibson.harness.CreateGraphRelationshipRequest
-	(*CreateGraphRelationshipResponse)(nil), // 63: gibson.harness.CreateGraphRelationshipResponse
-	(*Relationship)(nil),                    // 64: gibson.harness.Relationship
-	(*StoreGraphBatchRequest)(nil),          // 65: gibson.harness.StoreGraphBatchRequest
-	(*StoreGraphBatchResponse)(nil),         // 66: gibson.harness.StoreGraphBatchResponse
-	(*TraverseGraphRequest)(nil),            // 67: gibson.harness.TraverseGraphRequest
-	(*TraverseGraphResponse)(nil),           // 68: gibson.harness.TraverseGraphResponse
-	(*TraversalOptions)(nil),                // 69: gibson.harness.TraversalOptions
-	(*TraversalResult)(nil),                 // 70: gibson.harness.TraversalResult
-	(*GraphRAGHealthRequest)(nil),           // 71: gibson.harness.GraphRAGHealthRequest
-	(*GraphRAGHealthResponse)(nil),          // 72: gibson.harness.GraphRAGHealthResponse
-	(*GetPlanContextRequest)(nil),           // 73: gibson.harness.GetPlanContextRequest
-	(*GetPlanContextResponse)(nil),          // 74: gibson.harness.GetPlanContextResponse
-	(*PlanContext)(nil),                     // 75: gibson.harness.PlanContext
-	(*ReportStepHintsRequest)(nil),          // 76: gibson.harness.ReportStepHintsRequest
-	(*ReportStepHintsResponse)(nil),         // 77: gibson.harness.ReportStepHintsResponse
-	(*StepHints)(nil),                       // 78: gibson.harness.StepHints
-	(*AnyValue)(nil),                        // 79: gibson.harness.AnyValue
-	(*KeyValue)(nil),                        // 80: gibson.harness.KeyValue
-	(*SpanEvent)(nil),                       // 81: gibson.harness.SpanEvent
-	(*Span)(nil),                            // 82: gibson.harness.Span
-	(*RecordSpanRequest)(nil),               // 83: gibson.harness.RecordSpanRequest
-	(*RecordSpanResponse)(nil),              // 84: gibson.harness.RecordSpanResponse
-	(*RecordSpansRequest)(nil),              // 85: gibson.harness.RecordSpansRequest
-	(*RecordSpansResponse)(nil),             // 86: gibson.harness.RecordSpansResponse
+	(*HarnessError)(nil),                    // 0: gibson.harness.HarnessError
+	(*HarnessHealthStatus)(nil),             // 1: gibson.harness.HarnessHealthStatus
+	(*ContextInfo)(nil),                     // 2: gibson.harness.ContextInfo
+	(*TokenUsage)(nil),                      // 3: gibson.harness.TokenUsage
+	(*LLMMessage)(nil),                      // 4: gibson.harness.LLMMessage
+	(*ToolCall)(nil),                        // 5: gibson.harness.ToolCall
+	(*ToolResult)(nil),                      // 6: gibson.harness.ToolResult
+	(*ToolDef)(nil),                         // 7: gibson.harness.ToolDef
+	(*LLMCompleteRequest)(nil),              // 8: gibson.harness.LLMCompleteRequest
+	(*LLMCompleteWithToolsRequest)(nil),     // 9: gibson.harness.LLMCompleteWithToolsRequest
+	(*LLMCompleteStructuredRequest)(nil),    // 10: gibson.harness.LLMCompleteStructuredRequest
+	(*LLMCompleteStructuredResponse)(nil),   // 11: gibson.harness.LLMCompleteStructuredResponse
+	(*LLMCompleteResponse)(nil),             // 12: gibson.harness.LLMCompleteResponse
+	(*LLMStreamRequest)(nil),                // 13: gibson.harness.LLMStreamRequest
+	(*LLMStreamChunk)(nil),                  // 14: gibson.harness.LLMStreamChunk
+	(*CallToolRequest)(nil),                 // 15: gibson.harness.CallToolRequest
+	(*CallToolResponse)(nil),                // 16: gibson.harness.CallToolResponse
+	(*ListToolsRequest)(nil),                // 17: gibson.harness.ListToolsRequest
+	(*ListToolsResponse)(nil),               // 18: gibson.harness.ListToolsResponse
+	(*HarnessToolDescriptor)(nil),           // 19: gibson.harness.HarnessToolDescriptor
+	(*QueryPluginRequest)(nil),              // 20: gibson.harness.QueryPluginRequest
+	(*QueryPluginResponse)(nil),             // 21: gibson.harness.QueryPluginResponse
+	(*ListPluginsRequest)(nil),              // 22: gibson.harness.ListPluginsRequest
+	(*ListPluginsResponse)(nil),             // 23: gibson.harness.ListPluginsResponse
+	(*HarnessPluginDescriptor)(nil),         // 24: gibson.harness.HarnessPluginDescriptor
+	(*DelegateToAgentRequest)(nil),          // 25: gibson.harness.DelegateToAgentRequest
+	(*DelegateToAgentResponse)(nil),         // 26: gibson.harness.DelegateToAgentResponse
+	(*ListAgentsRequest)(nil),               // 27: gibson.harness.ListAgentsRequest
+	(*ListAgentsResponse)(nil),              // 28: gibson.harness.ListAgentsResponse
+	(*HarnessAgentDescriptor)(nil),          // 29: gibson.harness.HarnessAgentDescriptor
+	(*SubmitFindingRequest)(nil),            // 30: gibson.harness.SubmitFindingRequest
+	(*SubmitFindingResponse)(nil),           // 31: gibson.harness.SubmitFindingResponse
+	(*GetFindingsRequest)(nil),              // 32: gibson.harness.GetFindingsRequest
+	(*GetFindingsResponse)(nil),             // 33: gibson.harness.GetFindingsResponse
+	(*MemoryGetRequest)(nil),                // 34: gibson.harness.MemoryGetRequest
+	(*MemoryGetResponse)(nil),               // 35: gibson.harness.MemoryGetResponse
+	(*MemorySetRequest)(nil),                // 36: gibson.harness.MemorySetRequest
+	(*MemorySetResponse)(nil),               // 37: gibson.harness.MemorySetResponse
+	(*MemoryDeleteRequest)(nil),             // 38: gibson.harness.MemoryDeleteRequest
+	(*MemoryDeleteResponse)(nil),            // 39: gibson.harness.MemoryDeleteResponse
+	(*MemoryListRequest)(nil),               // 40: gibson.harness.MemoryListRequest
+	(*MemoryListResponse)(nil),              // 41: gibson.harness.MemoryListResponse
+	(*GraphRAGQueryRequest)(nil),            // 42: gibson.harness.GraphRAGQueryRequest
+	(*GraphRAGQueryResponse)(nil),           // 43: gibson.harness.GraphRAGQueryResponse
+	(*GraphRAGResult)(nil),                  // 44: gibson.harness.GraphRAGResult
+	(*GraphNode)(nil),                       // 45: gibson.harness.GraphNode
+	(*FindSimilarAttacksRequest)(nil),       // 46: gibson.harness.FindSimilarAttacksRequest
+	(*FindSimilarAttacksResponse)(nil),      // 47: gibson.harness.FindSimilarAttacksResponse
+	(*AttackPattern)(nil),                   // 48: gibson.harness.AttackPattern
+	(*FindSimilarFindingsRequest)(nil),      // 49: gibson.harness.FindSimilarFindingsRequest
+	(*FindSimilarFindingsResponse)(nil),     // 50: gibson.harness.FindSimilarFindingsResponse
+	(*FindingNode)(nil),                     // 51: gibson.harness.FindingNode
+	(*GetAttackChainsRequest)(nil),          // 52: gibson.harness.GetAttackChainsRequest
+	(*GetAttackChainsResponse)(nil),         // 53: gibson.harness.GetAttackChainsResponse
+	(*AttackChain)(nil),                     // 54: gibson.harness.AttackChain
+	(*AttackStep)(nil),                      // 55: gibson.harness.AttackStep
+	(*GetRelatedFindingsRequest)(nil),       // 56: gibson.harness.GetRelatedFindingsRequest
+	(*GetRelatedFindingsResponse)(nil),      // 57: gibson.harness.GetRelatedFindingsResponse
+	(*StoreGraphNodeRequest)(nil),           // 58: gibson.harness.StoreGraphNodeRequest
+	(*StoreGraphNodeResponse)(nil),          // 59: gibson.harness.StoreGraphNodeResponse
+	(*CreateGraphRelationshipRequest)(nil),  // 60: gibson.harness.CreateGraphRelationshipRequest
+	(*CreateGraphRelationshipResponse)(nil), // 61: gibson.harness.CreateGraphRelationshipResponse
+	(*Relationship)(nil),                    // 62: gibson.harness.Relationship
+	(*StoreGraphBatchRequest)(nil),          // 63: gibson.harness.StoreGraphBatchRequest
+	(*StoreGraphBatchResponse)(nil),         // 64: gibson.harness.StoreGraphBatchResponse
+	(*TraverseGraphRequest)(nil),            // 65: gibson.harness.TraverseGraphRequest
+	(*TraverseGraphResponse)(nil),           // 66: gibson.harness.TraverseGraphResponse
+	(*TraversalOptions)(nil),                // 67: gibson.harness.TraversalOptions
+	(*TraversalResult)(nil),                 // 68: gibson.harness.TraversalResult
+	(*GraphRAGHealthRequest)(nil),           // 69: gibson.harness.GraphRAGHealthRequest
+	(*GraphRAGHealthResponse)(nil),          // 70: gibson.harness.GraphRAGHealthResponse
+	(*GetPlanContextRequest)(nil),           // 71: gibson.harness.GetPlanContextRequest
+	(*GetPlanContextResponse)(nil),          // 72: gibson.harness.GetPlanContextResponse
+	(*PlanContext)(nil),                     // 73: gibson.harness.PlanContext
+	(*ReportStepHintsRequest)(nil),          // 74: gibson.harness.ReportStepHintsRequest
+	(*ReportStepHintsResponse)(nil),         // 75: gibson.harness.ReportStepHintsResponse
+	(*StepHints)(nil),                       // 76: gibson.harness.StepHints
 }
 var file_harness_callback_proto_depIdxs = []int32{
-	7,   // 0: gibson.harness.LLMMessage.tool_calls:type_name -> gibson.harness.ToolCall
-	8,   // 1: gibson.harness.LLMMessage.tool_results:type_name -> gibson.harness.ToolResult
-	4,   // 2: gibson.harness.LLMCompleteRequest.context:type_name -> gibson.harness.ContextInfo
-	6,   // 3: gibson.harness.LLMCompleteRequest.messages:type_name -> gibson.harness.LLMMessage
-	4,   // 4: gibson.harness.LLMCompleteWithToolsRequest.context:type_name -> gibson.harness.ContextInfo
-	6,   // 5: gibson.harness.LLMCompleteWithToolsRequest.messages:type_name -> gibson.harness.LLMMessage
-	9,   // 6: gibson.harness.LLMCompleteWithToolsRequest.tools:type_name -> gibson.harness.ToolDef
-	4,   // 7: gibson.harness.LLMCompleteStructuredRequest.context:type_name -> gibson.harness.ContextInfo
-	6,   // 8: gibson.harness.LLMCompleteStructuredRequest.messages:type_name -> gibson.harness.LLMMessage
-	5,   // 9: gibson.harness.LLMCompleteStructuredResponse.usage:type_name -> gibson.harness.TokenUsage
-	2,   // 10: gibson.harness.LLMCompleteStructuredResponse.error:type_name -> gibson.harness.HarnessError
-	7,   // 11: gibson.harness.LLMCompleteResponse.tool_calls:type_name -> gibson.harness.ToolCall
-	5,   // 12: gibson.harness.LLMCompleteResponse.usage:type_name -> gibson.harness.TokenUsage
-	2,   // 13: gibson.harness.LLMCompleteResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 14: gibson.harness.LLMStreamRequest.context:type_name -> gibson.harness.ContextInfo
-	6,   // 15: gibson.harness.LLMStreamRequest.messages:type_name -> gibson.harness.LLMMessage
-	7,   // 16: gibson.harness.LLMStreamChunk.tool_calls:type_name -> gibson.harness.ToolCall
-	5,   // 17: gibson.harness.LLMStreamChunk.usage:type_name -> gibson.harness.TokenUsage
-	2,   // 18: gibson.harness.LLMStreamChunk.error:type_name -> gibson.harness.HarnessError
-	4,   // 19: gibson.harness.CallToolRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 20: gibson.harness.CallToolResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 21: gibson.harness.ListToolsRequest.context:type_name -> gibson.harness.ContextInfo
-	21,  // 22: gibson.harness.ListToolsResponse.tools:type_name -> gibson.harness.HarnessToolDescriptor
-	2,   // 23: gibson.harness.ListToolsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 24: gibson.harness.QueryPluginRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 25: gibson.harness.QueryPluginResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 26: gibson.harness.ListPluginsRequest.context:type_name -> gibson.harness.ContextInfo
-	26,  // 27: gibson.harness.ListPluginsResponse.plugins:type_name -> gibson.harness.HarnessPluginDescriptor
-	2,   // 28: gibson.harness.ListPluginsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 29: gibson.harness.DelegateToAgentRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 30: gibson.harness.DelegateToAgentResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 31: gibson.harness.ListAgentsRequest.context:type_name -> gibson.harness.ContextInfo
-	31,  // 32: gibson.harness.ListAgentsResponse.agents:type_name -> gibson.harness.HarnessAgentDescriptor
-	2,   // 33: gibson.harness.ListAgentsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 34: gibson.harness.SubmitFindingRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 35: gibson.harness.SubmitFindingResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 36: gibson.harness.GetFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 37: gibson.harness.GetFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 38: gibson.harness.MemoryGetRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 39: gibson.harness.MemoryGetResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 40: gibson.harness.MemorySetRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 41: gibson.harness.MemorySetResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 42: gibson.harness.MemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 43: gibson.harness.MemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 44: gibson.harness.MemoryListRequest.context:type_name -> gibson.harness.ContextInfo
-	2,   // 45: gibson.harness.MemoryListResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 46: gibson.harness.GraphRAGQueryRequest.context:type_name -> gibson.harness.ContextInfo
-	46,  // 47: gibson.harness.GraphRAGQueryResponse.results:type_name -> gibson.harness.GraphRAGResult
-	2,   // 48: gibson.harness.GraphRAGQueryResponse.error:type_name -> gibson.harness.HarnessError
-	47,  // 49: gibson.harness.GraphRAGResult.node:type_name -> gibson.harness.GraphNode
-	4,   // 50: gibson.harness.FindSimilarAttacksRequest.context:type_name -> gibson.harness.ContextInfo
-	50,  // 51: gibson.harness.FindSimilarAttacksResponse.attacks:type_name -> gibson.harness.AttackPattern
-	2,   // 52: gibson.harness.FindSimilarAttacksResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 53: gibson.harness.FindSimilarFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	53,  // 54: gibson.harness.FindSimilarFindingsResponse.findings:type_name -> gibson.harness.FindingNode
-	2,   // 55: gibson.harness.FindSimilarFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 56: gibson.harness.GetAttackChainsRequest.context:type_name -> gibson.harness.ContextInfo
-	56,  // 57: gibson.harness.GetAttackChainsResponse.chains:type_name -> gibson.harness.AttackChain
-	2,   // 58: gibson.harness.GetAttackChainsResponse.error:type_name -> gibson.harness.HarnessError
-	57,  // 59: gibson.harness.AttackChain.steps:type_name -> gibson.harness.AttackStep
-	4,   // 60: gibson.harness.GetRelatedFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	53,  // 61: gibson.harness.GetRelatedFindingsResponse.findings:type_name -> gibson.harness.FindingNode
-	2,   // 62: gibson.harness.GetRelatedFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 63: gibson.harness.StoreGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
-	47,  // 64: gibson.harness.StoreGraphNodeRequest.node:type_name -> gibson.harness.GraphNode
-	2,   // 65: gibson.harness.StoreGraphNodeResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 66: gibson.harness.CreateGraphRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
-	64,  // 67: gibson.harness.CreateGraphRelationshipRequest.relationship:type_name -> gibson.harness.Relationship
-	2,   // 68: gibson.harness.CreateGraphRelationshipResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 69: gibson.harness.StoreGraphBatchRequest.context:type_name -> gibson.harness.ContextInfo
-	47,  // 70: gibson.harness.StoreGraphBatchRequest.nodes:type_name -> gibson.harness.GraphNode
-	64,  // 71: gibson.harness.StoreGraphBatchRequest.relationships:type_name -> gibson.harness.Relationship
-	2,   // 72: gibson.harness.StoreGraphBatchResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 73: gibson.harness.TraverseGraphRequest.context:type_name -> gibson.harness.ContextInfo
-	69,  // 74: gibson.harness.TraverseGraphRequest.options:type_name -> gibson.harness.TraversalOptions
-	70,  // 75: gibson.harness.TraverseGraphResponse.results:type_name -> gibson.harness.TraversalResult
-	2,   // 76: gibson.harness.TraverseGraphResponse.error:type_name -> gibson.harness.HarnessError
-	47,  // 77: gibson.harness.TraversalResult.node:type_name -> gibson.harness.GraphNode
-	4,   // 78: gibson.harness.GraphRAGHealthRequest.context:type_name -> gibson.harness.ContextInfo
-	3,   // 79: gibson.harness.GraphRAGHealthResponse.status:type_name -> gibson.harness.HarnessHealthStatus
-	4,   // 80: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
-	75,  // 81: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
-	2,   // 82: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 83: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
-	78,  // 84: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
-	2,   // 85: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
-	79,  // 86: gibson.harness.KeyValue.value:type_name -> gibson.harness.AnyValue
-	80,  // 87: gibson.harness.SpanEvent.attributes:type_name -> gibson.harness.KeyValue
-	0,   // 88: gibson.harness.Span.kind:type_name -> gibson.harness.SpanKind
-	1,   // 89: gibson.harness.Span.status_code:type_name -> gibson.harness.StatusCode
-	80,  // 90: gibson.harness.Span.attributes:type_name -> gibson.harness.KeyValue
-	81,  // 91: gibson.harness.Span.events:type_name -> gibson.harness.SpanEvent
-	4,   // 92: gibson.harness.RecordSpanRequest.context:type_name -> gibson.harness.ContextInfo
-	82,  // 93: gibson.harness.RecordSpanRequest.span:type_name -> gibson.harness.Span
-	2,   // 94: gibson.harness.RecordSpanResponse.error:type_name -> gibson.harness.HarnessError
-	4,   // 95: gibson.harness.RecordSpansRequest.context:type_name -> gibson.harness.ContextInfo
-	82,  // 96: gibson.harness.RecordSpansRequest.spans:type_name -> gibson.harness.Span
-	2,   // 97: gibson.harness.RecordSpansResponse.error:type_name -> gibson.harness.HarnessError
-	10,  // 98: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
-	11,  // 99: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
-	12,  // 100: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
-	15,  // 101: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
-	17,  // 102: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
-	19,  // 103: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
-	22,  // 104: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
-	24,  // 105: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
-	27,  // 106: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
-	29,  // 107: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
-	32,  // 108: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
-	34,  // 109: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
-	36,  // 110: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
-	38,  // 111: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
-	40,  // 112: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
-	42,  // 113: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
-	44,  // 114: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
-	48,  // 115: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
-	51,  // 116: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
-	54,  // 117: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
-	58,  // 118: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
-	60,  // 119: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
-	62,  // 120: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
-	65,  // 121: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
-	67,  // 122: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
-	71,  // 123: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
-	73,  // 124: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
-	76,  // 125: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
-	83,  // 126: gibson.harness.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.RecordSpanRequest
-	85,  // 127: gibson.harness.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.RecordSpansRequest
-	14,  // 128: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
-	14,  // 129: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
-	13,  // 130: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
-	16,  // 131: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
-	18,  // 132: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
-	20,  // 133: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
-	23,  // 134: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
-	25,  // 135: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
-	28,  // 136: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
-	30,  // 137: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
-	33,  // 138: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
-	35,  // 139: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
-	37,  // 140: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
-	39,  // 141: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
-	41,  // 142: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
-	43,  // 143: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
-	45,  // 144: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
-	49,  // 145: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
-	52,  // 146: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
-	55,  // 147: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
-	59,  // 148: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
-	61,  // 149: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
-	63,  // 150: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
-	66,  // 151: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
-	68,  // 152: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
-	72,  // 153: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
-	74,  // 154: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
-	77,  // 155: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
-	84,  // 156: gibson.harness.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.RecordSpanResponse
-	86,  // 157: gibson.harness.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.RecordSpansResponse
-	128, // [128:158] is the sub-list for method output_type
-	98,  // [98:128] is the sub-list for method input_type
-	98,  // [98:98] is the sub-list for extension type_name
-	98,  // [98:98] is the sub-list for extension extendee
-	0,   // [0:98] is the sub-list for field type_name
+	5,   // 0: gibson.harness.LLMMessage.tool_calls:type_name -> gibson.harness.ToolCall
+	6,   // 1: gibson.harness.LLMMessage.tool_results:type_name -> gibson.harness.ToolResult
+	2,   // 2: gibson.harness.LLMCompleteRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 3: gibson.harness.LLMCompleteRequest.messages:type_name -> gibson.harness.LLMMessage
+	2,   // 4: gibson.harness.LLMCompleteWithToolsRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 5: gibson.harness.LLMCompleteWithToolsRequest.messages:type_name -> gibson.harness.LLMMessage
+	7,   // 6: gibson.harness.LLMCompleteWithToolsRequest.tools:type_name -> gibson.harness.ToolDef
+	2,   // 7: gibson.harness.LLMCompleteStructuredRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 8: gibson.harness.LLMCompleteStructuredRequest.messages:type_name -> gibson.harness.LLMMessage
+	3,   // 9: gibson.harness.LLMCompleteStructuredResponse.usage:type_name -> gibson.harness.TokenUsage
+	0,   // 10: gibson.harness.LLMCompleteStructuredResponse.error:type_name -> gibson.harness.HarnessError
+	5,   // 11: gibson.harness.LLMCompleteResponse.tool_calls:type_name -> gibson.harness.ToolCall
+	3,   // 12: gibson.harness.LLMCompleteResponse.usage:type_name -> gibson.harness.TokenUsage
+	0,   // 13: gibson.harness.LLMCompleteResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 14: gibson.harness.LLMStreamRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 15: gibson.harness.LLMStreamRequest.messages:type_name -> gibson.harness.LLMMessage
+	5,   // 16: gibson.harness.LLMStreamChunk.tool_calls:type_name -> gibson.harness.ToolCall
+	3,   // 17: gibson.harness.LLMStreamChunk.usage:type_name -> gibson.harness.TokenUsage
+	0,   // 18: gibson.harness.LLMStreamChunk.error:type_name -> gibson.harness.HarnessError
+	2,   // 19: gibson.harness.CallToolRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 20: gibson.harness.CallToolResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 21: gibson.harness.ListToolsRequest.context:type_name -> gibson.harness.ContextInfo
+	19,  // 22: gibson.harness.ListToolsResponse.tools:type_name -> gibson.harness.HarnessToolDescriptor
+	0,   // 23: gibson.harness.ListToolsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 24: gibson.harness.QueryPluginRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 25: gibson.harness.QueryPluginResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 26: gibson.harness.ListPluginsRequest.context:type_name -> gibson.harness.ContextInfo
+	24,  // 27: gibson.harness.ListPluginsResponse.plugins:type_name -> gibson.harness.HarnessPluginDescriptor
+	0,   // 28: gibson.harness.ListPluginsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 29: gibson.harness.DelegateToAgentRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 30: gibson.harness.DelegateToAgentResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 31: gibson.harness.ListAgentsRequest.context:type_name -> gibson.harness.ContextInfo
+	29,  // 32: gibson.harness.ListAgentsResponse.agents:type_name -> gibson.harness.HarnessAgentDescriptor
+	0,   // 33: gibson.harness.ListAgentsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 34: gibson.harness.SubmitFindingRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 35: gibson.harness.SubmitFindingResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 36: gibson.harness.GetFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 37: gibson.harness.GetFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 38: gibson.harness.MemoryGetRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 39: gibson.harness.MemoryGetResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 40: gibson.harness.MemorySetRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 41: gibson.harness.MemorySetResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 42: gibson.harness.MemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 43: gibson.harness.MemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 44: gibson.harness.MemoryListRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 45: gibson.harness.MemoryListResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 46: gibson.harness.GraphRAGQueryRequest.context:type_name -> gibson.harness.ContextInfo
+	44,  // 47: gibson.harness.GraphRAGQueryResponse.results:type_name -> gibson.harness.GraphRAGResult
+	0,   // 48: gibson.harness.GraphRAGQueryResponse.error:type_name -> gibson.harness.HarnessError
+	45,  // 49: gibson.harness.GraphRAGResult.node:type_name -> gibson.harness.GraphNode
+	2,   // 50: gibson.harness.FindSimilarAttacksRequest.context:type_name -> gibson.harness.ContextInfo
+	48,  // 51: gibson.harness.FindSimilarAttacksResponse.attacks:type_name -> gibson.harness.AttackPattern
+	0,   // 52: gibson.harness.FindSimilarAttacksResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 53: gibson.harness.FindSimilarFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	51,  // 54: gibson.harness.FindSimilarFindingsResponse.findings:type_name -> gibson.harness.FindingNode
+	0,   // 55: gibson.harness.FindSimilarFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 56: gibson.harness.GetAttackChainsRequest.context:type_name -> gibson.harness.ContextInfo
+	54,  // 57: gibson.harness.GetAttackChainsResponse.chains:type_name -> gibson.harness.AttackChain
+	0,   // 58: gibson.harness.GetAttackChainsResponse.error:type_name -> gibson.harness.HarnessError
+	55,  // 59: gibson.harness.AttackChain.steps:type_name -> gibson.harness.AttackStep
+	2,   // 60: gibson.harness.GetRelatedFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	51,  // 61: gibson.harness.GetRelatedFindingsResponse.findings:type_name -> gibson.harness.FindingNode
+	0,   // 62: gibson.harness.GetRelatedFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 63: gibson.harness.StoreGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
+	45,  // 64: gibson.harness.StoreGraphNodeRequest.node:type_name -> gibson.harness.GraphNode
+	0,   // 65: gibson.harness.StoreGraphNodeResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 66: gibson.harness.CreateGraphRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
+	62,  // 67: gibson.harness.CreateGraphRelationshipRequest.relationship:type_name -> gibson.harness.Relationship
+	0,   // 68: gibson.harness.CreateGraphRelationshipResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 69: gibson.harness.StoreGraphBatchRequest.context:type_name -> gibson.harness.ContextInfo
+	45,  // 70: gibson.harness.StoreGraphBatchRequest.nodes:type_name -> gibson.harness.GraphNode
+	62,  // 71: gibson.harness.StoreGraphBatchRequest.relationships:type_name -> gibson.harness.Relationship
+	0,   // 72: gibson.harness.StoreGraphBatchResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 73: gibson.harness.TraverseGraphRequest.context:type_name -> gibson.harness.ContextInfo
+	67,  // 74: gibson.harness.TraverseGraphRequest.options:type_name -> gibson.harness.TraversalOptions
+	68,  // 75: gibson.harness.TraverseGraphResponse.results:type_name -> gibson.harness.TraversalResult
+	0,   // 76: gibson.harness.TraverseGraphResponse.error:type_name -> gibson.harness.HarnessError
+	45,  // 77: gibson.harness.TraversalResult.node:type_name -> gibson.harness.GraphNode
+	2,   // 78: gibson.harness.GraphRAGHealthRequest.context:type_name -> gibson.harness.ContextInfo
+	1,   // 79: gibson.harness.GraphRAGHealthResponse.status:type_name -> gibson.harness.HarnessHealthStatus
+	2,   // 80: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
+	73,  // 81: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
+	0,   // 82: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
+	2,   // 83: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
+	76,  // 84: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
+	0,   // 85: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
+	8,   // 86: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
+	9,   // 87: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
+	10,  // 88: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
+	13,  // 89: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
+	15,  // 90: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
+	17,  // 91: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
+	20,  // 92: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
+	22,  // 93: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
+	25,  // 94: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
+	27,  // 95: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
+	30,  // 96: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
+	32,  // 97: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
+	34,  // 98: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
+	36,  // 99: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
+	38,  // 100: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
+	40,  // 101: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
+	42,  // 102: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
+	46,  // 103: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
+	49,  // 104: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
+	52,  // 105: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
+	56,  // 106: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
+	58,  // 107: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
+	60,  // 108: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
+	63,  // 109: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
+	65,  // 110: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
+	69,  // 111: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
+	71,  // 112: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
+	74,  // 113: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
+	12,  // 114: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
+	12,  // 115: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
+	11,  // 116: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
+	14,  // 117: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
+	16,  // 118: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
+	18,  // 119: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
+	21,  // 120: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
+	23,  // 121: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
+	26,  // 122: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
+	28,  // 123: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
+	31,  // 124: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
+	33,  // 125: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
+	35,  // 126: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
+	37,  // 127: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
+	39,  // 128: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
+	41,  // 129: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
+	43,  // 130: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
+	47,  // 131: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
+	50,  // 132: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
+	53,  // 133: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
+	57,  // 134: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
+	59,  // 135: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
+	61,  // 136: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
+	64,  // 137: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
+	66,  // 138: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
+	70,  // 139: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
+	72,  // 140: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
+	75,  // 141: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
+	114, // [114:142] is the sub-list for method output_type
+	86,  // [86:114] is the sub-list for method input_type
+	86,  // [86:86] is the sub-list for extension type_name
+	86,  // [86:86] is the sub-list for extension extendee
+	0,   // [0:86] is the sub-list for field type_name
 }
 
 func init() { file_harness_callback_proto_init() }
@@ -6038,26 +5281,18 @@ func file_harness_callback_proto_init() {
 	}
 	file_harness_callback_proto_msgTypes[8].OneofWrappers = []any{}
 	file_harness_callback_proto_msgTypes[13].OneofWrappers = []any{}
-	file_harness_callback_proto_msgTypes[77].OneofWrappers = []any{
-		(*AnyValue_StringValue)(nil),
-		(*AnyValue_BoolValue)(nil),
-		(*AnyValue_IntValue)(nil),
-		(*AnyValue_DoubleValue)(nil),
-		(*AnyValue_BytesValue)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_harness_callback_proto_rawDesc), len(file_harness_callback_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   85,
+			NumEnums:      0,
+			NumMessages:   77,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_harness_callback_proto_goTypes,
 		DependencyIndexes: file_harness_callback_proto_depIdxs,
-		EnumInfos:         file_harness_callback_proto_enumTypes,
 		MessageInfos:      file_harness_callback_proto_msgTypes,
 	}.Build()
 	File_harness_callback_proto = out.File

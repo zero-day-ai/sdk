@@ -7,21 +7,26 @@ import (
 
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/memory"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // CallbackMemoryStore implements memory.Store by forwarding all operations
 // to the orchestrator via gRPC callbacks.
 type CallbackMemoryStore struct {
 	client  *CallbackClient
+	tracer  trace.Tracer
 	working *callbackWorkingMemory
 }
 
 // NewCallbackMemoryStore creates a new memory store that uses gRPC callbacks.
-func NewCallbackMemoryStore(client *CallbackClient) *CallbackMemoryStore {
+func NewCallbackMemoryStore(client *CallbackClient, tracer trace.Tracer) *CallbackMemoryStore {
 	store := &CallbackMemoryStore{
 		client: client,
+		tracer: tracer,
 	}
-	store.working = &callbackWorkingMemory{client: client}
+	store.working = &callbackWorkingMemory{client: client, tracer: tracer}
 	return store
 }
 
@@ -48,12 +53,25 @@ func (m *CallbackMemoryStore) LongTerm() memory.LongTermMemory {
 
 type callbackWorkingMemory struct {
 	client *CallbackClient
+	tracer trace.Tracer
 }
 
 // Get retrieves a value by key from the orchestrator's memory store.
 func (m *callbackWorkingMemory) Get(ctx context.Context, key string) (any, error) {
+	// Start span for memory get
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.get",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+		),
+	)
+	defer span.End()
+
 	if !m.client.IsConnected() {
-		return nil, fmt.Errorf("callback client not connected")
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
 
 	req := &proto.MemoryGetRequest{
@@ -62,20 +80,30 @@ func (m *callbackWorkingMemory) Get(ctx context.Context, key string) (any, error
 
 	resp, err := m.client.MemoryGet(ctx, req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("memory get failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return nil, fmt.Errorf("memory get error: %s", resp.Error.Message)
+		err := fmt.Errorf("memory get error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	if !resp.Found {
+		span.SetAttributes(attribute.Bool("gibson.memory.found", false))
 		return nil, memory.ErrNotFound
 	}
+
+	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
 
 	// Deserialize the value from JSON
 	var value any
 	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
 	}
 
@@ -84,13 +112,27 @@ func (m *callbackWorkingMemory) Get(ctx context.Context, key string) (any, error
 
 // Set stores a value with the given key in the orchestrator's memory store.
 func (m *callbackWorkingMemory) Set(ctx context.Context, key string, value any) error {
+	// Start span for memory set
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.set",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+		),
+	)
+	defer span.End()
+
 	if !m.client.IsConnected() {
-		return fmt.Errorf("callback client not connected")
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
 	}
 
 	// Serialize the value to JSON
 	valueJSON, err := json.Marshal(value)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed to marshal value: %w", err)
 	}
 
@@ -101,11 +143,16 @@ func (m *callbackWorkingMemory) Set(ctx context.Context, key string, value any) 
 
 	resp, err := m.client.MemorySet(ctx, req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("memory set failed: %w", err)
 	}
 
 	if resp.Error != nil {
-		return fmt.Errorf("memory set error: %s", resp.Error.Message)
+		err := fmt.Errorf("memory set error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return err
 	}
 
 	return nil
