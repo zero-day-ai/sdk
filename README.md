@@ -24,6 +24,14 @@ The Gibson SDK is the official Software Development Kit for building AI security
 - [Creating Tools](#creating-tools)
 - [Creating Plugins](#creating-plugins)
 - [Serving Components](#serving-components)
+  - [Deployment Modes](#deployment-modes)
+  - [Subprocess Mode (New)](#subprocess-mode)
+  - [Harness Callbacks](#harness-callbacks)
+- [Advanced Features](#advanced-features)
+  - [Real-time Streaming](#real-time-streaming)
+  - [Mission Execution Context](#mission-execution-context)
+  - [Scoped GraphRAG Queries](#scoped-graphrag-queries)
+  - [Memory Continuity](#memory-continuity)
 - [Framework Usage](#framework-usage)
 - [Configuration Options](#configuration-options)
 - [API Reference](#api-reference)
@@ -41,6 +49,10 @@ The Gibson SDK provides a comprehensive set of APIs for:
 - **Managing Missions**: Orchestrate testing campaigns across multiple agents and targets
 - **Collecting Findings**: Standardized vulnerability reporting with MITRE ATT&CK/ATLAS mappings
 - **Memory Management**: Three-tier memory system (working, mission, long-term)
+- **Real-time Streaming**: Live event emission for agent output, tool calls, and findings
+- **Harness Callbacks**: Remote agent execution with full harness capabilities via gRPC
+- **Mission Continuity**: Resumable missions with run history and memory continuity modes
+- **Scoped GraphRAG Queries**: Query knowledge graphs with mission and run-level scoping
 
 ## Architecture Overview
 
@@ -1124,10 +1136,11 @@ The SDK provides gRPC server infrastructure for exposing agents, tools, and plug
 
 ### Deployment Modes
 
-Gibson supports two primary deployment modes:
+Gibson supports three primary deployment modes:
 
 1. **Local Mode**: Components run on the same machine as the Gibson CLI, communicating via Unix domain sockets
 2. **Remote Mode**: Components run on different machines (or containers), communicating via TCP/IP
+3. **Subprocess Mode**: Tools run as short-lived processes spawned on-demand, communicating via stdin/stdout JSON
 
 ### Local Mode (Unix Sockets)
 
@@ -1327,6 +1340,204 @@ server.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_SE
 // Set component as unhealthy (e.g., during shutdown)
 server.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 ```
+
+### Subprocess Mode
+
+**Recommended for simple tools, prototyping, and language-agnostic tool development.**
+
+Subprocess mode allows tools to run as short-lived processes that communicate via stdin/stdout using JSON. This is ideal for:
+- Simple stateless utilities
+- Tools written in any language (Python, Rust, Node.js, shell scripts)
+- Prototyping before graduating to gRPC
+- Wrapping existing CLI tools
+
+#### Protocol
+
+```bash
+# Get tool schema (required for discovery)
+./my-tool --schema
+# Output: {"name": "...", "version": "...", "input_schema": {...}, "output_schema": {...}}
+
+# Execute tool
+echo '{"param": "value"}' | ./my-tool
+# Output: {"result": "..."}
+```
+
+#### Creating a Subprocess Tool
+
+```go
+package main
+
+import (
+    "context"
+    "os"
+
+    "github.com/zero-day-ai/sdk/schema"
+    "github.com/zero-day-ai/sdk/serve"
+    "github.com/zero-day-ai/sdk/types"
+)
+
+type DNSLookupTool struct{}
+
+func (t *DNSLookupTool) Name() string        { return "dns-lookup" }
+func (t *DNSLookupTool) Version() string     { return "1.0.0" }
+func (t *DNSLookupTool) Description() string { return "Perform DNS lookups" }
+func (t *DNSLookupTool) Tags() []string      { return []string{"network", "dns"} }
+
+func (t *DNSLookupTool) InputSchema() schema.JSON {
+    return schema.Object(map[string]schema.JSON{
+        "domain": schema.StringWithDesc("Domain name to lookup"),
+    }, "domain")
+}
+
+func (t *DNSLookupTool) OutputSchema() schema.JSON {
+    return schema.Object(map[string]schema.JSON{
+        "records": schema.Array(schema.String(), "DNS records found"),
+    }, "records")
+}
+
+func (t *DNSLookupTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
+    domain := input["domain"].(string)
+    // DNS lookup logic here...
+    return map[string]any{"records": []string{"192.168.1.1"}}, nil
+}
+
+func (t *DNSLookupTool) Health(ctx context.Context) types.HealthStatus {
+    return types.NewHealthyStatus("operational")
+}
+
+func main() {
+    tool := &DNSLookupTool{}
+
+    // Handle --schema flag (required for subprocess discovery)
+    if len(os.Args) > 1 && os.Args[1] == "--schema" {
+        if err := serve.OutputSchema(tool); err != nil {
+            os.Exit(1)
+        }
+        os.Exit(0)
+    }
+
+    // Run in subprocess mode (reads JSON from stdin, writes to stdout)
+    if err := serve.RunSubprocess(tool); err != nil {
+        os.Exit(1)
+    }
+}
+```
+
+#### Deploying Subprocess Tools
+
+```bash
+# Build the tool
+go build -o dns-lookup ./main.go
+
+# Deploy to Gibson tools directory
+cp dns-lookup ~/.gibson/tools/bin/
+
+# Verify discovery works
+./dns-lookup --schema
+
+# Test execution
+echo '{"domain": "example.com"}' | ./dns-lookup
+```
+
+#### When to Use Subprocess vs gRPC
+
+| Use Subprocess When | Use gRPC When |
+|---------------------|---------------|
+| Simple stateless utilities | High-frequency calls (>100/sec) |
+| Prototyping new tools | Stateful operations (connections, sessions) |
+| Any language needed | Warm caches, loaded models |
+| Infrequent calls | Distributed deployment |
+| Process isolation required | Real-time monitoring needed |
+
+### Harness Callbacks
+
+**For standalone agents that need access to the full Gibson orchestrator capabilities.**
+
+Harness callbacks enable agents running as separate gRPC services to access LLM completions, tools, plugins, and all other harness operations via gRPC callbacks to the orchestrator.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Gibson Orchestrator                       │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │         HarnessCallbackService (gRPC)                 │   │
+│  │  - Exposes harness operations via RPC                │   │
+│  │  - Manages harness registry by task ID               │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                          ▲                                   │
+└──────────────────────────┼───────────────────────────────────┘
+                           │ gRPC Callbacks
+┌──────────────────────────┼───────────────────────────────────┐
+│                    Standalone Agent                          │
+│  ┌──────────────────────▼───────────────────────────────┐   │
+│  │         CallbackHarness (Harness Implementation)      │   │
+│  │  - Implements agent.Harness interface                │   │
+│  │  - Forwards all operations to orchestrator           │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Configuring Callback Support
+
+```go
+package main
+
+import (
+    "context"
+    "os"
+
+    sdk "github.com/zero-day-ai/sdk"
+    "github.com/zero-day-ai/sdk/agent"
+    "github.com/zero-day-ai/sdk/serve"
+)
+
+func main() {
+    myAgent, _ := sdk.NewAgent(
+        sdk.WithName("my-agent"),
+        sdk.WithVersion("1.0.0"),
+        sdk.WithExecuteFunc(executeAgent),
+    )
+
+    // Serve agent with callback support
+    err := serve.Agent(myAgent,
+        serve.WithPort(50051),
+        serve.WithOrchestratorEndpoint("localhost:50052"),  // Enable callbacks
+        serve.WithOrchestratorToken(os.Getenv("ORCHESTRATOR_TOKEN")),  // Optional auth
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func executeAgent(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
+    // Harness operations are forwarded to orchestrator via gRPC
+    resp, err := harness.Complete(ctx, "primary", messages)
+    if err != nil {
+        return agent.NewFailedResult(err), err
+    }
+
+    // Tool calls via callback
+    output, err := harness.CallTool(ctx, "http-client", map[string]any{
+        "url": harness.Target().URL,
+    })
+
+    return agent.NewSuccessResult(resp.Content), nil
+}
+```
+
+#### Supported Callback Operations
+
+| Category | Operations |
+|----------|------------|
+| **LLM** | Complete, CompleteWithTools, Stream |
+| **Tools** | CallTool, ListTools |
+| **Plugins** | QueryPlugin, ListPlugins |
+| **Agents** | DelegateToAgent, ListAgents |
+| **Findings** | SubmitFinding, GetFindings |
+| **Memory** | Get, Set, Delete, List |
+| **GraphRAG** | QueryGraphRAG, FindSimilarAttacks, StoreGraphNode, etc. |
+
+For detailed callback architecture documentation, see [docs/harness_callbacks.md](docs/harness_callbacks.md).
 
 ### Tool Serving Examples
 
@@ -1752,6 +1963,172 @@ helm upgrade gibson ./helm-chart -n gibson
 4. **Network Policies**: Restrict component-to-component communication in Kubernetes
 5. **Health Checks**: Implement proper health checks to prevent routing to unhealthy instances
 
+## Advanced Features
+
+### Real-time Streaming
+
+The SDK supports real-time event emission for agent output, tool calls, and findings through the `StreamingHarness` interface.
+
+```go
+// StreamingHarness extends Harness with event emission
+type StreamingHarness interface {
+    Harness
+
+    // EmitOutput emits a text output chunk
+    EmitOutput(content string, isReasoning bool) error
+
+    // EmitToolCall emits a tool invocation event
+    EmitToolCall(toolName string, input map[string]any, callID string) error
+
+    // EmitToolResult emits a tool result event
+    EmitToolResult(output map[string]any, err error, callID string) error
+
+    // EmitFinding emits a discovered vulnerability
+    EmitFinding(finding *finding.Finding) error
+
+    // EmitStatus emits a status change
+    EmitStatus(status string, message string) error
+
+    // Steering returns channel for receiving user guidance
+    Steering() <-chan SteeringMessage
+
+    // Mode returns current execution mode
+    Mode() ExecutionMode
+}
+```
+
+**Execution Modes:**
+- `ExecutionModeAutonomous`: Agent operates independently
+- `ExecutionModeSemiAutonomous`: Agent pauses for approval on critical actions
+- `ExecutionModeManual`: Agent waits for explicit user direction
+
+### Mission Execution Context
+
+Access extended mission context including run history, resume status, and cross-run queries:
+
+```go
+func executeFunc(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
+    // Get full execution context
+    execCtx := harness.MissionExecutionContext()
+
+    logger := harness.Logger()
+    logger.Info("execution context",
+        "mission_id", execCtx.MissionID,
+        "run_number", execCtx.RunNumber,
+        "is_resumed", execCtx.IsResumed,
+    )
+
+    // Check if this is a resumed run
+    if execCtx.IsResumed {
+        logger.Info("resumed from node", "node", execCtx.ResumedFromNode)
+    }
+
+    // Get run history
+    history, err := harness.GetMissionRunHistory(ctx)
+    if err != nil {
+        return agent.NewFailedResult(err), err
+    }
+
+    // Access findings from previous run
+    prevFindings, err := harness.GetPreviousRunFindings(ctx, finding.Filter{})
+    if err != nil {
+        return agent.NewFailedResult(err), err
+    }
+
+    // Avoid re-discovering known vulnerabilities
+    for _, f := range prevFindings {
+        logger.Info("known vulnerability", "title", f.Title)
+    }
+
+    return agent.NewSuccessResult("completed"), nil
+}
+```
+
+**MissionExecutionContext fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `MissionID` | `string` | Unique mission identifier |
+| `MissionName` | `string` | Human-readable mission name |
+| `RunNumber` | `int` | Sequential run number (1-based) |
+| `IsResumed` | `bool` | True if resumed from prior run |
+| `ResumedFromNode` | `string` | Workflow node where execution resumed |
+| `PreviousRunID` | `string` | ID of the prior run (if any) |
+| `TotalFindingsAllRuns` | `int` | Cumulative findings across all runs |
+| `MemoryContinuity` | `string` | Memory mode (isolated/inherit/shared) |
+
+For detailed documentation, see [docs/mission-context.md](docs/mission-context.md).
+
+### Scoped GraphRAG Queries
+
+Control which mission runs are included in GraphRAG queries:
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag"
+
+// Query only current run's findings
+results, err := harness.QueryGraphRAGScoped(ctx, query, graphrag.ScopeCurrentRun)
+
+// Query all runs of this mission
+results, err := harness.QueryGraphRAGScoped(ctx, query, graphrag.ScopeSameMission)
+
+// Query across all missions (default)
+results, err := harness.QueryGraphRAGScoped(ctx, query, graphrag.ScopeAll)
+```
+
+**Scope Options:**
+
+| Scope | Description | Use Case |
+|-------|-------------|----------|
+| `ScopeCurrentRun` | Only current run's data | Isolated analysis, fresh perspective |
+| `ScopeSameMission` | All runs of this mission | Build on prior mission work |
+| `ScopeAll` | All missions (default) | Cross-mission pattern discovery |
+
+### Memory Continuity
+
+Configure how mission memory behaves across multiple runs:
+
+```go
+import "github.com/zero-day-ai/sdk/memory"
+
+func executeFunc(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
+    missionMem := harness.Memory().Mission()
+
+    // Check continuity mode
+    mode := missionMem.ContinuityMode()
+
+    switch mode {
+    case memory.MemoryIsolated:
+        // Each run has separate memory (default)
+        err := missionMem.Set(ctx, "state", initialState, nil)
+
+    case memory.MemoryInherit:
+        // Read prior run's memory, write to current
+        prevState, err := missionMem.GetPreviousRunValue(ctx, "state")
+        if errors.Is(err, memory.ErrNoPreviousRun) {
+            // First run - initialize
+        }
+
+    case memory.MemoryShared:
+        // All runs share same memory namespace
+        item, err := missionMem.Get(ctx, "shared_state")
+    }
+
+    // Track value evolution across runs
+    history, err := missionMem.GetValueHistory(ctx, "discovered_hosts")
+
+    return agent.NewSuccessResult("completed"), nil
+}
+```
+
+**Continuity Modes:**
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| **isolated** (default) | Each run has separate memory | Independent parallel runs, clean state testing |
+| **inherit** | Read prior run's memory, write to current | Sequential runs building on previous results |
+| **shared** | All runs share same memory | Collaborative multi-agent scenarios |
+
 ## Framework Usage
 
 The Framework interface provides centralized management of missions, registries, and findings.
@@ -1949,6 +2326,9 @@ serve.WithPort(8080)                           // Server port
 serve.WithHealthEndpoint("/health")            // Health check path
 serve.WithGracefulShutdown(30*time.Second)     // Shutdown timeout
 serve.WithTLS("cert.pem", "key.pem")           // Enable TLS
+serve.WithLocalMode(socketPath)                // Enable Unix socket mode
+serve.WithOrchestratorEndpoint("host:port")    // Enable harness callbacks
+serve.WithOrchestratorToken("token")           // Callback authentication
 ```
 
 ### LLM Completion Options
@@ -1987,18 +2367,20 @@ llm.WithTools(tools...)
 - **`github.com/zero-day-ai/sdk/input`** - Type-safe extraction helpers for map[string]any values
 
 #### Infrastructure
-- **`github.com/zero-day-ai/sdk/serve`** - gRPC server infrastructure for serving components
+- **`github.com/zero-day-ai/sdk/serve`** - gRPC server infrastructure, subprocess mode, harness callbacks
 - **`github.com/zero-day-ai/sdk/registry`** - Component registry and discovery
 - **`github.com/zero-day-ai/sdk/health`** - Health check types and status reporting
+- **`github.com/zero-day-ai/sdk/api`** - Protocol buffer definitions and gRPC service interfaces
 
 #### Utilities
 - **`github.com/zero-day-ai/sdk/exec`** - External command execution with proper security handling
 - **`github.com/zero-day-ai/sdk/toolerr`** - Structured error handling for tools with error codes
 - **`github.com/zero-day-ai/sdk/parser`** - Parsing utilities for common formats
+- **`github.com/zero-day-ai/sdk/target`** - Target system types and validation
 
 #### Evaluation and Feedback
 - **`github.com/zero-day-ai/sdk/eval`** - Evaluation harness for agent testing and feedback collection
-- **`github.com/zero-day-ai/sdk/planning`** - Planning context and hints (reserved for future bounded planning integration)
+- **`github.com/zero-day-ai/sdk/planning`** - Planning context and hints for goal-driven agent execution
 
 ### Key Interfaces
 
@@ -2075,13 +2457,52 @@ type Harness interface {
     Memory() memory.Store
 
     // Context access
-    MissionContext() types.MissionContext
-    TargetInfo() types.TargetInfo
+    Mission() types.MissionContext
+    Target() types.TargetInfo
+
+    // Mission execution context (new)
+    MissionExecutionContext() types.MissionExecutionContext
+    GetMissionRunHistory(ctx context.Context) ([]types.MissionRunSummary, error)
+    GetPreviousRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
+    GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
+
+    // GraphRAG knowledge graph
+    QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
+    QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error)
+    FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error)
+    FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]graphrag.FindingNode, error)
+    GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]graphrag.AttackChain, error)
+    StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error)
+    CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error
+    TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error)
+
+    // Planning context
+    PlanContext() planning.PlanningContext
+    ReportStepHints(ctx context.Context, hints *planning.StepHints) error
 
     // Observability
     Logger() *slog.Logger
     Tracer() trace.Tracer
-    TokenUsage() *llm.TokenTracker
+    TokenUsage() llm.TokenTracker
+}
+```
+
+**StreamingHarness Interface (extends Harness):**
+```go
+type StreamingHarness interface {
+    Harness
+
+    // Real-time event emission
+    EmitOutput(content string, isReasoning bool) error
+    EmitToolCall(toolName string, input map[string]any, callID string) error
+    EmitToolResult(output map[string]any, err error, callID string) error
+    EmitFinding(finding *finding.Finding) error
+    EmitStatus(status string, message string) error
+    EmitError(err error, context string) error
+
+    // Interactive control
+    Steering() <-chan SteeringMessage
+    Mode() ExecutionMode
 }
 ```
 
@@ -2273,6 +2694,15 @@ go test -bench=. ./...
 - Add godoc comments to all exported types and functions
 - Update README.md for significant changes
 - Add examples for new features
+
+### Additional Documentation
+
+For more detailed guides on specific topics, see:
+
+- **[Agent Development](docs/AGENT.md)** - Building custom security testing agents
+- **[Tool Development](docs/TOOLS.md)** - Creating subprocess and gRPC tools
+- **[Harness Callbacks](docs/harness_callbacks.md)** - Remote agent architecture
+- **[Mission Context](docs/mission-context.md)** - Run history, memory continuity, and scoped queries
 
 ### License
 
