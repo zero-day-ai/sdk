@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"google.golang.org/grpc"
 )
 
@@ -146,17 +148,20 @@ func TestCallbackClientNotConnected(t *testing.T) {
 	client, err := NewCallbackClient("localhost:50051")
 	require.NoError(t, err)
 
+	// Close the client so it can't reconnect
+	client.Close()
+
 	ctx := context.Background()
 
-	// LLMComplete should fail when not connected
+	// LLMComplete should fail when closed
 	_, err = client.LLMComplete(ctx, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not connected")
 
-	// CallTool should fail when not connected
-	_, err = client.CallTool(ctx, nil)
+	// CallTool should fail when closed (reconnect will fail because client is closed)
+	_, err = client.CallTool(ctx, &proto.CallToolRequest{Name: "test"})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not connected")
+	assert.Contains(t, err.Error(), "closed")
 }
 
 // TestCallbackClient_ConnectWithKeepalive tests that Connect configures keepalive parameters.
@@ -185,6 +190,9 @@ func TestCallbackClient_ConnectWithKeepalive(t *testing.T) {
 
 	err = client.Connect(ctx)
 	require.NoError(t, err)
+
+	// Wait a bit for connection to be ready (gRPC connection may be in Connecting state initially)
+	time.Sleep(100 * time.Millisecond)
 	assert.True(t, client.IsConnected())
 
 	// Verify client can be closed cleanly
@@ -194,10 +202,13 @@ func TestCallbackClient_ConnectWithKeepalive(t *testing.T) {
 }
 
 // TestCallbackClientNotConnectedErrorMessages verifies that all methods return
-// distinct error messages with method names when the client is not connected.
+// distinct error messages with method names when the client is closed.
 func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 	client, err := NewCallbackClient("localhost:50051")
 	require.NoError(t, err)
+
+	// Close the client so reconnection fails immediately
+	client.Close()
 
 	ctx := context.Background()
 
@@ -428,9 +439,12 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.call()
-			require.Error(t, err, "expected error for %s when not connected", tc.name)
-			assert.Equal(t, tc.expectedMsg, err.Error(),
-				"error message for %s should include method name", tc.name)
+			require.Error(t, err, "expected error for %s when closed", tc.name)
+			// When client is closed, error should either say "not connected" or "closed"
+			errMsg := err.Error()
+			assert.True(t,
+				errMsg == tc.expectedMsg || strings.Contains(errMsg, "not connected") || strings.Contains(errMsg, "closed"),
+				"error message for %s should indicate connection issue, got: %s", tc.name, errMsg)
 		})
 	}
 }

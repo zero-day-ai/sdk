@@ -9,6 +9,7 @@ import (
 
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
@@ -86,8 +87,15 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("client is closed")
 	}
 
-	if c.connected {
-		return nil // Already connected
+	// Check if already connected AND connection is actually healthy
+	if c.connected && c.conn != nil {
+		state := c.conn.GetState()
+		if state == connectivity.Ready || state == connectivity.Idle {
+			return nil // Already connected and healthy
+		}
+		// Connection exists but is unhealthy - close and reconnect
+		c.conn.Close()
+		c.connected = false
 	}
 
 	// Build dial options
@@ -185,10 +193,18 @@ func (c *CallbackClient) Close() error {
 }
 
 // IsConnected returns true if the client is connected to the orchestrator.
+// This checks both the internal state and the actual gRPC connection state.
 func (c *CallbackClient) IsConnected() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.connected && !c.closed
+
+	if !c.connected || c.closed || c.conn == nil {
+		return false
+	}
+
+	// Check actual gRPC connection state
+	state := c.conn.GetState()
+	return state == connectivity.Ready || state == connectivity.Idle
 }
 
 // ============================================================================
@@ -246,8 +262,11 @@ func (c *CallbackClient) LLMStream(ctx context.Context, req *proto.LLMStreamRequ
 
 // CallTool invokes a tool via the orchestrator.
 func (c *CallbackClient) CallTool(ctx context.Context, req *proto.CallToolRequest) (*proto.CallToolResponse, error) {
+	// Try to reconnect if not connected
 	if !c.IsConnected() {
-		return nil, fmt.Errorf("CallTool: client not connected")
+		if err := c.Connect(ctx); err != nil {
+			return nil, fmt.Errorf("CallTool: client not connected and reconnect failed: %w", err)
+		}
 	}
 
 	req.Context = c.contextInfo()
