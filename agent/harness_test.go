@@ -87,6 +87,19 @@ func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) 
 	}, nil
 }
 
+func (m *mockHarness) CallToolsParallel(ctx context.Context, calls []ToolCall, maxConcurrency int) ([]ToolResult, error) {
+	results := make([]ToolResult, len(calls))
+	for i, call := range calls {
+		output, err := m.CallTool(ctx, call.Name, call.Input)
+		results[i] = ToolResult{
+			Name:   call.Name,
+			Output: output,
+			Error:  err,
+		}
+	}
+	return results, nil
+}
+
 func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	if m.queryPluginFunc != nil {
 		return m.queryPluginFunc(ctx, name, method, params)

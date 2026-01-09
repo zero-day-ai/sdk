@@ -3,11 +3,13 @@ package serve
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 )
 
 // TestNewCallbackClient tests the callback client constructor.
@@ -155,6 +157,40 @@ func TestCallbackClientNotConnected(t *testing.T) {
 	_, err = client.CallTool(ctx, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not connected")
+}
+
+// TestCallbackClient_ConnectWithKeepalive tests that Connect configures keepalive parameters.
+func TestCallbackClient_ConnectWithKeepalive(t *testing.T) {
+	// Start a test gRPC server
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer lis.Close()
+
+	// Create and start a minimal gRPC server
+	server := grpc.NewServer()
+	defer server.Stop()
+
+	// Start serving in background
+	go func() {
+		_ = server.Serve(lis)
+	}()
+
+	// Create callback client pointing to test server
+	client, err := NewCallbackClient(lis.Addr().String())
+	require.NoError(t, err)
+
+	// Connect with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = client.Connect(ctx)
+	require.NoError(t, err)
+	assert.True(t, client.IsConnected())
+
+	// Verify client can be closed cleanly
+	err = client.Close()
+	require.NoError(t, err)
+	assert.False(t, client.IsConnected())
 }
 
 // TestCallbackClientNotConnectedErrorMessages verifies that all methods return

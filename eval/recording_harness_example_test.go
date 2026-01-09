@@ -90,6 +90,14 @@ func (m *minimalMockHarness) Stream(ctx context.Context, slot string, messages [
 func (m *minimalMockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	return nil, nil
 }
+func (m *minimalMockHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
+	results := make([]agent.ToolResult, len(calls))
+	for i, call := range calls {
+		output, err := m.CallTool(ctx, call.Name, call.Input)
+		results[i] = agent.ToolResult{Name: call.Name, Output: output, Error: err}
+	}
+	return results, nil
+}
 func (m *minimalMockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	return nil, nil
 }

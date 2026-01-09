@@ -160,6 +160,15 @@ func (e *exampleHarness) ListTools(ctx context.Context) ([]tool.Descriptor, erro
 	return nil, nil
 }
 
+func (e *exampleHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
+	results := make([]agent.ToolResult, len(calls))
+	for i, call := range calls {
+		output, err := e.CallTool(ctx, call.Name, call.Input)
+		results[i] = agent.ToolResult{Name: call.Name, Output: output, Error: err}
+	}
+	return results, nil
+}
+
 func (e *exampleHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	return nil, nil
 }

@@ -299,6 +299,60 @@ func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[s
 	return output, nil
 }
 
+// CallToolsParallel executes multiple tool calls concurrently.
+func (h *CallbackHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
+	if len(calls) == 0 {
+		return []agent.ToolResult{}, nil
+	}
+
+	// Default concurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = 10
+	}
+
+	// Create results slice (same length as calls, preserves order)
+	results := make([]agent.ToolResult, len(calls))
+
+	// Semaphore for concurrency limiting
+	sem := make(chan struct{}, maxConcurrency)
+
+	// WaitGroup for completion tracking
+	var wg sync.WaitGroup
+
+	// Execute calls in parallel
+	for i, call := range calls {
+		wg.Add(1)
+		go func(idx int, c agent.ToolCall) {
+			defer wg.Done()
+
+			// Acquire semaphore slot
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				results[idx] = agent.ToolResult{
+					Name:  c.Name,
+					Error: ctx.Err(),
+				}
+				return
+			}
+
+			// Execute tool call using existing CallTool
+			output, err := h.CallTool(ctx, c.Name, c.Input)
+			results[idx] = agent.ToolResult{
+				Name:   c.Name,
+				Output: output,
+				Error:  err,
+			}
+		}(i, call)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	return results, nil
+}
+
 // ListTools returns descriptors for all available tools.
 // Results are cached per task execution.
 func (h *CallbackHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {

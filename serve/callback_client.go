@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -100,14 +101,19 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// Add timeouts
-	dialOpts = append(dialOpts,
-		grpc.WithBlock(),
-		grpc.WithTimeout(10*time.Second),
-	)
+	// Add keepalive configuration
+	dialOpts = append(dialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                10 * time.Second,
+		Timeout:             5 * time.Second,
+		PermitWithoutStream: true,
+	}))
+
+	// Create context with timeout for connection establishment
+	connCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 
 	// Establish connection
-	conn, err := grpc.DialContext(ctx, c.endpoint, dialOpts...)
+	conn, err := grpc.DialContext(connCtx, c.endpoint, dialOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to connect to orchestrator: %w", err)
 	}

@@ -124,6 +124,21 @@ func (h *LocalHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error)
 	return []tool.Descriptor{}, nil
 }
 
+// CallToolsParallel returns error results for standalone mode (no tools available)
+func (h *LocalHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
+	h.logger.Warn("CallToolsParallel not available in standalone mode", "call_count", len(calls))
+
+	// Return error results for all calls
+	results := make([]agent.ToolResult, len(calls))
+	for i, call := range calls {
+		results[i] = agent.ToolResult{
+			Name:  call.Name,
+			Error: fmt.Errorf("tool operations not available in standalone mode (no orchestrator connected)"),
+		}
+	}
+	return results, nil
+}
+
 // ============================================================================
 // Plugin Operations (Not Available)
 // ============================================================================

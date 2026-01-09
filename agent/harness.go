@@ -15,6 +15,19 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// ToolCall represents a single tool invocation request for parallel execution
+type ToolCall struct {
+	Name  string         // Tool name to invoke
+	Input map[string]any // Tool input parameters
+}
+
+// ToolResult represents the result of a tool invocation
+type ToolResult struct {
+	Name   string         // Tool name that was invoked
+	Output map[string]any // Tool output (nil if error)
+	Error  error          // Error if tool failed (nil if success)
+}
+
 // Harness provides the runtime environment for agent execution.
 // It provides access to LLMs, tools, plugins, findings, memory, and observability.
 type Harness interface {
@@ -48,6 +61,13 @@ type Harness interface {
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.
 	ListTools(ctx context.Context) ([]tool.Descriptor, error)
+
+	// CallToolsParallel executes multiple tool calls concurrently.
+	// Results are returned in the same order as the input calls.
+	// Individual tool failures are captured in ToolResult.Error and do not
+	// abort other calls. The context timeout applies to the entire batch.
+	// maxConcurrency of 0 uses the default (10).
+	CallToolsParallel(ctx context.Context, calls []ToolCall, maxConcurrency int) ([]ToolResult, error)
 
 	// Plugin Access Methods
 	//

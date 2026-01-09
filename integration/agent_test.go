@@ -408,6 +408,10 @@ func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) 
 	return nil, errors.New("not implemented")
 }
 
+func (m *mockHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	return nil, errors.New("not implemented")
 }
