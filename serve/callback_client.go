@@ -130,6 +130,16 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 	c.client = proto.NewHarnessCallbackServiceClient(conn)
 	c.connected = true
 
+	// Wait for connection to be ready (with timeout)
+	// This ensures the connection is actually established, not just dialed
+	readyCtx, readyCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer readyCancel()
+	c.conn.WaitForStateChange(readyCtx, connectivity.Idle)
+	state := c.conn.GetState()
+	if state == connectivity.TransientFailure || state == connectivity.Shutdown {
+		return fmt.Errorf("connection failed to establish: state=%s", state)
+	}
+
 	return nil
 }
 
@@ -203,8 +213,9 @@ func (c *CallbackClient) IsConnected() bool {
 	}
 
 	// Check actual gRPC connection state
+	// Accept Ready, Idle, and Connecting as valid states (connection may be establishing)
 	state := c.conn.GetState()
-	return state == connectivity.Ready || state == connectivity.Idle
+	return state == connectivity.Ready || state == connectivity.Idle || state == connectivity.Connecting
 }
 
 // ============================================================================

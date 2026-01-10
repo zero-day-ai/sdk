@@ -129,6 +129,9 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 	)
 	defer span.End()
 
+	// Add prompt attribute for observability
+	span.SetAttributes(attribute.String("gen_ai.prompt", formatMessagesForPrompt(messages)))
+
 	// Build completion request with options
 	req := llm.NewCompletionRequest(messages, opts...)
 
@@ -183,11 +186,13 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 		},
 	}
 
-	// Record token usage in span
+	// Record token usage and response in span
 	span.SetAttributes(
 		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
 		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
 		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
+		attribute.String("gen_ai.completion", result.Content),
+		attribute.String("gen_ai.response.model", slot),
 	)
 
 	// Track token usage
@@ -209,6 +214,9 @@ func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, me
 		),
 	)
 	defer span.End()
+
+	// Add prompt attribute for observability
+	span.SetAttributes(attribute.String("gen_ai.prompt", formatMessagesForPrompt(messages)))
 
 	protoReq := &proto.LLMCompleteWithToolsRequest{
 		Slot:     slot,
@@ -241,12 +249,14 @@ func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, me
 		},
 	}
 
-	// Record token usage in span
+	// Record token usage and response in span
 	span.SetAttributes(
 		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
 		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
 		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
 		attribute.Int("gen_ai.response.tool_call_count", len(result.ToolCalls)),
+		attribute.String("gen_ai.completion", result.Content),
+		attribute.String("gen_ai.response.model", slot),
 	)
 
 	// Track token usage
@@ -1351,4 +1361,21 @@ func (h *CallbackHarness) relationshipToProto(rel graphrag.Relationship) *proto.
 		PropertiesJson: string(propsJSON),
 		Bidirectional:  rel.Bidirectional,
 	}
+}
+
+// formatMessagesForPrompt formats LLM messages into a readable prompt string
+// for observability in traces.
+func formatMessagesForPrompt(messages []llm.Message) string {
+	if len(messages) == 0 {
+		return ""
+	}
+
+	var result string
+	for i, msg := range messages {
+		if i > 0 {
+			result += "\n---\n"
+		}
+		result += fmt.Sprintf("[%s]: %s", msg.Role, msg.Content)
+	}
+	return result
 }
