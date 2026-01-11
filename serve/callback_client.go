@@ -823,3 +823,22 @@ func (c *CallbackClient) RecordSpans(ctx context.Context, req *proto.RecordSpans
 	}
 	return resp, nil
 }
+
+// ============================================================================
+// Credential Operations
+// ============================================================================
+
+// GetCredential retrieves a credential by name from the orchestrator's credential store.
+func (c *CallbackClient) GetCredential(ctx context.Context, req *proto.GetCredentialRequest) (*proto.GetCredentialResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("GetCredential: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.GetCredential(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("GetCredential: %w", err)
+	}
+	return resp, nil
+}

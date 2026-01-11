@@ -3,11 +3,13 @@ package agent
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -26,6 +28,124 @@ type ToolResult struct {
 	Name   string         // Tool name that was invoked
 	Output map[string]any // Tool output (nil if error)
 	Error  error          // Error if tool failed (nil if success)
+}
+
+// MissionManager provides mission lifecycle operations for agents.
+// This interface enables agents to autonomously create, run, monitor, and manage missions,
+// supporting hierarchical agent architectures and autonomous operation patterns.
+type MissionManager interface {
+	// CreateMission creates a new mission from a workflow definition.
+	// The workflow parameter should be a Gibson workflow.Workflow instance.
+	// Returns mission metadata including the assigned mission ID.
+	//
+	// If the creating agent is part of a mission, the parent mission ID
+	// will be automatically tracked for lineage.
+	//
+	// Example:
+	//   workflow := BuildReconWorkflow()
+	//   opts := &mission.CreateMissionOpts{
+	//       Name: "Subdomain Enumeration",
+	//       Constraints: &mission.MissionConstraints{
+	//           MaxDuration: 30 * time.Minute,
+	//           MaxTokens:   100000,
+	//       },
+	//   }
+	//   info, err := harness.CreateMission(ctx, workflow, targetID, opts)
+	CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error)
+
+	// RunMission queues a mission for execution.
+	// This method is non-blocking by default and returns immediately after queuing.
+	// Use WaitForMission to block until the mission completes.
+	//
+	// Returns an error if:
+	//   - The mission does not exist
+	//   - The mission is already running
+	//   - The mission is in a terminal state (completed, failed, cancelled)
+	//
+	// Example:
+	//   err := harness.RunMission(ctx, missionID, nil)
+	//   if err != nil {
+	//       return fmt.Errorf("failed to start mission: %w", err)
+	//   }
+	RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error
+
+	// GetMissionStatus returns the current state of a mission.
+	// Returns detailed status information including progress, findings count,
+	// token usage, and error messages if applicable.
+	//
+	// Returns an error if the mission does not exist.
+	//
+	// Example:
+	//   status, err := harness.GetMissionStatus(ctx, missionID)
+	//   if err != nil {
+	//       return err
+	//   }
+	//   log.Printf("Mission %s: %s (%.1f%% complete)", missionID, status.Status, status.Progress*100)
+	GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error)
+
+	// WaitForMission blocks until a mission completes or the timeout expires.
+	// Returns the final mission result including findings and output.
+	//
+	// The timeout parameter specifies how long to wait. Use 0 for no timeout.
+	// Returns context.DeadlineExceeded if the timeout is reached before completion.
+	//
+	// Example:
+	//   result, err := harness.WaitForMission(ctx, missionID, 10*time.Minute)
+	//   if err != nil {
+	//       return fmt.Errorf("mission wait failed: %w", err)
+	//   }
+	//   log.Printf("Mission completed with %d findings", len(result.Findings))
+	WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error)
+
+	// ListMissions returns missions matching the provided filter criteria.
+	// Returns an empty slice if no missions match the filter.
+	//
+	// The filter supports:
+	//   - Status filtering (pending, running, completed, etc.)
+	//   - Target ID filtering
+	//   - Parent mission ID filtering (for finding child missions)
+	//   - Time range filtering
+	//   - Tag filtering
+	//   - Pagination (limit/offset)
+	//
+	// Example:
+	//   filter := &mission.MissionFilter{
+	//       Status:   &statusRunning,
+	//       TargetID: &currentTargetID,
+	//       Limit:    10,
+	//   }
+	//   missions, err := harness.ListMissions(ctx, filter)
+	ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error)
+
+	// CancelMission requests cancellation of a running mission.
+	// The mission will be gracefully interrupted and its status will transition to "cancelled".
+	//
+	// This operation is idempotent - calling it on an already cancelled or
+	// completed mission returns success.
+	//
+	// Example:
+	//   err := harness.CancelMission(ctx, missionID)
+	//   if err != nil {
+	//       log.Printf("Failed to cancel mission: %v", err)
+	//   }
+	CancelMission(ctx context.Context, missionID string) error
+
+	// GetMissionResults returns the final results of a completed mission.
+	// Results include findings, output data, and execution metrics.
+	//
+	// Returns an error if:
+	//   - The mission does not exist
+	//   - The mission has not completed yet (use WaitForMission to wait)
+	//
+	// Example:
+	//   result, err := harness.GetMissionResults(ctx, missionID)
+	//   if err != nil {
+	//       return err
+	//   }
+	//   for _, finding := range result.Findings {
+	//       log.Printf("Found %s: %s", finding.Severity, finding.Title)
+	//   }
+	GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error)
 }
 
 // Harness provides the runtime environment for agent execution.
@@ -250,6 +370,31 @@ type Harness interface {
 	// This is a convenience method that sets scope before calling QueryGraphRAG.
 	// Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
 	QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error)
+
+	// Credential Access Methods
+	//
+	// These methods provide secure access to stored credentials.
+	// Agents, plugins, and tools should ALWAYS use the credential store
+	// for secrets rather than accepting raw API keys as parameters.
+
+	// GetCredential retrieves a credential by name from the credential store.
+	// The credential is decrypted and returned with its secret value.
+	// Returns an error if the credential does not exist.
+	//
+	// Example:
+	//   cred, err := harness.GetCredential(ctx, "hackerone-api")
+	//   if err != nil {
+	//       return fmt.Errorf("credential not found: %w", err)
+	//   }
+	//   apiKey := cred.Secret
+	GetCredential(ctx context.Context, name string) (*types.Credential, error)
+
+	// Mission Management Methods
+	//
+	// These methods provide mission lifecycle management for autonomous operation.
+	// Agents can create, run, monitor, and manage missions programmatically,
+	// enabling hierarchical agent architectures and autonomous campaigns.
+	MissionManager
 }
 
 // StreamingHarness extends Harness with real-time event emission capabilities.

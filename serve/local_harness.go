@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -533,4 +535,61 @@ func (t *localTokenTracker) Slots() []string {
 		slots = append(slots, slot)
 	}
 	return slots
+}
+
+// ============================================================================
+// MissionManager Methods
+// ============================================================================
+
+// CreateMission creates a new mission from a workflow definition.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// RunMission queues a mission for execution.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error {
+	return fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// GetMissionStatus returns the current state of a mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// WaitForMission blocks until a mission completes or the timeout expires.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// ListMissions returns missions matching the provided filter criteria.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// CancelMission requests cancellation of a running mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) CancelMission(ctx context.Context, missionID string) error {
+	return fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// GetMissionResults returns the final results of a completed mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *LocalHarness) GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in local harness")
+}
+
+// ============================================================================
+// Credential Operations (Not Available)
+// ============================================================================
+
+// GetCredential returns an error indicating credentials are not available.
+// In standalone mode, there is no credential store available.
+func (h *LocalHarness) GetCredential(ctx context.Context, name string) (*types.Credential, error) {
+	h.logger.Warn("GetCredential not available in standalone mode", "name", name)
+	return nil, fmt.Errorf("credential store not available in standalone mode (no orchestrator connected)")
 }

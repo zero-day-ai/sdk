@@ -2,6 +2,7 @@ package eval_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -283,6 +285,52 @@ func (e *exampleHarness) GetAllRunFindings(ctx context.Context, filter finding.F
 
 func (e *exampleHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
 	return nil, nil
+}
+
+// MissionManager methods - stubs for testing
+func (e *exampleHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error {
+	return errors.New("not implemented")
+}
+
+func (e *exampleHarness) GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) CancelMission(ctx context.Context, missionID string) error {
+	return errors.New("not implemented")
+}
+
+func (e *exampleHarness) GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) GetCredential(ctx context.Context, name string) (*types.Credential, error) {
+	return &types.Credential{
+		Name:   name,
+		Type:   "api-key",
+		Secret: "mock-secret-value",
+	}, nil
+}
+
+// CompleteStructured methods
+func (e *exampleHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (e *exampleHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return e.CompleteStructured(ctx, slot, messages, schema)
 }
 
 type exampleScorer struct{}

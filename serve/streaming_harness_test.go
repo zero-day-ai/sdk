@@ -17,6 +17,7 @@ import (
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -272,6 +273,57 @@ func (m *mockStreamHarness) GetAllRunFindings(ctx context.Context, filter findin
 
 func (m *mockStreamHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
 	return nil, nil
+}
+
+// MissionManager methods - stubs for testing
+func (m *mockStreamHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
+	return &mission.MissionInfo{
+		ID:       "mock-mission-id",
+		Name:     "mock-mission",
+		Status:   mission.MissionStatusPending,
+		TargetID: targetID,
+	}, nil
+}
+
+func (m *mockStreamHarness) RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error {
+	return nil
+}
+
+func (m *mockStreamHarness) GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error) {
+	return &mission.MissionStatusInfo{
+		Status:   mission.MissionStatusRunning,
+		Progress: 0.5,
+	}, nil
+}
+
+func (m *mockStreamHarness) WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error) {
+	return &mission.MissionResult{
+		MissionID: missionID,
+		Status:    mission.MissionStatusCompleted,
+	}, nil
+}
+
+func (m *mockStreamHarness) ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error) {
+	return []*mission.MissionInfo{}, nil
+}
+
+func (m *mockStreamHarness) CancelMission(ctx context.Context, missionID string) error {
+	return nil
+}
+
+func (m *mockStreamHarness) GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error) {
+	return &mission.MissionResult{
+		MissionID: missionID,
+		Status:    mission.MissionStatusCompleted,
+	}, nil
+}
+
+func (m *mockStreamHarness) GetCredential(ctx context.Context, name string) (*types.Credential, error) {
+	return &types.Credential{
+		Name:   name,
+		Type:   "api-key",
+		Secret: "mock-secret-value",
+	}, nil
 }
 
 // mockStreamMemoryStore implements memory.Store for testing.

@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -68,6 +70,14 @@ func (m *mockHarness) Stream(ctx context.Context, slot string, messages []llm.Me
 	ch <- llm.StreamChunk{Delta: "mock stream", FinishReason: "stop"}
 	close(ch)
 	return ch, nil
+}
+
+func (m *mockHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return map[string]any{"result": "structured"}, nil
+}
+
+func (m *mockHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+	return m.CompleteStructured(ctx, slot, messages, schema)
 }
 
 func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
@@ -251,6 +261,58 @@ func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filt
 
 func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
 	return nil, nil
+}
+
+// MissionManager methods - stubs for testing
+func (m *mockHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
+	return &mission.MissionInfo{
+		ID:       "mock-mission-id",
+		Name:     "mock-mission",
+		Status:   mission.MissionStatusPending,
+		TargetID: targetID,
+	}, nil
+}
+
+func (m *mockHarness) RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error {
+	return nil
+}
+
+func (m *mockHarness) GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error) {
+	return &mission.MissionStatusInfo{
+		Status:   mission.MissionStatusRunning,
+		Progress: 0.5,
+	}, nil
+}
+
+func (m *mockHarness) WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error) {
+	return &mission.MissionResult{
+		MissionID: missionID,
+		Status:    mission.MissionStatusCompleted,
+	}, nil
+}
+
+func (m *mockHarness) ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error) {
+	return []*mission.MissionInfo{}, nil
+}
+
+func (m *mockHarness) CancelMission(ctx context.Context, missionID string) error {
+	return nil
+}
+
+func (m *mockHarness) GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error) {
+	return &mission.MissionResult{
+		MissionID: missionID,
+		Status:    mission.MissionStatusCompleted,
+	}, nil
+}
+
+// GetCredential returns a mock credential for testing
+func (m *mockHarness) GetCredential(ctx context.Context, name string) (*types.Credential, error) {
+	return &types.Credential{
+		Name:   name,
+		Type:   "api-key",
+		Secret: "mock-secret-value",
+	}, nil
 }
 
 // mockMemoryStore implements memory.Store for testing.

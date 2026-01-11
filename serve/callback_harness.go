@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
@@ -13,6 +14,7 @@ import (
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/memory"
+	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
 	"github.com/zero-day-ai/sdk/tool"
@@ -1378,4 +1380,109 @@ func formatMessagesForPrompt(messages []llm.Message) string {
 		result += fmt.Sprintf("[%s]: %s", msg.Role, msg.Content)
 	}
 	return result
+}
+
+// ============================================================================
+// MissionManager Methods
+// ============================================================================
+
+// CreateMission creates a new mission from a workflow definition.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// RunMission queues a mission for execution.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) RunMission(ctx context.Context, missionID string, opts *mission.RunMissionOpts) error {
+	return fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// GetMissionStatus returns the current state of a mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) GetMissionStatus(ctx context.Context, missionID string) (*mission.MissionStatusInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// WaitForMission blocks until a mission completes or the timeout expires.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) WaitForMission(ctx context.Context, missionID string, timeout time.Duration) (*mission.MissionResult, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// ListMissions returns missions matching the provided filter criteria.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) ListMissions(ctx context.Context, filter *mission.MissionFilter) ([]*mission.MissionInfo, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// CancelMission requests cancellation of a running mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) CancelMission(ctx context.Context, missionID string) error {
+	return fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// GetMissionResults returns the final results of a completed mission.
+// This is a stub implementation that will be implemented in a future release.
+func (h *CallbackHarness) GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error) {
+	return nil, fmt.Errorf("mission management not yet implemented in callback harness")
+}
+
+// ============================================================================
+// Credential Operations
+// ============================================================================
+
+// GetCredential retrieves a credential by name from the credential store.
+// The credential is decrypted and returned with its secret value.
+// Returns an error if the credential does not exist.
+func (h *CallbackHarness) GetCredential(ctx context.Context, name string) (*types.Credential, error) {
+	protoReq := &proto.GetCredentialRequest{
+		Name: name,
+	}
+
+	resp, err := h.client.GetCredential(ctx, protoReq)
+	if err != nil {
+		return nil, fmt.Errorf("get credential callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return nil, fmt.Errorf("get credential error: %s", resp.Error.Message)
+	}
+
+	if resp.Credential == nil {
+		return nil, fmt.Errorf("credential %q not found", name)
+	}
+
+	// Convert proto credential type to SDK type
+	var credType types.CredentialType
+	switch resp.Credential.Type {
+	case proto.CredentialType_CREDENTIAL_TYPE_API_KEY:
+		credType = types.CredentialTypeAPIKey
+	case proto.CredentialType_CREDENTIAL_TYPE_BEARER:
+		credType = types.CredentialTypeBearer
+	case proto.CredentialType_CREDENTIAL_TYPE_BASIC:
+		credType = types.CredentialTypeBasic
+	case proto.CredentialType_CREDENTIAL_TYPE_OAUTH:
+		credType = types.CredentialTypeOAuth
+	case proto.CredentialType_CREDENTIAL_TYPE_CUSTOM:
+		credType = types.CredentialTypeCustom
+	default:
+		credType = types.CredentialTypeAPIKey // Default
+	}
+
+	// Parse metadata if present
+	var metadata map[string]any
+	if resp.Credential.MetadataJson != "" {
+		if err := json.Unmarshal([]byte(resp.Credential.MetadataJson), &metadata); err != nil {
+			h.logger.Warn("failed to parse credential metadata", "error", err, "name", name)
+		}
+	}
+
+	return &types.Credential{
+		Name:     resp.Credential.Name,
+		Type:     credType,
+		Secret:   resp.Credential.Secret,
+		Username: resp.Credential.Username,
+		Metadata: metadata,
+	}, nil
 }
