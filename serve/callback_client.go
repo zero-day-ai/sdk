@@ -486,6 +486,134 @@ func (c *CallbackClient) MemoryList(ctx context.Context, req *proto.MemoryListRe
 }
 
 // ============================================================================
+// Mission Memory Operations
+// ============================================================================
+
+// MissionMemorySearch performs a full-text search on mission memory.
+func (c *CallbackClient) MissionMemorySearch(ctx context.Context, req *proto.MissionMemorySearchRequest) (*proto.MissionMemorySearchResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("MissionMemorySearch: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.MissionMemorySearch(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("MissionMemorySearch: %w", err)
+	}
+	return resp, nil
+}
+
+// MissionMemoryHistory retrieves recent mission memory entries.
+func (c *CallbackClient) MissionMemoryHistory(ctx context.Context, req *proto.MissionMemoryHistoryRequest) (*proto.MissionMemoryHistoryResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("MissionMemoryHistory: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.MissionMemoryHistory(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("MissionMemoryHistory: %w", err)
+	}
+	return resp, nil
+}
+
+// MissionMemoryGetPreviousRunValue retrieves a value from a previous mission run.
+func (c *CallbackClient) MissionMemoryGetPreviousRunValue(ctx context.Context, req *proto.MissionMemoryGetPreviousRunValueRequest) (*proto.MissionMemoryGetPreviousRunValueResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("MissionMemoryGetPreviousRunValue: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.MissionMemoryGetPreviousRunValue(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("MissionMemoryGetPreviousRunValue: %w", err)
+	}
+	return resp, nil
+}
+
+// MissionMemoryGetValueHistory retrieves the history of values for a key across runs.
+func (c *CallbackClient) MissionMemoryGetValueHistory(ctx context.Context, req *proto.MissionMemoryGetValueHistoryRequest) (*proto.MissionMemoryGetValueHistoryResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("MissionMemoryGetValueHistory: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.MissionMemoryGetValueHistory(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("MissionMemoryGetValueHistory: %w", err)
+	}
+	return resp, nil
+}
+
+// MissionMemoryContinuityMode retrieves the current mission memory continuity mode.
+func (c *CallbackClient) MissionMemoryContinuityMode(ctx context.Context, req *proto.MissionMemoryContinuityModeRequest) (*proto.MissionMemoryContinuityModeResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("MissionMemoryContinuityMode: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.MissionMemoryContinuityMode(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("MissionMemoryContinuityMode: %w", err)
+	}
+	return resp, nil
+}
+
+// ============================================================================
+// Long-Term Memory Operations
+// ============================================================================
+
+// LongTermMemoryStore stores content in long-term vector memory.
+func (c *CallbackClient) LongTermMemoryStore(ctx context.Context, req *proto.LongTermMemoryStoreRequest) (*proto.LongTermMemoryStoreResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("LongTermMemoryStore: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.LongTermMemoryStore(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LongTermMemoryStore: %w", err)
+	}
+	return resp, nil
+}
+
+// LongTermMemorySearch performs a semantic search on long-term memory.
+func (c *CallbackClient) LongTermMemorySearch(ctx context.Context, req *proto.LongTermMemorySearchRequest) (*proto.LongTermMemorySearchResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("LongTermMemorySearch: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.LongTermMemorySearch(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LongTermMemorySearch: %w", err)
+	}
+	return resp, nil
+}
+
+// LongTermMemoryDelete removes an entry from long-term memory.
+func (c *CallbackClient) LongTermMemoryDelete(ctx context.Context, req *proto.LongTermMemoryDeleteRequest) (*proto.LongTermMemoryDeleteResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("LongTermMemoryDelete: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.LongTermMemoryDelete(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LongTermMemoryDelete: %w", err)
+	}
+	return resp, nil
+}
+
+// ============================================================================
 // GraphRAG Query Operations
 // ============================================================================
 

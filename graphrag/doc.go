@@ -116,15 +116,44 @@
 //	    log.Fatal(err)
 //	}
 //
-// Common relationship types:
-//   - ELICITED: Technique successfully triggered behavior
-//   - PART_OF: Component or hierarchical relationships
-//   - SIMILAR_TO: Semantic similarity relationships
-//   - USES_TECHNIQUE: Finding uses specific technique
-//   - TARGETS: Technique targets specific component
-//   - REFERENCES: Cross-reference relationships
-//   - EXPLOITS: Finding exploits a vulnerability
-//   - MITIGATES: Control mitigates a risk
+// ## Relationship Types
+//
+// Canonical relationship types defined in the taxonomy:
+//
+// Asset Hierarchy:
+//   - HAS_SUBDOMAIN: Domain has subdomain
+//   - RESOLVES_TO: Domain/subdomain resolves to host
+//   - HAS_PORT: Host has open port
+//   - RUNS_SERVICE: Port runs service
+//   - HAS_ENDPOINT: Service has endpoint
+//   - USES_TECHNOLOGY: Component uses technology
+//   - SERVES_CERTIFICATE: Service serves certificate
+//   - HOSTS: Provider hosts resource
+//
+// Finding Links:
+//   - AFFECTS: Finding affects asset
+//   - USES_TECHNIQUE: Finding uses attack technique
+//   - HAS_EVIDENCE: Finding has evidence
+//   - LEADS_TO: Finding leads to another finding (attack chains)
+//   - MITIGATES: Mitigation addresses finding
+//   - SIMILAR_TO: Findings are similar (bidirectional)
+//   - EXPLOITS: Finding exploits vulnerability
+//
+// Execution Context:
+//   - PART_OF: Component is part of parent
+//   - EXECUTED_BY: Entity executed by agent/tool
+//   - DISCOVERED: Asset discovered by execution
+//   - PRODUCED: Execution produced artifact
+//
+// Use generated constants for type safety:
+//
+//	rel := graphrag.NewRelationshipWithValidation(
+//	    fromID,
+//	    toID,
+//	    graphrag.RelTypeHasSubdomain,  // type-safe constant
+//	)
+//
+// See taxonomy_generated.go for the complete list with documentation.
 //
 // # Batch Operations
 //
@@ -158,18 +187,79 @@
 //   - "incoming": Follow relationships from target to source
 //   - "both": Follow relationships in both directions
 //
-// # Node Types
+// # Taxonomy System
 //
-// Common node types in GraphRAG:
-//   - finding: Security findings and vulnerabilities
-//   - technique: Attack techniques and methods (MITRE ATT&CK)
-//   - target: System components being tested
-//   - agent: Agent executions and actions
-//   - conversation: LLM conversation threads
-//   - tool: Tool invocations and results
-//   - evidence: Evidence artifacts and data
-//   - mitigation: Security controls and mitigations
-//   - asset: System assets and resources
+// GraphRAG uses a YAML-driven taxonomy system for node and relationship types.
+// The taxonomy provides type safety, validation, and comprehensive documentation
+// for all graph types used across the Zero-Day.AI platform.
+//
+// ## Using Generated Constants
+//
+// Instead of string literals, use the generated constants from taxonomy_generated.go:
+//
+//	// Instead of this:
+//	node := graphrag.NewGraphNode("domain")  // string literal
+//
+//	// Use this:
+//	node := graphrag.NewGraphNode(graphrag.NodeTypeDomain)  // type-safe constant
+//
+// Generated constants are available for:
+//   - All canonical node types (NodeType* constants)
+//   - All canonical relationship types (RelType* constants)
+//   - MITRE ATT&CK techniques (Technique* constants)
+//   - Arcanum prompt injection techniques (ArcanumTechnique* constants)
+//
+// ## Taxonomy Validation
+//
+// Nodes and relationships are automatically validated against the taxonomy:
+//
+//	// Create node with canonical type - no warning
+//	node := graphrag.NewNodeWithValidation("domain")
+//
+//	// Create node with custom type - logs warning but still works
+//	node := graphrag.NewNodeWithValidation("my_custom_type")
+//	// WARNING: Node type 'my_custom_type' is not in the canonical taxonomy
+//
+//	// Check if a type is canonical
+//	if graphrag.ValidateAndWarnNodeType("domain") {
+//	    // Type is canonical
+//	}
+//
+// The validation helpers encourage use of canonical types while allowing
+// flexibility for agent-specific custom types.
+//
+// ## Node Types
+//
+// Canonical node types defined in the taxonomy:
+//
+// Asset Discovery:
+//   - domain: Internet domain names
+//   - subdomain: Subdomains of parent domains
+//   - host: IP addresses and hostnames
+//   - port: TCP/UDP ports
+//   - service: Running services
+//   - endpoint: HTTP endpoints and APIs
+//   - api: API specifications
+//   - technology: Detected technologies
+//   - cloud_asset: Cloud resources
+//   - certificate: TLS/SSL certificates
+//
+// Security Findings:
+//   - finding: Security vulnerabilities and findings
+//   - evidence: Supporting evidence for findings
+//   - mitigation: Recommended security controls
+//
+// Execution Context:
+//   - mission: Testing missions
+//   - agent_run: Agent execution instances
+//   - tool_execution: Tool invocations
+//   - llm_call: LLM API calls
+//
+// Attack Techniques:
+//   - technique: MITRE ATT&CK or Arcanum techniques
+//   - tactic: MITRE ATT&CK tactics
+//
+// See taxonomy_generated.go for the complete list with documentation.
 //
 // # Hybrid Scoring
 //

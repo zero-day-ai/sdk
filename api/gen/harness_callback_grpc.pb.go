@@ -19,34 +19,44 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HarnessCallbackService_LLMComplete_FullMethodName             = "/gibson.harness.HarnessCallbackService/LLMComplete"
-	HarnessCallbackService_LLMCompleteWithTools_FullMethodName    = "/gibson.harness.HarnessCallbackService/LLMCompleteWithTools"
-	HarnessCallbackService_LLMCompleteStructured_FullMethodName   = "/gibson.harness.HarnessCallbackService/LLMCompleteStructured"
-	HarnessCallbackService_LLMStream_FullMethodName               = "/gibson.harness.HarnessCallbackService/LLMStream"
-	HarnessCallbackService_CallTool_FullMethodName                = "/gibson.harness.HarnessCallbackService/CallTool"
-	HarnessCallbackService_ListTools_FullMethodName               = "/gibson.harness.HarnessCallbackService/ListTools"
-	HarnessCallbackService_QueryPlugin_FullMethodName             = "/gibson.harness.HarnessCallbackService/QueryPlugin"
-	HarnessCallbackService_ListPlugins_FullMethodName             = "/gibson.harness.HarnessCallbackService/ListPlugins"
-	HarnessCallbackService_DelegateToAgent_FullMethodName         = "/gibson.harness.HarnessCallbackService/DelegateToAgent"
-	HarnessCallbackService_ListAgents_FullMethodName              = "/gibson.harness.HarnessCallbackService/ListAgents"
-	HarnessCallbackService_SubmitFinding_FullMethodName           = "/gibson.harness.HarnessCallbackService/SubmitFinding"
-	HarnessCallbackService_GetFindings_FullMethodName             = "/gibson.harness.HarnessCallbackService/GetFindings"
-	HarnessCallbackService_MemoryGet_FullMethodName               = "/gibson.harness.HarnessCallbackService/MemoryGet"
-	HarnessCallbackService_MemorySet_FullMethodName               = "/gibson.harness.HarnessCallbackService/MemorySet"
-	HarnessCallbackService_MemoryDelete_FullMethodName            = "/gibson.harness.HarnessCallbackService/MemoryDelete"
-	HarnessCallbackService_MemoryList_FullMethodName              = "/gibson.harness.HarnessCallbackService/MemoryList"
-	HarnessCallbackService_GraphRAGQuery_FullMethodName           = "/gibson.harness.HarnessCallbackService/GraphRAGQuery"
-	HarnessCallbackService_FindSimilarAttacks_FullMethodName      = "/gibson.harness.HarnessCallbackService/FindSimilarAttacks"
-	HarnessCallbackService_FindSimilarFindings_FullMethodName     = "/gibson.harness.HarnessCallbackService/FindSimilarFindings"
-	HarnessCallbackService_GetAttackChains_FullMethodName         = "/gibson.harness.HarnessCallbackService/GetAttackChains"
-	HarnessCallbackService_GetRelatedFindings_FullMethodName      = "/gibson.harness.HarnessCallbackService/GetRelatedFindings"
-	HarnessCallbackService_StoreGraphNode_FullMethodName          = "/gibson.harness.HarnessCallbackService/StoreGraphNode"
-	HarnessCallbackService_CreateGraphRelationship_FullMethodName = "/gibson.harness.HarnessCallbackService/CreateGraphRelationship"
-	HarnessCallbackService_StoreGraphBatch_FullMethodName         = "/gibson.harness.HarnessCallbackService/StoreGraphBatch"
-	HarnessCallbackService_TraverseGraph_FullMethodName           = "/gibson.harness.HarnessCallbackService/TraverseGraph"
-	HarnessCallbackService_GraphRAGHealth_FullMethodName          = "/gibson.harness.HarnessCallbackService/GraphRAGHealth"
-	HarnessCallbackService_GetPlanContext_FullMethodName          = "/gibson.harness.HarnessCallbackService/GetPlanContext"
-	HarnessCallbackService_ReportStepHints_FullMethodName         = "/gibson.harness.HarnessCallbackService/ReportStepHints"
+	HarnessCallbackService_LLMComplete_FullMethodName                      = "/gibson.harness.HarnessCallbackService/LLMComplete"
+	HarnessCallbackService_LLMCompleteWithTools_FullMethodName             = "/gibson.harness.HarnessCallbackService/LLMCompleteWithTools"
+	HarnessCallbackService_LLMCompleteStructured_FullMethodName            = "/gibson.harness.HarnessCallbackService/LLMCompleteStructured"
+	HarnessCallbackService_LLMStream_FullMethodName                        = "/gibson.harness.HarnessCallbackService/LLMStream"
+	HarnessCallbackService_CallTool_FullMethodName                         = "/gibson.harness.HarnessCallbackService/CallTool"
+	HarnessCallbackService_ListTools_FullMethodName                        = "/gibson.harness.HarnessCallbackService/ListTools"
+	HarnessCallbackService_QueryPlugin_FullMethodName                      = "/gibson.harness.HarnessCallbackService/QueryPlugin"
+	HarnessCallbackService_ListPlugins_FullMethodName                      = "/gibson.harness.HarnessCallbackService/ListPlugins"
+	HarnessCallbackService_DelegateToAgent_FullMethodName                  = "/gibson.harness.HarnessCallbackService/DelegateToAgent"
+	HarnessCallbackService_ListAgents_FullMethodName                       = "/gibson.harness.HarnessCallbackService/ListAgents"
+	HarnessCallbackService_SubmitFinding_FullMethodName                    = "/gibson.harness.HarnessCallbackService/SubmitFinding"
+	HarnessCallbackService_GetFindings_FullMethodName                      = "/gibson.harness.HarnessCallbackService/GetFindings"
+	HarnessCallbackService_MemoryGet_FullMethodName                        = "/gibson.harness.HarnessCallbackService/MemoryGet"
+	HarnessCallbackService_MemorySet_FullMethodName                        = "/gibson.harness.HarnessCallbackService/MemorySet"
+	HarnessCallbackService_MemoryDelete_FullMethodName                     = "/gibson.harness.HarnessCallbackService/MemoryDelete"
+	HarnessCallbackService_MemoryList_FullMethodName                       = "/gibson.harness.HarnessCallbackService/MemoryList"
+	HarnessCallbackService_MissionMemorySearch_FullMethodName              = "/gibson.harness.HarnessCallbackService/MissionMemorySearch"
+	HarnessCallbackService_MissionMemoryHistory_FullMethodName             = "/gibson.harness.HarnessCallbackService/MissionMemoryHistory"
+	HarnessCallbackService_MissionMemoryGetPreviousRunValue_FullMethodName = "/gibson.harness.HarnessCallbackService/MissionMemoryGetPreviousRunValue"
+	HarnessCallbackService_MissionMemoryGetValueHistory_FullMethodName     = "/gibson.harness.HarnessCallbackService/MissionMemoryGetValueHistory"
+	HarnessCallbackService_MissionMemoryContinuityMode_FullMethodName      = "/gibson.harness.HarnessCallbackService/MissionMemoryContinuityMode"
+	HarnessCallbackService_LongTermMemoryStore_FullMethodName              = "/gibson.harness.HarnessCallbackService/LongTermMemoryStore"
+	HarnessCallbackService_LongTermMemorySearch_FullMethodName             = "/gibson.harness.HarnessCallbackService/LongTermMemorySearch"
+	HarnessCallbackService_LongTermMemoryDelete_FullMethodName             = "/gibson.harness.HarnessCallbackService/LongTermMemoryDelete"
+	HarnessCallbackService_GraphRAGQuery_FullMethodName                    = "/gibson.harness.HarnessCallbackService/GraphRAGQuery"
+	HarnessCallbackService_FindSimilarAttacks_FullMethodName               = "/gibson.harness.HarnessCallbackService/FindSimilarAttacks"
+	HarnessCallbackService_FindSimilarFindings_FullMethodName              = "/gibson.harness.HarnessCallbackService/FindSimilarFindings"
+	HarnessCallbackService_GetAttackChains_FullMethodName                  = "/gibson.harness.HarnessCallbackService/GetAttackChains"
+	HarnessCallbackService_GetRelatedFindings_FullMethodName               = "/gibson.harness.HarnessCallbackService/GetRelatedFindings"
+	HarnessCallbackService_StoreGraphNode_FullMethodName                   = "/gibson.harness.HarnessCallbackService/StoreGraphNode"
+	HarnessCallbackService_CreateGraphRelationship_FullMethodName          = "/gibson.harness.HarnessCallbackService/CreateGraphRelationship"
+	HarnessCallbackService_StoreGraphBatch_FullMethodName                  = "/gibson.harness.HarnessCallbackService/StoreGraphBatch"
+	HarnessCallbackService_TraverseGraph_FullMethodName                    = "/gibson.harness.HarnessCallbackService/TraverseGraph"
+	HarnessCallbackService_GraphRAGHealth_FullMethodName                   = "/gibson.harness.HarnessCallbackService/GraphRAGHealth"
+	HarnessCallbackService_GetPlanContext_FullMethodName                   = "/gibson.harness.HarnessCallbackService/GetPlanContext"
+	HarnessCallbackService_ReportStepHints_FullMethodName                  = "/gibson.harness.HarnessCallbackService/ReportStepHints"
+	HarnessCallbackService_RecordSpan_FullMethodName                       = "/gibson.harness.HarnessCallbackService/RecordSpan"
+	HarnessCallbackService_RecordSpans_FullMethodName                      = "/gibson.harness.HarnessCallbackService/RecordSpans"
 )
 
 // HarnessCallbackServiceClient is the client API for HarnessCallbackService service.
@@ -78,6 +88,16 @@ type HarnessCallbackServiceClient interface {
 	MemorySet(ctx context.Context, in *MemorySetRequest, opts ...grpc.CallOption) (*MemorySetResponse, error)
 	MemoryDelete(ctx context.Context, in *MemoryDeleteRequest, opts ...grpc.CallOption) (*MemoryDeleteResponse, error)
 	MemoryList(ctx context.Context, in *MemoryListRequest, opts ...grpc.CallOption) (*MemoryListResponse, error)
+	// Mission Memory operations
+	MissionMemorySearch(ctx context.Context, in *MissionMemorySearchRequest, opts ...grpc.CallOption) (*MissionMemorySearchResponse, error)
+	MissionMemoryHistory(ctx context.Context, in *MissionMemoryHistoryRequest, opts ...grpc.CallOption) (*MissionMemoryHistoryResponse, error)
+	MissionMemoryGetPreviousRunValue(ctx context.Context, in *MissionMemoryGetPreviousRunValueRequest, opts ...grpc.CallOption) (*MissionMemoryGetPreviousRunValueResponse, error)
+	MissionMemoryGetValueHistory(ctx context.Context, in *MissionMemoryGetValueHistoryRequest, opts ...grpc.CallOption) (*MissionMemoryGetValueHistoryResponse, error)
+	MissionMemoryContinuityMode(ctx context.Context, in *MissionMemoryContinuityModeRequest, opts ...grpc.CallOption) (*MissionMemoryContinuityModeResponse, error)
+	// Long-Term Memory operations
+	LongTermMemoryStore(ctx context.Context, in *LongTermMemoryStoreRequest, opts ...grpc.CallOption) (*LongTermMemoryStoreResponse, error)
+	LongTermMemorySearch(ctx context.Context, in *LongTermMemorySearchRequest, opts ...grpc.CallOption) (*LongTermMemorySearchResponse, error)
+	LongTermMemoryDelete(ctx context.Context, in *LongTermMemoryDeleteRequest, opts ...grpc.CallOption) (*LongTermMemoryDeleteResponse, error)
 	// GraphRAG Query Operations
 	GraphRAGQuery(ctx context.Context, in *GraphRAGQueryRequest, opts ...grpc.CallOption) (*GraphRAGQueryResponse, error)
 	FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error)
@@ -93,6 +113,9 @@ type HarnessCallbackServiceClient interface {
 	// Planning Operations
 	GetPlanContext(ctx context.Context, in *GetPlanContextRequest, opts ...grpc.CallOption) (*GetPlanContextResponse, error)
 	ReportStepHints(ctx context.Context, in *ReportStepHintsRequest, opts ...grpc.CallOption) (*ReportStepHintsResponse, error)
+	// Distributed Tracing Operations
+	RecordSpan(ctx context.Context, in *RecordSpanRequest, opts ...grpc.CallOption) (*RecordSpanResponse, error)
+	RecordSpans(ctx context.Context, in *RecordSpansRequest, opts ...grpc.CallOption) (*RecordSpansResponse, error)
 }
 
 type harnessCallbackServiceClient struct {
@@ -272,6 +295,86 @@ func (c *harnessCallbackServiceClient) MemoryList(ctx context.Context, in *Memor
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) MissionMemorySearch(ctx context.Context, in *MissionMemorySearchRequest, opts ...grpc.CallOption) (*MissionMemorySearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MissionMemorySearchResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_MissionMemorySearch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) MissionMemoryHistory(ctx context.Context, in *MissionMemoryHistoryRequest, opts ...grpc.CallOption) (*MissionMemoryHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MissionMemoryHistoryResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_MissionMemoryHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) MissionMemoryGetPreviousRunValue(ctx context.Context, in *MissionMemoryGetPreviousRunValueRequest, opts ...grpc.CallOption) (*MissionMemoryGetPreviousRunValueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MissionMemoryGetPreviousRunValueResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_MissionMemoryGetPreviousRunValue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) MissionMemoryGetValueHistory(ctx context.Context, in *MissionMemoryGetValueHistoryRequest, opts ...grpc.CallOption) (*MissionMemoryGetValueHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MissionMemoryGetValueHistoryResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_MissionMemoryGetValueHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) MissionMemoryContinuityMode(ctx context.Context, in *MissionMemoryContinuityModeRequest, opts ...grpc.CallOption) (*MissionMemoryContinuityModeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MissionMemoryContinuityModeResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_MissionMemoryContinuityMode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) LongTermMemoryStore(ctx context.Context, in *LongTermMemoryStoreRequest, opts ...grpc.CallOption) (*LongTermMemoryStoreResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LongTermMemoryStoreResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_LongTermMemoryStore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) LongTermMemorySearch(ctx context.Context, in *LongTermMemorySearchRequest, opts ...grpc.CallOption) (*LongTermMemorySearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LongTermMemorySearchResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_LongTermMemorySearch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) LongTermMemoryDelete(ctx context.Context, in *LongTermMemoryDeleteRequest, opts ...grpc.CallOption) (*LongTermMemoryDeleteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LongTermMemoryDeleteResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_LongTermMemoryDelete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *harnessCallbackServiceClient) GraphRAGQuery(ctx context.Context, in *GraphRAGQueryRequest, opts ...grpc.CallOption) (*GraphRAGQueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GraphRAGQueryResponse)
@@ -392,6 +495,26 @@ func (c *harnessCallbackServiceClient) ReportStepHints(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) RecordSpan(ctx context.Context, in *RecordSpanRequest, opts ...grpc.CallOption) (*RecordSpanResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordSpanResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_RecordSpan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) RecordSpans(ctx context.Context, in *RecordSpansRequest, opts ...grpc.CallOption) (*RecordSpansResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordSpansResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_RecordSpans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HarnessCallbackServiceServer is the server API for HarnessCallbackService service.
 // All implementations must embed UnimplementedHarnessCallbackServiceServer
 // for forward compatibility.
@@ -421,6 +544,16 @@ type HarnessCallbackServiceServer interface {
 	MemorySet(context.Context, *MemorySetRequest) (*MemorySetResponse, error)
 	MemoryDelete(context.Context, *MemoryDeleteRequest) (*MemoryDeleteResponse, error)
 	MemoryList(context.Context, *MemoryListRequest) (*MemoryListResponse, error)
+	// Mission Memory operations
+	MissionMemorySearch(context.Context, *MissionMemorySearchRequest) (*MissionMemorySearchResponse, error)
+	MissionMemoryHistory(context.Context, *MissionMemoryHistoryRequest) (*MissionMemoryHistoryResponse, error)
+	MissionMemoryGetPreviousRunValue(context.Context, *MissionMemoryGetPreviousRunValueRequest) (*MissionMemoryGetPreviousRunValueResponse, error)
+	MissionMemoryGetValueHistory(context.Context, *MissionMemoryGetValueHistoryRequest) (*MissionMemoryGetValueHistoryResponse, error)
+	MissionMemoryContinuityMode(context.Context, *MissionMemoryContinuityModeRequest) (*MissionMemoryContinuityModeResponse, error)
+	// Long-Term Memory operations
+	LongTermMemoryStore(context.Context, *LongTermMemoryStoreRequest) (*LongTermMemoryStoreResponse, error)
+	LongTermMemorySearch(context.Context, *LongTermMemorySearchRequest) (*LongTermMemorySearchResponse, error)
+	LongTermMemoryDelete(context.Context, *LongTermMemoryDeleteRequest) (*LongTermMemoryDeleteResponse, error)
 	// GraphRAG Query Operations
 	GraphRAGQuery(context.Context, *GraphRAGQueryRequest) (*GraphRAGQueryResponse, error)
 	FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error)
@@ -436,6 +569,9 @@ type HarnessCallbackServiceServer interface {
 	// Planning Operations
 	GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error)
 	ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error)
+	// Distributed Tracing Operations
+	RecordSpan(context.Context, *RecordSpanRequest) (*RecordSpanResponse, error)
+	RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error)
 	mustEmbedUnimplementedHarnessCallbackServiceServer()
 }
 
@@ -494,6 +630,30 @@ func (UnimplementedHarnessCallbackServiceServer) MemoryDelete(context.Context, *
 func (UnimplementedHarnessCallbackServiceServer) MemoryList(context.Context, *MemoryListRequest) (*MemoryListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method MemoryList not implemented")
 }
+func (UnimplementedHarnessCallbackServiceServer) MissionMemorySearch(context.Context, *MissionMemorySearchRequest) (*MissionMemorySearchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MissionMemorySearch not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) MissionMemoryHistory(context.Context, *MissionMemoryHistoryRequest) (*MissionMemoryHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MissionMemoryHistory not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) MissionMemoryGetPreviousRunValue(context.Context, *MissionMemoryGetPreviousRunValueRequest) (*MissionMemoryGetPreviousRunValueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MissionMemoryGetPreviousRunValue not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) MissionMemoryGetValueHistory(context.Context, *MissionMemoryGetValueHistoryRequest) (*MissionMemoryGetValueHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MissionMemoryGetValueHistory not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) MissionMemoryContinuityMode(context.Context, *MissionMemoryContinuityModeRequest) (*MissionMemoryContinuityModeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MissionMemoryContinuityMode not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) LongTermMemoryStore(context.Context, *LongTermMemoryStoreRequest) (*LongTermMemoryStoreResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LongTermMemoryStore not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) LongTermMemorySearch(context.Context, *LongTermMemorySearchRequest) (*LongTermMemorySearchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LongTermMemorySearch not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) LongTermMemoryDelete(context.Context, *LongTermMemoryDeleteRequest) (*LongTermMemoryDeleteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LongTermMemoryDelete not implemented")
+}
 func (UnimplementedHarnessCallbackServiceServer) GraphRAGQuery(context.Context, *GraphRAGQueryRequest) (*GraphRAGQueryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GraphRAGQuery not implemented")
 }
@@ -529,6 +689,12 @@ func (UnimplementedHarnessCallbackServiceServer) GetPlanContext(context.Context,
 }
 func (UnimplementedHarnessCallbackServiceServer) ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportStepHints not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) RecordSpan(context.Context, *RecordSpanRequest) (*RecordSpanResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordSpan not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordSpans not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) mustEmbedUnimplementedHarnessCallbackServiceServer() {
 }
@@ -833,6 +999,150 @@ func _HarnessCallbackService_MemoryList_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_MissionMemorySearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MissionMemorySearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).MissionMemorySearch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_MissionMemorySearch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).MissionMemorySearch(ctx, req.(*MissionMemorySearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_MissionMemoryHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MissionMemoryHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_MissionMemoryHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryHistory(ctx, req.(*MissionMemoryHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_MissionMemoryGetPreviousRunValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MissionMemoryGetPreviousRunValueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryGetPreviousRunValue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_MissionMemoryGetPreviousRunValue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryGetPreviousRunValue(ctx, req.(*MissionMemoryGetPreviousRunValueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_MissionMemoryGetValueHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MissionMemoryGetValueHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryGetValueHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_MissionMemoryGetValueHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryGetValueHistory(ctx, req.(*MissionMemoryGetValueHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_MissionMemoryContinuityMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MissionMemoryContinuityModeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryContinuityMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_MissionMemoryContinuityMode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).MissionMemoryContinuityMode(ctx, req.(*MissionMemoryContinuityModeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_LongTermMemoryStore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LongTermMemoryStoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).LongTermMemoryStore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_LongTermMemoryStore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).LongTermMemoryStore(ctx, req.(*LongTermMemoryStoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_LongTermMemorySearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LongTermMemorySearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).LongTermMemorySearch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_LongTermMemorySearch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).LongTermMemorySearch(ctx, req.(*LongTermMemorySearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_LongTermMemoryDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LongTermMemoryDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).LongTermMemoryDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_LongTermMemoryDelete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).LongTermMemoryDelete(ctx, req.(*LongTermMemoryDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HarnessCallbackService_GraphRAGQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GraphRAGQueryRequest)
 	if err := dec(in); err != nil {
@@ -1049,6 +1359,42 @@ func _HarnessCallbackService_ReportStepHints_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_RecordSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordSpanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).RecordSpan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_RecordSpan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).RecordSpan(ctx, req.(*RecordSpanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_RecordSpans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordSpansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).RecordSpans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_RecordSpans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).RecordSpans(ctx, req.(*RecordSpansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HarnessCallbackService_ServiceDesc is the grpc.ServiceDesc for HarnessCallbackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1117,6 +1463,38 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HarnessCallbackService_MemoryList_Handler,
 		},
 		{
+			MethodName: "MissionMemorySearch",
+			Handler:    _HarnessCallbackService_MissionMemorySearch_Handler,
+		},
+		{
+			MethodName: "MissionMemoryHistory",
+			Handler:    _HarnessCallbackService_MissionMemoryHistory_Handler,
+		},
+		{
+			MethodName: "MissionMemoryGetPreviousRunValue",
+			Handler:    _HarnessCallbackService_MissionMemoryGetPreviousRunValue_Handler,
+		},
+		{
+			MethodName: "MissionMemoryGetValueHistory",
+			Handler:    _HarnessCallbackService_MissionMemoryGetValueHistory_Handler,
+		},
+		{
+			MethodName: "MissionMemoryContinuityMode",
+			Handler:    _HarnessCallbackService_MissionMemoryContinuityMode_Handler,
+		},
+		{
+			MethodName: "LongTermMemoryStore",
+			Handler:    _HarnessCallbackService_LongTermMemoryStore_Handler,
+		},
+		{
+			MethodName: "LongTermMemorySearch",
+			Handler:    _HarnessCallbackService_LongTermMemorySearch_Handler,
+		},
+		{
+			MethodName: "LongTermMemoryDelete",
+			Handler:    _HarnessCallbackService_LongTermMemoryDelete_Handler,
+		},
+		{
 			MethodName: "GraphRAGQuery",
 			Handler:    _HarnessCallbackService_GraphRAGQuery_Handler,
 		},
@@ -1163,6 +1541,14 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportStepHints",
 			Handler:    _HarnessCallbackService_ReportStepHints_Handler,
+		},
+		{
+			MethodName: "RecordSpan",
+			Handler:    _HarnessCallbackService_RecordSpan_Handler,
+		},
+		{
+			MethodName: "RecordSpans",
+			Handler:    _HarnessCallbackService_RecordSpans_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

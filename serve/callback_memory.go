@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/memory"
@@ -36,15 +37,13 @@ func (m *CallbackMemoryStore) Working() memory.WorkingMemory {
 }
 
 // Mission returns the mission memory tier (persistent per-mission).
-// Currently forwards to the same callback mechanism as working memory.
 func (m *CallbackMemoryStore) Mission() memory.MissionMemory {
-	return &callbackMissionMemory{client: m.client}
+	return &callbackMissionMemory{client: m.client, tracer: m.tracer}
 }
 
 // LongTerm returns the long-term memory tier (vector-based).
-// Currently returns a stub implementation that returns ErrNotImplemented.
 func (m *CallbackMemoryStore) LongTerm() memory.LongTermMemory {
-	return &callbackLongTermMemory{client: m.client}
+	return &callbackLongTermMemory{client: m.client, tracer: m.tracer}
 }
 
 // ============================================================================
@@ -229,61 +228,686 @@ func (m *callbackWorkingMemory) Keys(ctx context.Context) ([]string, error) {
 }
 
 // ============================================================================
-// Mission Memory Implementation (Stub)
+// Mission Memory Implementation
 // ============================================================================
 
 type callbackMissionMemory struct {
 	client *CallbackClient
+	tracer trace.Tracer
 }
 
 func (m *callbackMissionMemory) Get(ctx context.Context, key string) (*memory.Item, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.get",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	req := &proto.MemoryGetRequest{
+		Key:  key,
+		Tier: proto.MemoryTier_MEMORY_TIER_MISSION,
+	}
+
+	resp, err := m.client.MemoryGet(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("mission memory get failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		if resp.Error.Code == "NOT_FOUND" {
+			span.SetAttributes(attribute.Bool("gibson.memory.found", false))
+			return nil, memory.ErrNotFound
+		}
+		err := fmt.Errorf("mission memory get error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	if !resp.Found {
+		span.SetAttributes(attribute.Bool("gibson.memory.found", false))
+		return nil, memory.ErrNotFound
+	}
+
+	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
+
+	// Deserialize the value from JSON
+	var value any
+	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
+	}
+
+	// Deserialize metadata from JSON
+	var metadata map[string]any
+	if resp.MetadataJson != "" {
+		if err := json.Unmarshal([]byte(resp.MetadataJson), &metadata); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		}
+	}
+
+	// Parse timestamps
+	var createdAt, updatedAt time.Time
+	if resp.CreatedAt != "" {
+		createdAt, _ = time.Parse(time.RFC3339, resp.CreatedAt)
+	}
+	if resp.UpdatedAt != "" {
+		updatedAt, _ = time.Parse(time.RFC3339, resp.UpdatedAt)
+	}
+
+	return &memory.Item{
+		Key:       key,
+		Value:     value,
+		Metadata:  metadata,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}, nil
 }
 
 func (m *callbackMissionMemory) Set(ctx context.Context, key string, value any, metadata map[string]any) error {
-	return memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.set",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	// Serialize the value to JSON
+	valueJSON, err := json.Marshal(value)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("failed to marshal value: %w", err)
+	}
+
+	// Serialize metadata to JSON
+	var metadataJSON string
+	if metadata != nil {
+		metaBytes, err := json.Marshal(metadata)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return fmt.Errorf("failed to marshal metadata: %w", err)
+		}
+		metadataJSON = string(metaBytes)
+	}
+
+	req := &proto.MemorySetRequest{
+		Key:          key,
+		ValueJson:    string(valueJSON),
+		MetadataJson: metadataJSON,
+		Tier:         proto.MemoryTier_MEMORY_TIER_MISSION,
+	}
+
+	resp, err := m.client.MemorySet(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("mission memory set failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("mission memory set error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return err
+	}
+
+	return nil
 }
 
 func (m *callbackMissionMemory) Delete(ctx context.Context, key string) error {
-	return memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.delete",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	req := &proto.MemoryDeleteRequest{
+		Key:  key,
+		Tier: proto.MemoryTier_MEMORY_TIER_MISSION,
+	}
+
+	resp, err := m.client.MemoryDelete(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("mission memory delete failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		if resp.Error.Code == "NOT_FOUND" {
+			return memory.ErrNotFound
+		}
+		err := fmt.Errorf("mission memory delete error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return err
+	}
+
+	return nil
 }
 
 func (m *callbackMissionMemory) Search(ctx context.Context, query string, limit int) ([]memory.Result, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.search",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.query", query),
+			attribute.Int("gibson.memory.limit", limit),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	req := &proto.MissionMemorySearchRequest{
+		Query: query,
+		Limit: int32(limit),
+	}
+
+	resp, err := m.client.MissionMemorySearch(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("mission memory search failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("mission memory search error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	results := make([]memory.Result, 0, len(resp.Results))
+	for _, r := range resp.Results {
+		// Deserialize value
+		var value any
+		if err := json.Unmarshal([]byte(r.ValueJson), &value); err != nil {
+			continue // Skip items with invalid JSON
+		}
+
+		// Deserialize metadata
+		var metadata map[string]any
+		if r.MetadataJson != "" {
+			json.Unmarshal([]byte(r.MetadataJson), &metadata)
+		}
+
+		// Parse timestamps
+		var createdAt, updatedAt time.Time
+		if r.CreatedAt != "" {
+			createdAt, _ = time.Parse(time.RFC3339, r.CreatedAt)
+		}
+		if r.UpdatedAt != "" {
+			updatedAt, _ = time.Parse(time.RFC3339, r.UpdatedAt)
+		}
+
+		results = append(results, memory.Result{
+			Item: memory.Item{
+				Key:       r.Key,
+				Value:     value,
+				Metadata:  metadata,
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Score: r.Score,
+		})
+	}
+
+	span.SetAttributes(attribute.Int("gibson.memory.results", len(results)))
+	return results, nil
 }
 
 func (m *callbackMissionMemory) History(ctx context.Context, limit int) ([]memory.Item, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.history",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.Int("gibson.memory.limit", limit),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	req := &proto.MissionMemoryHistoryRequest{
+		Limit: int32(limit),
+	}
+
+	resp, err := m.client.MissionMemoryHistory(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("mission memory history failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("mission memory history error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	items := make([]memory.Item, 0, len(resp.Items))
+	for _, item := range resp.Items {
+		// Deserialize value
+		var value any
+		if err := json.Unmarshal([]byte(item.ValueJson), &value); err != nil {
+			continue // Skip items with invalid JSON
+		}
+
+		// Deserialize metadata
+		var metadata map[string]any
+		if item.MetadataJson != "" {
+			json.Unmarshal([]byte(item.MetadataJson), &metadata)
+		}
+
+		// Parse timestamps
+		var createdAt, updatedAt time.Time
+		if item.CreatedAt != "" {
+			createdAt, _ = time.Parse(time.RFC3339, item.CreatedAt)
+		}
+		if item.UpdatedAt != "" {
+			updatedAt, _ = time.Parse(time.RFC3339, item.UpdatedAt)
+		}
+
+		items = append(items, memory.Item{
+			Key:       item.Key,
+			Value:     value,
+			Metadata:  metadata,
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		})
+	}
+
+	span.SetAttributes(attribute.Int("gibson.memory.items", len(items)))
+	return items, nil
 }
 
 func (m *callbackMissionMemory) GetPreviousRunValue(ctx context.Context, key string) (any, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.get_previous_run_value",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	req := &proto.MissionMemoryGetPreviousRunValueRequest{
+		Key: key,
+	}
+
+	resp, err := m.client.MissionMemoryGetPreviousRunValue(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("mission memory get previous run value failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		switch resp.Error.Code {
+		case "NO_PREVIOUS_RUN":
+			return nil, memory.ErrNoPreviousRun
+		case "CONTINUITY_NOT_SUPPORTED":
+			return nil, memory.ErrContinuityNotSupported
+		case "NOT_FOUND":
+			span.SetAttributes(attribute.Bool("gibson.memory.found", false))
+			return nil, memory.ErrNotFound
+		default:
+			err := fmt.Errorf("mission memory get previous run value error: %s", resp.Error.Message)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, resp.Error.Message)
+			return nil, err
+		}
+	}
+
+	if !resp.Found {
+		span.SetAttributes(attribute.Bool("gibson.memory.found", false))
+		return nil, memory.ErrNotFound
+	}
+
+	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
+
+	// Deserialize the value from JSON
+	var value any
+	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
+	}
+
+	return value, nil
 }
 
 func (m *callbackMissionMemory) GetValueHistory(ctx context.Context, key string) ([]memory.HistoricalValue, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.mission.get_value_history",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.key", key),
+			attribute.String("gibson.memory.tier", "mission"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	req := &proto.MissionMemoryGetValueHistoryRequest{
+		Key: key,
+	}
+
+	resp, err := m.client.MissionMemoryGetValueHistory(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("mission memory get value history failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		if resp.Error.Code == "CONTINUITY_NOT_SUPPORTED" {
+			return nil, memory.ErrContinuityNotSupported
+		}
+		err := fmt.Errorf("mission memory get value history error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	values := make([]memory.HistoricalValue, 0, len(resp.Values))
+	for _, v := range resp.Values {
+		// Deserialize value
+		var value any
+		if err := json.Unmarshal([]byte(v.ValueJson), &value); err != nil {
+			continue // Skip items with invalid JSON
+		}
+
+		// Parse timestamp
+		var storedAt time.Time
+		if v.StoredAt != "" {
+			storedAt, _ = time.Parse(time.RFC3339, v.StoredAt)
+		}
+
+		values = append(values, memory.HistoricalValue{
+			Value:     value,
+			RunNumber: int(v.RunNumber),
+			MissionID: v.MissionId,
+			StoredAt:  storedAt,
+		})
+	}
+
+	span.SetAttributes(attribute.Int("gibson.memory.values", len(values)))
+	return values, nil
 }
 
 func (m *callbackMissionMemory) ContinuityMode() memory.MemoryContinuityMode {
-	return memory.MemoryIsolated
+	// Note: ContinuityMode doesn't take a context, but we need one for the RPC call.
+	// We use a background context with a reasonable timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if !m.client.IsConnected() {
+		return memory.MemoryIsolated // Default if not connected
+	}
+
+	req := &proto.MissionMemoryContinuityModeRequest{}
+
+	resp, err := m.client.MissionMemoryContinuityMode(ctx, req)
+	if err != nil {
+		return memory.MemoryIsolated // Default on error
+	}
+
+	if resp.Error != nil {
+		return memory.MemoryIsolated // Default on error
+	}
+
+	// Convert string to MemoryContinuityMode
+	switch resp.Mode {
+	case "isolated":
+		return memory.MemoryIsolated
+	case "inherit":
+		return memory.MemoryInherit
+	case "shared":
+		return memory.MemoryShared
+	default:
+		return memory.MemoryIsolated
+	}
 }
 
 // ============================================================================
-// Long-Term Memory Implementation (Stub)
+// Long-Term Memory Implementation
 // ============================================================================
 
 type callbackLongTermMemory struct {
 	client *CallbackClient
+	tracer trace.Tracer
 }
 
 func (m *callbackLongTermMemory) Store(ctx context.Context, content string, metadata map[string]any) (string, error) {
-	return "", memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.longterm.store",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.tier", "longterm"),
+			attribute.Int("gibson.memory.content_length", len(content)),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", err
+	}
+
+	// Serialize metadata to JSON
+	var metadataJSON string
+	if metadata != nil {
+		metaBytes, err := json.Marshal(metadata)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return "", fmt.Errorf("failed to marshal metadata: %w", err)
+		}
+		metadataJSON = string(metaBytes)
+	}
+
+	req := &proto.LongTermMemoryStoreRequest{
+		Content:      content,
+		MetadataJson: metadataJSON,
+	}
+
+	resp, err := m.client.LongTermMemoryStore(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", fmt.Errorf("longterm memory store failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("longterm memory store error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return "", err
+	}
+
+	span.SetAttributes(attribute.String("gibson.memory.id", resp.Id))
+	return resp.Id, nil
 }
 
 func (m *callbackLongTermMemory) Search(ctx context.Context, query string, topK int, filters map[string]any) ([]memory.Result, error) {
-	return nil, memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.longterm.search",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.query", query),
+			attribute.Int("gibson.memory.top_k", topK),
+			attribute.String("gibson.memory.tier", "longterm"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	// Serialize filters to JSON
+	var filtersJSON string
+	if filters != nil {
+		filterBytes, err := json.Marshal(filters)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, fmt.Errorf("failed to marshal filters: %w", err)
+		}
+		filtersJSON = string(filterBytes)
+	}
+
+	req := &proto.LongTermMemorySearchRequest{
+		Query:       query,
+		TopK:        int32(topK),
+		FiltersJson: filtersJSON,
+	}
+
+	resp, err := m.client.LongTermMemorySearch(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("longterm memory search failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("longterm memory search error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	results := make([]memory.Result, 0, len(resp.Results))
+	for _, r := range resp.Results {
+		// Deserialize metadata
+		var metadata map[string]any
+		if r.MetadataJson != "" {
+			json.Unmarshal([]byte(r.MetadataJson), &metadata)
+		}
+
+		// Parse timestamps
+		var createdAt time.Time
+		if r.CreatedAt != "" {
+			createdAt, _ = time.Parse(time.RFC3339, r.CreatedAt)
+		}
+
+		results = append(results, memory.Result{
+			Item: memory.Item{
+				Key:       r.Id,
+				Value:     r.Content,
+				Metadata:  metadata,
+				CreatedAt: createdAt,
+				UpdatedAt: createdAt, // LongTerm items are immutable
+			},
+			Score: r.Score,
+		})
+	}
+
+	span.SetAttributes(attribute.Int("gibson.memory.results", len(results)))
+	return results, nil
 }
 
 func (m *callbackLongTermMemory) Delete(ctx context.Context, id string) error {
-	return memory.ErrNotImplemented
+	ctx, span := m.tracer.Start(ctx, "gibson.memory.longterm.delete",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.memory.id", id),
+			attribute.String("gibson.memory.tier", "longterm"),
+		),
+	)
+	defer span.End()
+
+	if !m.client.IsConnected() {
+		err := fmt.Errorf("callback client not connected")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	req := &proto.LongTermMemoryDeleteRequest{
+		Id: id,
+	}
+
+	resp, err := m.client.LongTermMemoryDelete(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("longterm memory delete failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		if resp.Error.Code == "NOT_FOUND" {
+			return memory.ErrNotFound
+		}
+		err := fmt.Errorf("longterm memory delete error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return err
+	}
+
+	return nil
 }

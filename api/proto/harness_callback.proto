@@ -33,6 +33,18 @@ service HarnessCallbackService {
     rpc MemoryDelete(MemoryDeleteRequest) returns (MemoryDeleteResponse);
     rpc MemoryList(MemoryListRequest) returns (MemoryListResponse);
 
+    // Mission Memory operations
+    rpc MissionMemorySearch(MissionMemorySearchRequest) returns (MissionMemorySearchResponse);
+    rpc MissionMemoryHistory(MissionMemoryHistoryRequest) returns (MissionMemoryHistoryResponse);
+    rpc MissionMemoryGetPreviousRunValue(MissionMemoryGetPreviousRunValueRequest) returns (MissionMemoryGetPreviousRunValueResponse);
+    rpc MissionMemoryGetValueHistory(MissionMemoryGetValueHistoryRequest) returns (MissionMemoryGetValueHistoryResponse);
+    rpc MissionMemoryContinuityMode(MissionMemoryContinuityModeRequest) returns (MissionMemoryContinuityModeResponse);
+
+    // Long-Term Memory operations
+    rpc LongTermMemoryStore(LongTermMemoryStoreRequest) returns (LongTermMemoryStoreResponse);
+    rpc LongTermMemorySearch(LongTermMemorySearchRequest) returns (LongTermMemorySearchResponse);
+    rpc LongTermMemoryDelete(LongTermMemoryDeleteRequest) returns (LongTermMemoryDeleteResponse);
+
     // GraphRAG Query Operations
     rpc GraphRAGQuery(GraphRAGQueryRequest) returns (GraphRAGQueryResponse);
     rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse);
@@ -300,21 +312,35 @@ message GetFindingsResponse {
 // Memory Operations
 // ============================================================================
 
+// MemoryTier specifies which memory tier to use for an operation.
+enum MemoryTier {
+    MEMORY_TIER_UNSPECIFIED = 0;  // Default to WORKING for backward compatibility
+    MEMORY_TIER_WORKING = 1;      // Ephemeral in-memory
+    MEMORY_TIER_MISSION = 2;      // Persistent per-mission with FTS
+    MEMORY_TIER_LONG_TERM = 3;    // Vector-based semantic storage
+}
+
 message MemoryGetRequest {
     ContextInfo context = 1;
     string key = 2;
+    MemoryTier tier = 3;
 }
 
 message MemoryGetResponse {
     string value_json = 1;  // JSON-encoded any
     bool found = 2;
     HarnessError error = 3;
+    string metadata_json = 4;
+    string created_at = 5;
+    string updated_at = 6;
 }
 
 message MemorySetRequest {
     ContextInfo context = 1;
     string key = 2;
     string value_json = 3;  // JSON-encoded any
+    MemoryTier tier = 4;
+    string metadata_json = 5;
 }
 
 message MemorySetResponse {
@@ -324,6 +350,7 @@ message MemorySetResponse {
 message MemoryDeleteRequest {
     ContextInfo context = 1;
     string key = 2;
+    MemoryTier tier = 3;
 }
 
 message MemoryDeleteResponse {
@@ -333,11 +360,135 @@ message MemoryDeleteResponse {
 message MemoryListRequest {
     ContextInfo context = 1;
     string prefix = 2;
+    MemoryTier tier = 3;
 }
 
 message MemoryListResponse {
     repeated string keys = 1;
     HarnessError error = 2;
+}
+
+// ============================================================================
+// Mission Memory Operations
+// ============================================================================
+
+message MissionMemorySearchRequest {
+    ContextInfo context = 1;
+    string query = 2;
+    int32 limit = 3;
+}
+
+message MissionMemorySearchResponse {
+    repeated MissionMemoryResult results = 1;
+    HarnessError error = 2;
+}
+
+message MissionMemoryResult {
+    string key = 1;
+    string value_json = 2;
+    string metadata_json = 3;
+    double score = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+message MissionMemoryHistoryRequest {
+    ContextInfo context = 1;
+    int32 limit = 2;
+}
+
+message MissionMemoryHistoryResponse {
+    repeated MissionMemoryItem items = 1;
+    HarnessError error = 2;
+}
+
+message MissionMemoryItem {
+    string key = 1;
+    string value_json = 2;
+    string metadata_json = 3;
+    string created_at = 4;
+    string updated_at = 5;
+}
+
+message MissionMemoryGetPreviousRunValueRequest {
+    ContextInfo context = 1;
+    string key = 2;
+}
+
+message MissionMemoryGetPreviousRunValueResponse {
+    string value_json = 1;
+    bool found = 2;
+    HarnessError error = 3;
+}
+
+message MissionMemoryGetValueHistoryRequest {
+    ContextInfo context = 1;
+    string key = 2;
+}
+
+message MissionMemoryGetValueHistoryResponse {
+    repeated HistoricalValueItem values = 1;
+    HarnessError error = 2;
+}
+
+message HistoricalValueItem {
+    string value_json = 1;
+    int32 run_number = 2;
+    string mission_id = 3;
+    string stored_at = 4;
+}
+
+message MissionMemoryContinuityModeRequest {
+    ContextInfo context = 1;
+}
+
+message MissionMemoryContinuityModeResponse {
+    string mode = 1;
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// Long-Term Memory Operations
+// ============================================================================
+
+message LongTermMemoryStoreRequest {
+    ContextInfo context = 1;
+    string content = 2;
+    string metadata_json = 3;
+}
+
+message LongTermMemoryStoreResponse {
+    string id = 1;
+    HarnessError error = 2;
+}
+
+message LongTermMemorySearchRequest {
+    ContextInfo context = 1;
+    string query = 2;
+    int32 top_k = 3;
+    string filters_json = 4;
+}
+
+message LongTermMemorySearchResponse {
+    repeated LongTermMemoryResult results = 1;
+    HarnessError error = 2;
+}
+
+message LongTermMemoryResult {
+    string id = 1;
+    string content = 2;
+    string metadata_json = 3;
+    double score = 4;
+    string created_at = 5;
+}
+
+message LongTermMemoryDeleteRequest {
+    ContextInfo context = 1;
+    string id = 2;
+}
+
+message LongTermMemoryDeleteResponse {
+    HarnessError error = 1;
 }
 
 // ============================================================================
