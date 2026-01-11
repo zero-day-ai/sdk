@@ -57,6 +57,7 @@ const (
 	HarnessCallbackService_ReportStepHints_FullMethodName                  = "/gibson.harness.HarnessCallbackService/ReportStepHints"
 	HarnessCallbackService_RecordSpan_FullMethodName                       = "/gibson.harness.HarnessCallbackService/RecordSpan"
 	HarnessCallbackService_RecordSpans_FullMethodName                      = "/gibson.harness.HarnessCallbackService/RecordSpans"
+	HarnessCallbackService_GetCredential_FullMethodName                    = "/gibson.harness.HarnessCallbackService/GetCredential"
 )
 
 // HarnessCallbackServiceClient is the client API for HarnessCallbackService service.
@@ -116,6 +117,8 @@ type HarnessCallbackServiceClient interface {
 	// Distributed Tracing Operations
 	RecordSpan(ctx context.Context, in *RecordSpanRequest, opts ...grpc.CallOption) (*RecordSpanResponse, error)
 	RecordSpans(ctx context.Context, in *RecordSpansRequest, opts ...grpc.CallOption) (*RecordSpansResponse, error)
+	// Credential Operations
+	GetCredential(ctx context.Context, in *GetCredentialRequest, opts ...grpc.CallOption) (*GetCredentialResponse, error)
 }
 
 type harnessCallbackServiceClient struct {
@@ -515,6 +518,16 @@ func (c *harnessCallbackServiceClient) RecordSpans(ctx context.Context, in *Reco
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) GetCredential(ctx context.Context, in *GetCredentialRequest, opts ...grpc.CallOption) (*GetCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCredentialResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_GetCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HarnessCallbackServiceServer is the server API for HarnessCallbackService service.
 // All implementations must embed UnimplementedHarnessCallbackServiceServer
 // for forward compatibility.
@@ -572,6 +585,8 @@ type HarnessCallbackServiceServer interface {
 	// Distributed Tracing Operations
 	RecordSpan(context.Context, *RecordSpanRequest) (*RecordSpanResponse, error)
 	RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error)
+	// Credential Operations
+	GetCredential(context.Context, *GetCredentialRequest) (*GetCredentialResponse, error)
 	mustEmbedUnimplementedHarnessCallbackServiceServer()
 }
 
@@ -695,6 +710,9 @@ func (UnimplementedHarnessCallbackServiceServer) RecordSpan(context.Context, *Re
 }
 func (UnimplementedHarnessCallbackServiceServer) RecordSpans(context.Context, *RecordSpansRequest) (*RecordSpansResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecordSpans not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) GetCredential(context.Context, *GetCredentialRequest) (*GetCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCredential not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) mustEmbedUnimplementedHarnessCallbackServiceServer() {
 }
@@ -1395,6 +1413,24 @@ func _HarnessCallbackService_RecordSpans_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_GetCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).GetCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_GetCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).GetCredential(ctx, req.(*GetCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HarnessCallbackService_ServiceDesc is the grpc.ServiceDesc for HarnessCallbackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1549,6 +1585,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordSpans",
 			Handler:    _HarnessCallbackService_RecordSpans_Handler,
+		},
+		{
+			MethodName: "GetCredential",
+			Handler:    _HarnessCallbackService_GetCredential_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

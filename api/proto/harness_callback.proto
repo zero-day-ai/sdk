@@ -66,6 +66,9 @@ service HarnessCallbackService {
     // Distributed Tracing Operations
     rpc RecordSpan(RecordSpanRequest) returns (RecordSpanResponse);
     rpc RecordSpans(RecordSpansRequest) returns (RecordSpansResponse);
+
+    // Credential Operations
+    rpc GetCredential(GetCredentialRequest) returns (GetCredentialResponse);
 }
 
 // ============================================================================
@@ -790,4 +793,36 @@ message RecordSpansRequest {
 
 message RecordSpansResponse {
     HarnessError error = 1;
+}
+
+// ============================================================================
+// Credential Operations
+// ============================================================================
+
+// CredentialType represents the type of credential.
+enum CredentialType {
+    CREDENTIAL_TYPE_UNSPECIFIED = 0;
+    CREDENTIAL_TYPE_API_KEY = 1;
+    CREDENTIAL_TYPE_BEARER = 2;
+    CREDENTIAL_TYPE_BASIC = 3;
+    CREDENTIAL_TYPE_OAUTH = 4;
+    CREDENTIAL_TYPE_CUSTOM = 5;
+}
+
+message GetCredentialRequest {
+    ContextInfo context = 1;
+    string name = 2;  // Credential name (e.g., "hackerone-api")
+}
+
+message GetCredentialResponse {
+    Credential credential = 1;
+    HarnessError error = 2;
+}
+
+message Credential {
+    string name = 1;
+    CredentialType type = 2;
+    string secret = 3;           // The decrypted secret value
+    string username = 4;         // For BASIC auth credentials
+    string metadata_json = 5;    // JSON-encoded additional metadata
 }
