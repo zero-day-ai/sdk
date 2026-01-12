@@ -30,9 +30,9 @@ func TestAgentCreation(t *testing.T) {
 			sdk.WithName("test-agent"),
 			sdk.WithVersion("1.0.0"),
 			sdk.WithDescription("A test agent for integration testing"),
-			sdk.WithCapabilities(agent.CapabilityPromptInjection),
-			sdk.WithTargetTypes(types.TargetTypeLLMChat),
-			sdk.WithTechniqueTypes(types.TechniquePromptInjection),
+			sdk.WithCapabilities("prompt_injection"),
+			sdk.WithTargetTypes("llm_chat"),
+			sdk.WithTechniqueTypes("prompt_injection"),
 			sdk.WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 				return agent.NewSuccessResult("test completed"), nil
 			}),
@@ -45,11 +45,11 @@ func TestAgentCreation(t *testing.T) {
 		assert.Equal(t, "1.0.0", a.Version())
 		assert.Equal(t, "A test agent for integration testing", a.Description())
 		assert.Len(t, a.Capabilities(), 1)
-		assert.Equal(t, agent.CapabilityPromptInjection, a.Capabilities()[0])
+		assert.Equal(t, "prompt_injection", a.Capabilities()[0])
 		assert.Len(t, a.TargetTypes(), 1)
-		assert.Equal(t, types.TargetTypeLLMChat, a.TargetTypes()[0])
+		assert.Equal(t, "llm_chat", a.TargetTypes()[0])
 		assert.Len(t, a.TechniqueTypes(), 1)
-		assert.Equal(t, types.TechniquePromptInjection, a.TechniqueTypes()[0])
+		assert.Equal(t, "prompt_injection", a.TechniqueTypes()[0])
 	})
 
 	t.Run("with multiple capabilities", func(t *testing.T) {
@@ -58,9 +58,9 @@ func TestAgentCreation(t *testing.T) {
 			sdk.WithVersion("2.0.0"),
 			sdk.WithDescription("Agent with multiple capabilities"),
 			sdk.WithCapabilities(
-				agent.CapabilityPromptInjection,
-				agent.CapabilityJailbreak,
-				agent.CapabilityDataExtraction,
+				"prompt_injection",
+				"jailbreak",
+				"data_extraction",
 			),
 			sdk.WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 				return agent.NewSuccessResult("done"), nil
@@ -256,7 +256,7 @@ func TestAgentExecution(t *testing.T) {
 			sdk.WithName("finding-agent"),
 			sdk.WithVersion("1.0.0"),
 			sdk.WithDescription("Discovers findings"),
-			sdk.WithCapabilities(agent.CapabilityPromptInjection),
+			sdk.WithCapabilities("prompt_injection"),
 			sdk.WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 				result := agent.NewSuccessResult("Found vulnerabilities")
 				result.AddFinding("finding-1")
@@ -359,12 +359,12 @@ func TestAgentHealth(t *testing.T) {
 
 // TestAgentCapabilities tests all agent capabilities are properly set.
 func TestAgentCapabilities(t *testing.T) {
-	capabilities := []agent.Capability{
-		agent.CapabilityPromptInjection,
-		agent.CapabilityJailbreak,
-		agent.CapabilityDataExtraction,
-		agent.CapabilityModelManipulation,
-		agent.CapabilityDOS,
+	capabilities := []string{
+		"prompt_injection",
+		"jailbreak",
+		"data_extraction",
+		"model_manipulation",
+		"dos",
 	}
 
 	for _, cap := range capabilities {
@@ -381,8 +381,8 @@ func TestAgentCapabilities(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Contains(t, a.Capabilities(), cap)
-			assert.True(t, cap.IsValid())
-			assert.NotEmpty(t, cap.Description())
+			// Note: Capabilities are now strings, no validation methods
+			assert.NotEmpty(t, cap)
 		})
 	}
 }

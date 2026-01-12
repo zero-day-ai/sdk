@@ -23,7 +23,7 @@ func TestSDKPackageImports(t *testing.T) {
 
 	t.Run("agent package", func(t *testing.T) {
 		var _ agent.Agent
-		var _ agent.Capability = agent.CapabilityPromptInjection
+		var _ string = "prompt_injection"
 		var _ agent.Result
 		var _ agent.Task
 	})
@@ -47,8 +47,7 @@ func TestSDKPackageImports(t *testing.T) {
 	})
 
 	t.Run("types package", func(t *testing.T) {
-		var _ types.TargetType = types.TargetTypeLLMChat
-		var _ types.TechniqueType = types.TechniquePromptInjection
+		// Note: TargetType and TechniqueType removed - now plain strings
 		var _ types.HealthStatus
 	})
 
@@ -416,8 +415,8 @@ func TestEndToEndIntegration(t *testing.T) {
 		sdk.WithName("integration-agent"),
 		sdk.WithVersion("1.0.0"),
 		sdk.WithDescription("End-to-end integration test agent"),
-		sdk.WithCapabilities(agent.CapabilityPromptInjection),
-		sdk.WithTargetTypes(types.TargetTypeLLMChat),
+		sdk.WithCapabilities("prompt_injection"),
+		sdk.WithTargetTypes("llm_chat"),
 		sdk.WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 			return agent.NewSuccessResult("integration test completed"), nil
 		}),

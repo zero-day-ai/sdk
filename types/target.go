@@ -2,45 +2,6 @@ package types
 
 import "github.com/zero-day-ai/sdk/input"
 
-// TargetType represents the category of target system being tested.
-// Deprecated: Use string type for Target.Type field instead.
-type TargetType string
-
-// Target type constants define the supported categories of AI systems.
-// Deprecated: These constants are kept for backward compatibility but new code
-// should use string literals directly.
-const (
-	// TargetTypeLLMChat represents a conversational LLM interface (e.g., ChatGPT, Claude).
-	TargetTypeLLMChat TargetType = "llm_chat"
-
-	// TargetTypeLLMAPI represents a programmatic LLM API endpoint.
-	TargetTypeLLMAPI TargetType = "llm_api"
-
-	// TargetTypeRAG represents a Retrieval-Augmented Generation system.
-	TargetTypeRAG TargetType = "rag"
-
-	// TargetTypeAgent represents an autonomous AI agent system.
-	TargetTypeAgent TargetType = "agent"
-
-	// TargetTypeCopilot represents an AI coding assistant or copilot.
-	TargetTypeCopilot TargetType = "copilot"
-)
-
-// String returns the string representation of the target type.
-func (t TargetType) String() string {
-	return string(t)
-}
-
-// IsValid returns true if the target type is a recognized value.
-// Deprecated: Type validation is now handled via target schemas.
-func (t TargetType) IsValid() bool {
-	switch t {
-	case TargetTypeLLMChat, TargetTypeLLMAPI, TargetTypeRAG, TargetTypeAgent, TargetTypeCopilot:
-		return true
-	default:
-		return false
-	}
-}
 
 // TargetInfo contains detailed information about a target system.
 // It provides all necessary context for agents to interact with and test the target.
@@ -64,23 +25,12 @@ type TargetInfo struct {
 	// smart_contract targets use {"chain": "...", "address": "..."}.
 	Connection map[string]any `json:"connection,omitempty"`
 
-	// DeprecatedURL is the legacy URL field.
-	// Deprecated: Use Connection["url"] instead. Kept for backward compatibility.
-	// Will be removed in a future version.
-	DeprecatedURL string `json:"url,omitempty"`
-
-	// DeprecatedHeaders are the legacy headers.
-	// Deprecated: Use Connection["headers"] instead. Kept for backward compatibility.
-	// Will be removed in a future version.
-	DeprecatedHeaders map[string]string `json:"headers,omitempty"`
-
 	// Metadata stores additional target-specific information and context.
 	// This can include model versions, capabilities, rate limits, etc.
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // Validate checks if the TargetInfo has all required fields.
-// Supports both legacy URL-based targets and new Connection-based targets.
 func (t *TargetInfo) Validate() error {
 	if t.ID == "" {
 		return &ValidationError{Field: "ID", Message: "target ID is required"}
@@ -94,29 +44,20 @@ func (t *TargetInfo) Validate() error {
 		return &ValidationError{Field: "Type", Message: "target type is required"}
 	}
 
-	// Check either new Connection map or deprecated URL field
-	hasConnection := len(t.Connection) > 0
-	hasURL := t.DeprecatedURL != ""
-
-	if !hasConnection && !hasURL {
-		return &ValidationError{Field: "URL/Connection", Message: "target must have either URL or Connection parameters"}
+	if len(t.Connection) == 0 {
+		return &ValidationError{Field: "Connection", Message: "target must have Connection parameters"}
 	}
 
 	return nil
 }
 
-// URL returns the URL for backward compatibility.
-// If Connection["url"] exists, returns it as a string.
-// Otherwise, returns the deprecated DeprecatedURL field.
-// This method provides a consistent way to retrieve the URL regardless of
-// whether the target uses the old URL field or new Connection map.
+// URL returns the URL from the Connection map.
+// This is a convenience method for accessing Connection["url"].
 func (t *TargetInfo) URL() string {
 	if t.Connection != nil {
-		if url := input.GetString(t.Connection, "url", ""); url != "" {
-			return url
-		}
+		return input.GetString(t.Connection, "url", "")
 	}
-	return t.DeprecatedURL
+	return ""
 }
 
 // GetConnection retrieves a connection parameter value by key.
@@ -136,10 +77,9 @@ func (t *TargetInfo) GetConnectionString(key string) string {
 	return input.GetString(t.Connection, key, "")
 }
 
-// GetHeader retrieves a header value by key, returns empty string if not found.
-// First checks Connection["headers"], then falls back to deprecated DeprecatedHeaders field.
+// GetHeader retrieves a header value by key from Connection["headers"].
+// Returns empty string if not found.
 func (t *TargetInfo) GetHeader(key string) string {
-	// Check Connection["headers"] first
 	if t.Connection != nil {
 		if headers := input.GetMap(t.Connection, "headers"); headers != nil {
 			if val, ok := headers[key].(string); ok {
@@ -147,15 +87,10 @@ func (t *TargetInfo) GetHeader(key string) string {
 			}
 		}
 	}
-	// Fall back to deprecated field
-	if t.DeprecatedHeaders == nil {
-		return ""
-	}
-	return t.DeprecatedHeaders[key]
+	return ""
 }
 
 // SetHeader sets a header value in Connection["headers"].
-// Also updates deprecated DeprecatedHeaders field for backward compatibility.
 func (t *TargetInfo) SetHeader(key, value string) {
 	// Ensure Connection map exists
 	if t.Connection == nil {
@@ -168,12 +103,6 @@ func (t *TargetInfo) SetHeader(key, value string) {
 		t.Connection["headers"] = headers
 	}
 	headers[key] = value
-
-	// Also update deprecated field for backward compatibility
-	if t.DeprecatedHeaders == nil {
-		t.DeprecatedHeaders = make(map[string]string)
-	}
-	t.DeprecatedHeaders[key] = value
 }
 
 // GetMetadata retrieves a metadata value by key.

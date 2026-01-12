@@ -34,9 +34,9 @@ func TestConfig_FluentAPI(t *testing.T) {
 		SetName("test-agent").
 		SetVersion("1.0.0").
 		SetDescription("Test agent description").
-		AddCapability(CapabilityPromptInjection).
-		AddTargetType(types.TargetTypeLLMChat).
-		AddTechniqueType(types.TechniquePromptInjection)
+		AddCapability("prompt_injection").
+		AddTargetType("llm_chat").
+		AddTechniqueType("prompt_injection")
 
 	if cfg.name != "test-agent" {
 		t.Errorf("name = %s, want test-agent", cfg.name)
@@ -59,22 +59,22 @@ func TestConfig_FluentAPI(t *testing.T) {
 }
 
 func TestConfig_SetCapabilities(t *testing.T) {
-	caps := []Capability{CapabilityJailbreak, CapabilityDataExtraction}
+	caps := []string{"jailbreak", "data_extraction"}
 	cfg := NewConfig().SetCapabilities(caps)
 
 	if len(cfg.capabilities) != 2 {
 		t.Errorf("len(capabilities) = %d, want 2", len(cfg.capabilities))
 	}
-	if cfg.capabilities[0] != CapabilityJailbreak {
-		t.Errorf("capabilities[0] = %v, want %v", cfg.capabilities[0], CapabilityJailbreak)
+	if cfg.capabilities[0] != "jailbreak" {
+		t.Errorf("capabilities[0] = %v, want %v", cfg.capabilities[0], "jailbreak")
 	}
-	if cfg.capabilities[1] != CapabilityDataExtraction {
-		t.Errorf("capabilities[1] = %v, want %v", cfg.capabilities[1], CapabilityDataExtraction)
+	if cfg.capabilities[1] != "data_extraction" {
+		t.Errorf("capabilities[1] = %v, want %v", cfg.capabilities[1], "data_extraction")
 	}
 }
 
 func TestConfig_SetTargetTypes(t *testing.T) {
-	targets := []types.TargetType{types.TargetTypeLLMChat, types.TargetTypeRAG}
+	targets := []string{"llm_chat", "rag"}
 	cfg := NewConfig().SetTargetTypes(targets)
 
 	if len(cfg.targetTypes) != 2 {
@@ -83,7 +83,7 @@ func TestConfig_SetTargetTypes(t *testing.T) {
 }
 
 func TestConfig_SetTechniqueTypes(t *testing.T) {
-	techniques := []types.TechniqueType{types.TechniqueJailbreak, types.TechniqueDOS}
+	techniques := []string{"jailbreak", "dos"}
 	cfg := NewConfig().SetTechniqueTypes(techniques)
 
 	if len(cfg.techniqueTypes) != 2 {
@@ -471,11 +471,11 @@ func TestSDKAgent_AllProperties(t *testing.T) {
 		SetName("full-agent").
 		SetVersion("2.1.0").
 		SetDescription("Full featured agent").
-		AddCapability(CapabilityJailbreak).
-		AddCapability(CapabilityDOS).
-		AddTargetType(types.TargetTypeLLMAPI).
-		AddTargetType(types.TargetTypeRAG).
-		AddTechniqueType(types.TechniqueJailbreak).
+		AddCapability("jailbreak").
+		AddCapability("dos").
+		AddTargetType("llm_api").
+		AddTargetType("rag").
+		AddTechniqueType("jailbreak").
 		AddLLMSlot("primary", llm.SlotRequirements{
 			MinContextWindow: 8000,
 		}).

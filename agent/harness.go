@@ -479,12 +479,12 @@ type Descriptor struct {
 	Description string
 
 	// Capabilities lists the security testing capabilities the agent provides.
-	Capabilities []Capability
+	Capabilities []string
 
 	// TargetTypes lists the types of targets the agent can test.
-	TargetTypes []types.TargetType
+	TargetTypes []string
 
 	// TechniqueTypes lists the attack techniques the agent employs.
-	TechniqueTypes []types.TechniqueType
+	TechniqueTypes []string
 }
 

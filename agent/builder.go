@@ -15,10 +15,10 @@ type Config struct {
 	name                  string
 	version               string
 	description           string
-	capabilities          []Capability
+	capabilities          []string
 	targetSchemas         []types.TargetSchema
-	targetTypes           []types.TargetType // Deprecated: use targetSchemas
-	techniqueTypes        []types.TechniqueType
+	targetTypes           []string
+	techniqueTypes        []string
 	llmSlots              []llm.SlotDefinition
 	executeFunc           ExecuteFunc
 	streamingExecuteFunc  StreamingExecuteFunc
@@ -51,10 +51,10 @@ type HealthFunc func(ctx context.Context) types.HealthStatus
 // NewConfig creates a new agent configuration with default values.
 func NewConfig() *Config {
 	return &Config{
-		capabilities:   []Capability{},
+		capabilities:   []string{},
 		targetSchemas:  []types.TargetSchema{},
-		targetTypes:    []types.TargetType{},
-		techniqueTypes: []types.TechniqueType{},
+		targetTypes:    []string{},
+		techniqueTypes: []string{},
 		llmSlots:       []llm.SlotDefinition{},
 	}
 }
@@ -81,13 +81,13 @@ func (c *Config) SetDescription(desc string) *Config {
 }
 
 // SetCapabilities sets the agent's security testing capabilities.
-func (c *Config) SetCapabilities(caps []Capability) *Config {
+func (c *Config) SetCapabilities(caps []string) *Config {
 	c.capabilities = caps
 	return c
 }
 
 // AddCapability adds a single capability to the agent.
-func (c *Config) AddCapability(cap Capability) *Config {
+func (c *Config) AddCapability(cap string) *Config {
 	c.capabilities = append(c.capabilities, cap)
 	return c
 }
@@ -106,28 +106,26 @@ func (c *Config) AddTargetSchema(schema types.TargetSchema) *Config {
 	return c
 }
 
-// Deprecated: Use SetTargetSchemas instead.
 // SetTargetTypes sets the types of targets the agent can test.
-func (c *Config) SetTargetTypes(types []types.TargetType) *Config {
+func (c *Config) SetTargetTypes(types []string) *Config {
 	c.targetTypes = types
 	return c
 }
 
-// Deprecated: Use AddTargetSchema instead.
 // AddTargetType adds a single target type to the agent.
-func (c *Config) AddTargetType(t types.TargetType) *Config {
+func (c *Config) AddTargetType(t string) *Config {
 	c.targetTypes = append(c.targetTypes, t)
 	return c
 }
 
 // SetTechniqueTypes sets the attack techniques the agent employs.
-func (c *Config) SetTechniqueTypes(types []types.TechniqueType) *Config {
+func (c *Config) SetTechniqueTypes(types []string) *Config {
 	c.techniqueTypes = types
 	return c
 }
 
 // AddTechniqueType adds a single technique type to the agent.
-func (c *Config) AddTechniqueType(t types.TechniqueType) *Config {
+func (c *Config) AddTechniqueType(t string) *Config {
 	c.techniqueTypes = append(c.techniqueTypes, t)
 	return c
 }
@@ -264,10 +262,10 @@ type sdkAgent struct {
 	name                 string
 	version              string
 	description          string
-	capabilities         []Capability
+	capabilities         []string
 	targetSchemas        []types.TargetSchema
-	targetTypes          []types.TargetType
-	techniqueTypes       []types.TechniqueType
+	targetTypes          []string
+	techniqueTypes       []string
 	llmSlots             []llm.SlotDefinition
 	executeFunc          ExecuteFunc
 	streamingExecuteFunc StreamingExecuteFunc
@@ -292,7 +290,7 @@ func (a *sdkAgent) Description() string {
 }
 
 // Capabilities returns the security testing capabilities the agent provides.
-func (a *sdkAgent) Capabilities() []Capability {
+func (a *sdkAgent) Capabilities() []string {
 	return a.capabilities
 }
 
@@ -302,13 +300,12 @@ func (a *sdkAgent) TargetSchemas() []types.TargetSchema {
 }
 
 // TargetTypes returns the types of targets the agent can test.
-// Deprecated: Use TargetSchemas() instead.
-func (a *sdkAgent) TargetTypes() []types.TargetType {
+func (a *sdkAgent) TargetTypes() []string {
 	return a.targetTypes
 }
 
 // TechniqueTypes returns the attack techniques the agent employs.
-func (a *sdkAgent) TechniqueTypes() []types.TechniqueType {
+func (a *sdkAgent) TechniqueTypes() []string {
 	return a.techniqueTypes
 }
 

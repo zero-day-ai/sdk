@@ -37,17 +37,17 @@ func TestAgentRegistrationWithMockRegistry(t *testing.T) {
 
 	capabilities := make([]string, len(mockAgt.Capabilities()))
 	for i, cap := range mockAgt.Capabilities() {
-		capabilities[i] = cap.String()
+		capabilities[i] = cap
 	}
 
 	targetTypes := make([]string, len(mockAgt.TargetTypes()))
 	for i, tt := range mockAgt.TargetTypes() {
-		targetTypes[i] = tt.String()
+		targetTypes[i] = tt
 	}
 
 	techniqueTypes := make([]string, len(mockAgt.TechniqueTypes()))
 	for i, tt := range mockAgt.TechniqueTypes() {
-		techniqueTypes[i] = tt.String()
+		techniqueTypes[i] = tt
 	}
 
 	serviceInfo := map[string]interface{}{
@@ -440,15 +440,15 @@ func TestMetadataExtractionCorrectness(t *testing.T) {
 				}
 				capabilities := make([]string, len(mockAgt.Capabilities()))
 				for i, cap := range mockAgt.Capabilities() {
-					capabilities[i] = cap.String()
+					capabilities[i] = cap
 				}
 				targetTypes := make([]string, len(mockAgt.TargetTypes()))
 				for i, t := range mockAgt.TargetTypes() {
-					targetTypes[i] = t.String()
+					targetTypes[i] = t
 				}
 				techniqueTypes := make([]string, len(mockAgt.TechniqueTypes()))
 				for i, t := range mockAgt.TechniqueTypes() {
-					techniqueTypes[i] = t.String()
+					techniqueTypes[i] = t
 				}
 				metadata = map[string]string{
 					"description":     mockAgt.Description(),

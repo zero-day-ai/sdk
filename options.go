@@ -8,7 +8,6 @@ import (
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/tool"
-	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -76,15 +75,15 @@ func WithDescription(desc string) AgentOption {
 
 // WithCapabilities sets the agent's security testing capabilities.
 // These indicate what types of vulnerabilities the agent can discover.
-func WithCapabilities(caps ...agent.Capability) AgentOption {
+func WithCapabilities(caps ...string) AgentOption {
 	return func(c *agent.Config) {
 		c.SetCapabilities(caps)
 	}
 }
 
-// WithTargetTypes sets the types of AI systems the agent can test.
+// WithTargetTypes sets the types of target systems the agent can test.
 // This helps the framework match agents to appropriate targets.
-func WithTargetTypes(targetTypes ...types.TargetType) AgentOption {
+func WithTargetTypes(targetTypes ...string) AgentOption {
 	return func(c *agent.Config) {
 		c.SetTargetTypes(targetTypes)
 	}
@@ -92,7 +91,7 @@ func WithTargetTypes(targetTypes ...types.TargetType) AgentOption {
 
 // WithTechniqueTypes sets the attack techniques the agent employs.
 // This categorizes the agent's testing methodology.
-func WithTechniqueTypes(techniqueTypes ...types.TechniqueType) AgentOption {
+func WithTechniqueTypes(techniqueTypes ...string) AgentOption {
 	return func(c *agent.Config) {
 		c.SetTechniqueTypes(techniqueTypes)
 	}

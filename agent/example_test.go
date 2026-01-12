@@ -17,9 +17,9 @@ func Example_simpleAgent() {
 		SetName("example-agent").
 		SetVersion("1.0.0").
 		SetDescription("A simple example agent for prompt injection testing").
-		AddCapability(agent.CapabilityPromptInjection).
-		AddTargetType(types.TargetTypeLLMChat).
-		AddTechniqueType(types.TechniquePromptInjection).
+		AddCapability("prompt_injection").
+		AddTargetType("llm_chat").
+		AddTechniqueType("prompt_injection").
 		AddLLMSlot("primary", llm.SlotRequirements{
 			MinContextWindow: 8000,
 			RequiredFeatures: []string{"function_calling"},
@@ -185,24 +185,26 @@ func Example_resultHandling() {
 // Example_capabilities demonstrates agent capability system.
 func Example_capabilities() {
 	// Show all available capabilities
-	capabilities := []agent.Capability{
-		agent.CapabilityPromptInjection,
-		agent.CapabilityJailbreak,
-		agent.CapabilityDataExtraction,
-		agent.CapabilityModelManipulation,
-		agent.CapabilityDOS,
+	capabilities := []string{
+		"prompt_injection",
+		"jailbreak",
+		"data_extraction",
+		"model_manipulation",
+		"dos",
 	}
 
+	// Note: Capabilities are now simple strings. Domain-specific capability
+	// descriptions are maintained in Gibson's taxonomy system.
 	fmt.Println("Available capabilities:")
 	for _, cap := range capabilities {
-		fmt.Printf("- %s: %s\n", cap.String(), cap.Description())
+		fmt.Printf("- %s\n", cap)
 	}
 
 	// Output:
 	// Available capabilities:
-	// - prompt_injection: Tests for prompt injection vulnerabilities and instruction manipulation
-	// - jailbreak: Tests for jailbreak attempts to bypass safety guardrails
-	// - data_extraction: Tests for data extraction and information disclosure vulnerabilities
-	// - model_manipulation: Tests for model manipulation and behavior modification
-	// - dos: Tests for denial-of-service and resource exhaustion vulnerabilities
+	// - prompt_injection
+	// - jailbreak
+	// - data_extraction
+	// - model_manipulation
+	// - dos
 }

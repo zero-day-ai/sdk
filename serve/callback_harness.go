@@ -17,6 +17,7 @@ import (
 	"github.com/zero-day-ai/sdk/mission"
 	"github.com/zero-day-ai/sdk/planning"
 	"github.com/zero-day-ai/sdk/plugin"
+	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/attribute"
@@ -270,9 +271,17 @@ func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, me
 // CompleteStructured performs a completion with provider-native structured output.
 // This forwards the request to the orchestrator which handles schema conversion
 // and provider-specific structured output mechanisms.
-func (h *CallbackHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+//
+// The schemaType parameter should be a Go struct (or pointer to struct) that
+// defines the expected response structure. The method generates a JSON schema
+// from the type and sends it to the daemon for LLM completion.
+func (h *CallbackHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
+	// Generate JSON schema from the Go type
+	// This converts the struct definition to a proper JSON schema that the LLM can use
+	jsonSchema := schema.FromType(schemaType)
+
 	// Serialize the schema to JSON for transmission
-	schemaJSON, err := json.Marshal(schema)
+	schemaJSON, err := json.Marshal(jsonSchema)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal schema: %w", err)
 	}
@@ -703,31 +712,14 @@ func (h *CallbackHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, e
 	// Convert to agent.Descriptor
 	agents := make([]agent.Descriptor, len(resp.Agents))
 	for i, protoAgent := range resp.Agents {
-		// Convert capability strings to agent.Capability
-		capabilities := make([]agent.Capability, len(protoAgent.Capabilities))
-		for j, cap := range protoAgent.Capabilities {
-			capabilities[j] = agent.Capability(cap)
-		}
-
-		// Convert target type strings to types.TargetType
-		targetTypes := make([]types.TargetType, len(protoAgent.TargetTypes))
-		for j, tt := range protoAgent.TargetTypes {
-			targetTypes[j] = types.TargetType(tt)
-		}
-
-		// Convert technique type strings to types.TechniqueType
-		techniqueTypes := make([]types.TechniqueType, len(protoAgent.TechniqueTypes))
-		for j, tt := range protoAgent.TechniqueTypes {
-			techniqueTypes[j] = types.TechniqueType(tt)
-		}
-
+		// Proto returns strings, which match the new agent interface
 		agents[i] = agent.Descriptor{
 			Name:           protoAgent.Name,
 			Version:        protoAgent.Version,
 			Description:    protoAgent.Description,
-			Capabilities:   capabilities,
-			TargetTypes:    targetTypes,
-			TechniqueTypes: techniqueTypes,
+			Capabilities:   protoAgent.Capabilities,
+			TargetTypes:    protoAgent.TargetTypes,
+			TechniqueTypes: protoAgent.TechniqueTypes,
 		}
 	}
 

@@ -5,52 +5,8 @@ import (
 	"testing"
 )
 
-func TestTargetType_String(t *testing.T) {
-	tests := []struct {
-		name       string
-		targetType TargetType
-		want       string
-	}{
-		{"llm chat", TargetTypeLLMChat, "llm_chat"},
-		{"llm api", TargetTypeLLMAPI, "llm_api"},
-		{"rag", TargetTypeRAG, "rag"},
-		{"agent", TargetTypeAgent, "agent"},
-		{"copilot", TargetTypeCopilot, "copilot"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.targetType.String(); got != tt.want {
-				t.Errorf("String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestTargetType_IsValid(t *testing.T) {
-	tests := []struct {
-		name       string
-		targetType TargetType
-		want       bool
-	}{
-		{"valid llm chat", TargetTypeLLMChat, true},
-		{"valid llm api", TargetTypeLLMAPI, true},
-		{"valid rag", TargetTypeRAG, true},
-		{"valid agent", TargetTypeAgent, true},
-		{"valid copilot", TargetTypeCopilot, true},
-		{"invalid empty", TargetType(""), false},
-		{"invalid unknown", TargetType("unknown"), false},
-		{"invalid custom", TargetType("custom_type"), false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.targetType.IsValid(); got != tt.want {
-				t.Errorf("IsValid() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// Note: TargetType tests removed as target types are now plain strings.
+// Domain-specific target type constants moved to Gibson's taxonomy.
 
 func TestTargetInfo_Validate(t *testing.T) {
 	tests := []struct {
@@ -68,16 +24,6 @@ func TestTargetInfo_Validate(t *testing.T) {
 					"url": "https://api.example.com",
 				},
 				Type: "llm_api",
-			},
-			wantErr: false,
-		},
-		{
-			name: "valid target with deprecated URL",
-			target: TargetInfo{
-				ID:            "target-1",
-				Name:          "Test Target",
-				DeprecatedURL: "https://api.example.com",
-				Type:          "llm_api",
 			},
 			wantErr: false,
 		},
@@ -106,14 +52,14 @@ func TestTargetInfo_Validate(t *testing.T) {
 			errMsg:  "Name",
 		},
 		{
-			name: "missing URL and Connection",
+			name: "missing Connection",
 			target: TargetInfo{
 				ID:   "target-1",
 				Name: "Test Target",
 				Type: "llm_api",
 			},
 			wantErr: true,
-			errMsg:  "URL/Connection",
+			errMsg:  "Connection",
 		},
 		{
 			name: "invalid type",
@@ -151,9 +97,11 @@ func TestTargetInfo_Validate(t *testing.T) {
 
 func TestTargetInfo_GetHeader(t *testing.T) {
 	target := &TargetInfo{
-		DeprecatedHeaders: map[string]string{
-			"Authorization": "Bearer token123",
-			"Content-Type":  "application/json",
+		Connection: map[string]any{
+			"headers": map[string]any{
+				"Authorization": "Bearer token123",
+				"Content-Type":  "application/json",
+			},
 		},
 	}
 
@@ -282,13 +230,15 @@ func TestTargetInfo_SetMetadata(t *testing.T) {
 
 func TestTargetInfo_JSONMarshaling(t *testing.T) {
 	original := TargetInfo{
-		ID:            "target-1",
-		Name:          "Test Target",
-		DeprecatedURL: "https://api.example.com",
-		Type:          "llm_api",
-		Provider:      "openai",
-		DeprecatedHeaders: map[string]string{
-			"Authorization": "Bearer token123",
+		ID:       "target-1",
+		Name:     "Test Target",
+		Type:     "llm_api",
+		Provider: "openai",
+		Connection: map[string]any{
+			"url": "https://api.example.com",
+			"headers": map[string]any{
+				"Authorization": "Bearer token123",
+			},
 		},
 		Metadata: map[string]any{
 			"model":      "gpt-4",
@@ -317,8 +267,8 @@ func TestTargetInfo_JSONMarshaling(t *testing.T) {
 		t.Errorf("Name = %v, want %v", unmarshaled.Name, original.Name)
 	}
 
-	if unmarshaled.DeprecatedURL != original.DeprecatedURL {
-		t.Errorf("DeprecatedURL = %v, want %v", unmarshaled.DeprecatedURL, original.DeprecatedURL)
+	if unmarshaled.URL() != "https://api.example.com" {
+		t.Errorf("URL() = %v, want %v", unmarshaled.URL(), "https://api.example.com")
 	}
 
 	if unmarshaled.Type != original.Type {
@@ -329,9 +279,9 @@ func TestTargetInfo_JSONMarshaling(t *testing.T) {
 		t.Errorf("Provider = %v, want %v", unmarshaled.Provider, original.Provider)
 	}
 
-	// Verify headers via deprecated field
-	if unmarshaled.DeprecatedHeaders["Authorization"] != "Bearer token123" {
-		t.Errorf("Headers[Authorization] = %v, want %v", unmarshaled.DeprecatedHeaders["Authorization"], "Bearer token123")
+	// Verify headers via Connection
+	if unmarshaled.GetHeader("Authorization") != "Bearer token123" {
+		t.Errorf("GetHeader(Authorization) = %v, want %v", unmarshaled.GetHeader("Authorization"), "Bearer token123")
 	}
 
 	// Verify metadata
@@ -354,23 +304,6 @@ func TestTargetInfo_URL_Method(t *testing.T) {
 				},
 			},
 			want: "https://api.example.com",
-		},
-		{
-			name: "URL from deprecated field",
-			target: TargetInfo{
-				DeprecatedURL: "https://legacy.example.com",
-			},
-			want: "https://legacy.example.com",
-		},
-		{
-			name: "Connection URL takes precedence",
-			target: TargetInfo{
-				Connection: map[string]any{
-					"url": "https://new.example.com",
-				},
-				DeprecatedURL: "https://old.example.com",
-			},
-			want: "https://new.example.com",
 		},
 		{
 			name:   "empty when neither provided",

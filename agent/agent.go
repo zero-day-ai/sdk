@@ -25,21 +25,23 @@ type Agent interface {
 
 	// Capabilities returns the security testing capabilities this agent provides.
 	// These indicate what types of vulnerabilities the agent can discover.
-	Capabilities() []Capability
+	// Returns a list of capability identifiers as strings.
+	Capabilities() []string
 
 	// TargetSchemas returns the target schemas this agent supports.
 	// This defines the connection parameter requirements for each target type.
 	// Returns nil or empty slice to accept any target type (opt-out validation).
 	TargetSchemas() []types.TargetSchema
 
-	// Deprecated: Use TargetSchemas() instead.
-	// TargetTypes returns the types of AI systems this agent can test.
+	// TargetTypes returns the types of target systems this agent can test.
 	// This helps the framework match agents to appropriate targets.
-	TargetTypes() []types.TargetType
+	// Returns a list of target type identifiers as strings.
+	TargetTypes() []string
 
 	// TechniqueTypes returns the attack techniques this agent employs.
 	// This categorizes the agent's testing methodology.
-	TechniqueTypes() []types.TechniqueType
+	// Returns a list of technique identifiers as strings.
+	TechniqueTypes() []string
 
 	// LLMSlots returns the LLM slot definitions required by this agent.
 	// The framework will provision LLMs that meet these requirements.
@@ -64,62 +66,3 @@ type Agent interface {
 	Health(ctx context.Context) types.HealthStatus
 }
 
-// Capability represents a security testing capability that an agent provides.
-// Capabilities describe what types of vulnerabilities the agent can discover.
-type Capability string
-
-const (
-	// CapabilityPromptInjection indicates the agent can test for prompt injection vulnerabilities.
-	// This includes direct injection, indirect injection, and cross-context attacks.
-	CapabilityPromptInjection Capability = "prompt_injection"
-
-	// CapabilityJailbreak indicates the agent can test for jailbreak vulnerabilities.
-	// This includes attempts to bypass safety guardrails and content filters.
-	CapabilityJailbreak Capability = "jailbreak"
-
-	// CapabilityDataExtraction indicates the agent can test for data extraction vulnerabilities.
-	// This includes extracting training data, PII, or sensitive information.
-	CapabilityDataExtraction Capability = "data_extraction"
-
-	// CapabilityModelManipulation indicates the agent can test for model manipulation vulnerabilities.
-	// This includes bias exploitation, output formatting attacks, and behavior modification.
-	CapabilityModelManipulation Capability = "model_manipulation"
-
-	// CapabilityDOS indicates the agent can test for denial-of-service vulnerabilities.
-	// This includes resource exhaustion, infinite loops, and performance degradation.
-	CapabilityDOS Capability = "dos"
-)
-
-// String returns the string representation of the capability.
-func (c Capability) String() string {
-	return string(c)
-}
-
-// IsValid checks if the capability is a recognized value.
-func (c Capability) IsValid() bool {
-	switch c {
-	case CapabilityPromptInjection, CapabilityJailbreak, CapabilityDataExtraction,
-		CapabilityModelManipulation, CapabilityDOS:
-		return true
-	default:
-		return false
-	}
-}
-
-// Description returns a human-readable description of the capability.
-func (c Capability) Description() string {
-	switch c {
-	case CapabilityPromptInjection:
-		return "Tests for prompt injection vulnerabilities and instruction manipulation"
-	case CapabilityJailbreak:
-		return "Tests for jailbreak attempts to bypass safety guardrails"
-	case CapabilityDataExtraction:
-		return "Tests for data extraction and information disclosure vulnerabilities"
-	case CapabilityModelManipulation:
-		return "Tests for model manipulation and behavior modification"
-	case CapabilityDOS:
-		return "Tests for denial-of-service and resource exhaustion vulnerabilities"
-	default:
-		return "Unknown capability"
-	}
-}

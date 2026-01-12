@@ -76,21 +76,10 @@ func Agent(a agent.Agent, opts ...Option) error {
 			endpoint = fmt.Sprintf("localhost:%d", srv.Port())
 		}
 
-		// Extract agent metadata
-		capabilities := make([]string, len(a.Capabilities()))
-		for i, cap := range a.Capabilities() {
-			capabilities[i] = cap.String()
-		}
-
-		targetTypes := make([]string, len(a.TargetTypes()))
-		for i, tt := range a.TargetTypes() {
-			targetTypes[i] = tt.String()
-		}
-
-		techniqueTypes := make([]string, len(a.TechniqueTypes()))
-		for i, tt := range a.TechniqueTypes() {
-			techniqueTypes[i] = tt.String()
-		}
+		// Extract agent metadata (already strings)
+		capabilities := a.Capabilities()
+		targetTypes := a.TargetTypes()
+		techniqueTypes := a.TechniqueTypes()
 
 		// Create ServiceInfo struct (using map to avoid circular dependency)
 		serviceInfo = map[string]interface{}{
@@ -138,20 +127,10 @@ type agentServiceServer struct {
 // GetDescriptor returns the agent's descriptor including name, version,
 // capabilities, target types, and technique types.
 func (s *agentServiceServer) GetDescriptor(ctx context.Context, req *proto.AgentGetDescriptorRequest) (*proto.AgentDescriptor, error) {
-	capabilities := make([]string, len(s.agent.Capabilities()))
-	for i, cap := range s.agent.Capabilities() {
-		capabilities[i] = cap.String()
-	}
-
-	targetTypes := make([]string, len(s.agent.TargetTypes()))
-	for i, tt := range s.agent.TargetTypes() {
-		targetTypes[i] = tt.String()
-	}
-
-	techniqueTypes := make([]string, len(s.agent.TechniqueTypes()))
-	for i, tt := range s.agent.TechniqueTypes() {
-		techniqueTypes[i] = tt.String()
-	}
+	// Agent methods now return []string directly
+	capabilities := s.agent.Capabilities()
+	targetTypes := s.agent.TargetTypes()
+	techniqueTypes := s.agent.TechniqueTypes()
 
 	return &proto.AgentDescriptor{
 		Name:           s.agent.Name(),

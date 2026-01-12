@@ -11,7 +11,6 @@ import (
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/tool"
-	"github.com/zero-day-ai/sdk/types"
 )
 
 func TestFrameworkOptions(t *testing.T) {
@@ -116,7 +115,7 @@ func TestAgentOptions(t *testing.T) {
 
 	t.Run("WithCapabilities", func(t *testing.T) {
 		cfg := agent.NewConfig()
-		caps := []agent.Capability{agent.CapabilityPromptInjection, agent.CapabilityJailbreak}
+		caps := []string{"prompt_injection", "jailbreak"}
 		opt := WithCapabilities(caps...)
 		opt(cfg)
 
@@ -140,7 +139,7 @@ func TestAgentOptions(t *testing.T) {
 
 	t.Run("WithTargetTypes", func(t *testing.T) {
 		cfg := agent.NewConfig()
-		targetTypes := []types.TargetType{types.TargetTypeLLMChat, types.TargetTypeLLMAPI}
+		targetTypes := []string{"llm_chat", "llm_api"}
 		opt := WithTargetTypes(targetTypes...)
 		opt(cfg)
 
@@ -164,7 +163,7 @@ func TestAgentOptions(t *testing.T) {
 
 	t.Run("WithTechniqueTypes", func(t *testing.T) {
 		cfg := agent.NewConfig()
-		techTypes := []types.TechniqueType{types.TechniquePromptInjection}
+		techTypes := []string{"prompt_injection"}
 		opt := WithTechniqueTypes(techTypes...)
 		opt(cfg)
 

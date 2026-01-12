@@ -117,7 +117,7 @@ func TestNewAgent(t *testing.T) {
 			WithName("full-agent"),
 			WithVersion("2.0.0"),
 			WithDescription("A fully configured agent"),
-			WithCapabilities(agent.CapabilityPromptInjection),
+			WithCapabilities("prompt_injection"),
 			WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 				return agent.NewSuccessResult("done"), nil
 			}),

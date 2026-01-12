@@ -11,7 +11,6 @@ import (
 	"github.com/zero-day-ai/sdk"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/schema"
-	"github.com/zero-day-ai/sdk/types"
 )
 
 // Helper to create framework without logging
@@ -52,9 +51,9 @@ func ExampleNewAgent() {
 		sdk.WithName("prompt-injector"),
 		sdk.WithVersion("1.0.0"),
 		sdk.WithDescription("Tests for prompt injection vulnerabilities"),
-		sdk.WithCapabilities(agent.CapabilityPromptInjection),
-		sdk.WithTargetTypes(types.TargetTypeLLMChat, types.TargetTypeLLMAPI),
-		sdk.WithTechniqueTypes(types.TechniquePromptInjection),
+		sdk.WithCapabilities("prompt_injection"),
+		sdk.WithTargetTypes("llm_chat", "llm_api"),
+		sdk.WithTechniqueTypes("prompt_injection"),
 		sdk.WithExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 			// Agent implementation
 			return agent.NewSuccessResult(map[string]any{

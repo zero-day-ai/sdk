@@ -30,20 +30,20 @@ func (m *mockAgent) Name() string        { return m.name }
 func (m *mockAgent) Version() string     { return m.version }
 func (m *mockAgent) Description() string { return m.description }
 
-func (m *mockAgent) Capabilities() []agent.Capability {
-	return []agent.Capability{agent.CapabilityPromptInjection}
+func (m *mockAgent) Capabilities() []string {
+	return []string{"prompt_injection"}
 }
 
 func (m *mockAgent) TargetSchemas() []types.TargetSchema {
 	return []types.TargetSchema{}
 }
 
-func (m *mockAgent) TargetTypes() []types.TargetType {
-	return []types.TargetType{types.TargetTypeLLMChat}
+func (m *mockAgent) TargetTypes() []string {
+	return []string{"llm_chat"}
 }
 
-func (m *mockAgent) TechniqueTypes() []types.TechniqueType {
-	return []types.TechniqueType{types.TechniquePromptInjection}
+func (m *mockAgent) TechniqueTypes() []string {
+	return []string{"prompt_injection"}
 }
 
 func (m *mockAgent) LLMSlots() []llm.SlotDefinition {
