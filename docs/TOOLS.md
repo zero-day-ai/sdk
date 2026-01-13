@@ -13,6 +13,8 @@ This guide explains how to build, deploy, and use tools in the Gibson framework.
 - [Scaling with the Gibson Daemon](#scaling-with-the-gibson-daemon)
 - [Architectural Considerations](#architectural-considerations)
 - [Best Practices](#best-practices)
+- [GraphRAG Taxonomy Integration](#graphrag-taxonomy-integration)
+- [Future Tool Development Roadmap](#future-tool-development-roadmap)
 
 ---
 
@@ -867,3 +869,600 @@ gibson tool refresh
 # Check tool health
 gibson tool health <name>
 ```
+
+---
+
+## GraphRAG Taxonomy Integration
+
+Tools can embed GraphRAG taxonomy directly in their schema, enabling automatic knowledge graph population. When a tool outputs data, Gibson extracts entities and relationships based on the embedded taxonomy.
+
+### How Taxonomy Works
+
+When you define a tool's `OutputSchema()`, you can include a `TaxonomyMapping` that tells Gibson how to extract knowledge graph nodes and relationships from the tool's output:
+
+```go
+func (t *NmapTool) OutputSchema() schema.JSON {
+    return schema.Object(map[string]schema.JSON{
+        "hosts": schema.Array(schema.Object(map[string]schema.JSON{
+            "ip":       schema.StringWithDesc("IP address"),
+            "hostname": schema.StringWithDesc("Hostname"),
+            "ports":    schema.Array(portSchema, "Open ports"),
+        }), "Discovered hosts"),
+    }).WithTaxonomy(schema.TaxonomyMapping{
+        Extracts: []schema.ExtractRule{
+            {
+                JSONPath:   "$.hosts[*]",
+                NodeType:   "host",
+                IDTemplate: "host:{.ip}",
+                Properties: []schema.PropertyMapping{
+                    {Source: "ip", Target: "ip"},
+                    {Source: "hostname", Target: "hostname"},
+                },
+                Relationships: []schema.RelationshipMapping{
+                    {
+                        Type:         "DISCOVERED_BY",
+                        FromTemplate: "host:{.ip}",
+                        ToTemplate:   "agent_run:{_context.agent_run_id}",
+                    },
+                },
+            },
+            {
+                JSONPath:   "$.hosts[*].ports[*]",
+                NodeType:   "port",
+                IDTemplate: "port:{_parent.ip}:{.port}",
+                Properties: []schema.PropertyMapping{
+                    {Source: "port", Target: "port_number"},
+                    {Source: "protocol", Target: "protocol"},
+                    {Source: "service", Target: "service"},
+                },
+                Relationships: []schema.RelationshipMapping{
+                    {
+                        Type:         "HAS_PORT",
+                        FromTemplate: "host:{_parent.ip}",
+                        ToTemplate:   "port:{_parent.ip}:{.port}",
+                    },
+                },
+            },
+        },
+    })
+}
+```
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Node Types** | Entity categories in the knowledge graph (host, port, domain, finding, etc.) |
+| **ID Template** | How to construct unique IDs for nodes using JSONPath expressions |
+| **Properties** | Field mappings from tool output to node properties |
+| **Relationships** | Edges between nodes with directional type labels |
+| **JSONPath** | Path to extract arrays/objects from tool output (`$.hosts[*]`, `$.results[*].ports[*]`) |
+
+### Current Node Types
+
+Tools should use these standard node types for consistency:
+
+| Node Type | Description | Example ID Template |
+|-----------|-------------|---------------------|
+| `domain` | Root domain | `domain:{.name}` |
+| `subdomain` | Subdomain of a domain | `subdomain:{.name}` |
+| `host` | IP address or hostname | `host:{.ip}` |
+| `port` | Network port | `port:{.host}:{.port}` |
+| `endpoint` | HTTP/API endpoint | `endpoint:{.url}` |
+| `technology` | Software/framework detected | `technology:{.name}:{.version}` |
+| `finding` | Vulnerability or security finding | `finding:{.template_id}:{.host}` |
+| `asn` | Autonomous System Number | `asn:{.number}` |
+| `dns_record` | DNS record | `dns:{.type}:{.name}` |
+
+---
+
+## Future Tool Development Roadmap
+
+This section catalogs **all security tools** that bug bounty hunters and security researchers commonly use, organized by MITRE ATT&CK taxonomy phases. Each tool includes its primary use case, expected GraphRAG node types, and implementation priority.
+
+### Currently Implemented (6 tools)
+
+These tools have embedded GraphRAG taxonomy and are production-ready:
+
+| Tool | Phase | Node Types | Description |
+|------|-------|------------|-------------|
+| **nmap** | Discovery | host, port | Network exploration and port scanning |
+| **masscan** | Discovery | host, port | High-speed TCP port scanner |
+| **subfinder** | Reconnaissance | domain, subdomain | Passive subdomain enumeration |
+| **httpx** | Reconnaissance | endpoint, technology | HTTP probing and technology detection |
+| **nuclei** | Reconnaissance | finding | Template-based vulnerability scanning |
+| **amass** | Reconnaissance | domain, subdomain, host, asn, dns_record | Attack surface mapping |
+
+---
+
+### Reconnaissance (TA0043) - Attack Surface Discovery
+
+Tools for discovering targets, subdomains, and gathering OSINT.
+
+#### Subdomain Enumeration
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **subfinder** | ✅ Done | domain, subdomain | Passive subdomain discovery using APIs |
+| **amass** | ✅ Done | domain, subdomain, host, asn, dns_record | Comprehensive attack surface mapping |
+| **assetfinder** | High | domain, subdomain | Find domains and subdomains from public sources |
+| **findomain** | High | domain, subdomain | Fast subdomain enumeration |
+| **knockpy** | Medium | domain, subdomain | DNS enumeration with wordlist |
+| **sublist3r** | Medium | domain, subdomain | Subdomain enumeration using search engines |
+| **crt.sh** | Medium | domain, subdomain, certificate | Certificate transparency log search |
+| **massdns** | High | domain, subdomain, dns_record | High-performance DNS resolver |
+| **shuffledns** | Medium | domain, subdomain | Wrapper around massdns for active bruteforce |
+| **puredns** | Medium | domain, subdomain | Fast domain resolver and bruteforcer |
+| **dnsrecon** | Medium | domain, dns_record | DNS enumeration and zone transfer |
+| **dnsx** | High | domain, subdomain, dns_record | Fast DNS toolkit with wildcard filtering |
+| **alterx** | Low | domain, subdomain | Subdomain permutation generator |
+
+#### DNS & Network Analysis
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **dnsx** | High | dns_record, subdomain | DNS query toolkit |
+| **asnmap** | High | asn, host, cidr | ASN to CIDR mapping |
+| **whois** | Medium | domain, registrant, organization | Domain registration lookup |
+| **dig** | Low | dns_record | DNS query tool |
+| **nslookup** | Low | dns_record | DNS query utility |
+| **host** | Low | dns_record, host | DNS lookup utility |
+
+#### Web Enumeration & Crawling
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **httpx** | ✅ Done | endpoint, technology | HTTP probing with technology detection |
+| **katana** | High | endpoint, url, parameter | Next-gen web crawler |
+| **gospider** | High | endpoint, url, parameter | Fast web spider |
+| **hakrawler** | Medium | endpoint, url | Simple web crawler |
+| **gau** | High | endpoint, url | Fetch known URLs from AlienVault, Wayback |
+| **waybackurls** | High | endpoint, url | Fetch URLs from Wayback Machine |
+| **getallurls** | Medium | endpoint, url | URL extraction from various sources |
+| **paramspider** | Medium | endpoint, parameter | Mining parameters from web archives |
+| **arjun** | Medium | endpoint, parameter | HTTP parameter discovery |
+| **x8** | Medium | endpoint, parameter | Hidden parameter discovery |
+| **feroxbuster** | High | endpoint, directory | Fast content discovery |
+| **gobuster** | High | endpoint, directory | Directory/DNS/VHost brute-forcer |
+| **ffuf** | High | endpoint, directory, parameter | Fast web fuzzer |
+| **dirsearch** | Medium | endpoint, directory | Web path discovery |
+| **dirb** | Low | endpoint, directory | Web content scanner |
+| **wfuzz** | Medium | endpoint, parameter | Web application fuzzer |
+
+#### Technology & Service Detection
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **whatweb** | High | technology, endpoint | Web technology identification |
+| **wappalyzer** | High | technology, endpoint | Technology profiler |
+| **webanalyze** | Medium | technology, endpoint | Port of Wappalyzer |
+| **builtwith** | Medium | technology | Technology lookup API |
+| **retire.js** | Medium | technology, vulnerability | JavaScript library vulnerability scanner |
+| **wafw00f** | Medium | technology, waf | WAF detection tool |
+| **identywaf** | Low | technology, waf | WAF identification |
+
+#### OSINT & Intelligence Gathering
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **shodan** | High | host, port, technology, banner | Internet-wide scanner database |
+| **censys** | High | host, port, certificate, technology | Internet scan data search |
+| **zoomeye** | Medium | host, port, technology | Chinese internet scanner |
+| **fofa** | Medium | host, port, technology | Network asset search |
+| **binaryedge** | Medium | host, port, vulnerability | Threat intelligence platform |
+| **securitytrails** | High | domain, subdomain, dns_record, history | Historical DNS data |
+| **passivetotal** | Medium | domain, host, threat | Threat intelligence |
+| **virustotal** | Medium | domain, host, file, malware | Multi-AV scanner and intelligence |
+| **urlscan.io** | Medium | endpoint, screenshot, technology | Website scanner |
+| **spiderfoot** | High | domain, host, email, social | OSINT automation |
+| **theHarvester** | High | domain, email, host, employee | Email/subdomain/IP harvester |
+| **maltego** | Low | entity, relationship | OSINT visualization |
+| **recon-ng** | High | domain, host, email, credential | Web reconnaissance framework |
+| **osintframework** | Low | various | OSINT resource collection |
+
+#### Cloud & Infrastructure Recon
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **cloud_enum** | High | bucket, blob, host | Cloud asset enumeration |
+| **S3Scanner** | High | bucket, file | AWS S3 bucket enumeration |
+| **GCPBucketBrute** | Medium | bucket | GCP bucket enumeration |
+| **AzureHound** | Medium | azure_resource, user, group | Azure AD enumeration |
+| **ScoutSuite** | High | cloud_resource, misconfiguration | Multi-cloud security audit |
+| **Prowler** | High | aws_resource, finding | AWS security assessment |
+| **CloudMapper** | Medium | aws_resource, network | AWS environment analysis |
+| **pacu** | Medium | aws_resource, exploit | AWS exploitation framework |
+
+#### Email & Social OSINT
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **hunter.io** | High | email, domain, employee | Email finder API |
+| **phonebook.cz** | Medium | email, domain, subdomain | Email/subdomain search |
+| **emailrep.io** | Medium | email, reputation | Email reputation lookup |
+| **haveibeenpwned** | High | email, breach | Breach database search |
+| **dehashed** | Medium | credential, breach | Leaked credential search |
+| **intelx.io** | Medium | credential, breach, document | Intelligence X search |
+| **linkedin2username** | Medium | employee, email | LinkedIn username generator |
+| **socialscan** | Low | social_account | Social media username check |
+
+#### GitHub & Code Recon
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **gitrob** | High | repository, secret, credential | GitHub secret scanner |
+| **trufflehog** | High | secret, credential, repository | Credential scanner |
+| **gitleaks** | High | secret, credential | Git secret scanner |
+| **shhgit** | Medium | secret, credential | Real-time GitHub secret finder |
+| **gitdorker** | Medium | repository, finding | GitHub dork automation |
+| **github-search** | Medium | repository, code | GitHub search automation |
+
+---
+
+### Discovery (TA0007) - Network & Service Discovery
+
+Tools for active scanning and service enumeration.
+
+#### Port Scanning
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **nmap** | ✅ Done | host, port, service, os | Network mapper and port scanner |
+| **masscan** | ✅ Done | host, port | Fastest port scanner |
+| **rustscan** | High | host, port | Fast Rust-based port scanner |
+| **zmap** | Medium | host, port | Internet-wide scanner |
+| **unicornscan** | Low | host, port | Asynchronous port scanner |
+| **naabu** | High | host, port | Fast port scanner in Go |
+
+#### Service Enumeration
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **nikto** | High | endpoint, vulnerability, technology | Web server scanner |
+| **whatweb** | High | technology, endpoint | Web fingerprinting |
+| **wpscan** | High | technology, vulnerability, user | WordPress scanner |
+| **joomscan** | Medium | technology, vulnerability | Joomla scanner |
+| **droopescan** | Medium | technology, vulnerability | CMS scanner |
+| **drupwn** | Low | technology, vulnerability | Drupal scanner |
+| **CMSmap** | Medium | technology, vulnerability | CMS detection and exploitation |
+| **sslscan** | High | certificate, cipher, vulnerability | SSL/TLS scanner |
+| **sslyze** | High | certificate, cipher, vulnerability | SSL configuration analyzer |
+| **testssl.sh** | Medium | certificate, vulnerability | SSL/TLS testing |
+
+#### Active Directory & Windows
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **bloodhound** | High | ad_user, ad_group, ad_computer, path | AD attack path mapping |
+| **sharphound** | High | ad_object, relationship | BloodHound data collector |
+| **ldapdomaindump** | High | ad_user, ad_group, ad_computer | LDAP enumeration |
+| **adidnsdump** | Medium | dns_record, ad_object | AD integrated DNS dump |
+| **kerbrute** | High | ad_user, credential | Kerberos bruteforce |
+| **enum4linux** | High | smb_share, ad_user, ad_group | SMB/NetBIOS enumeration |
+| **enum4linux-ng** | High | smb_share, ad_user, ad_group | Next-gen enum4linux |
+| **crackmapexec** | High | host, credential, smb_share | Swiss army knife for Windows |
+| **netexec** | High | host, credential, smb_share | CrackMapExec successor |
+| **rpcclient** | Medium | ad_user, ad_group | RPC client for Windows |
+| **smbmap** | High | smb_share, file | SMB share enumeration |
+| **smbclient** | Medium | smb_share | SMB client |
+
+#### Network Service Scanning
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **snmpwalk** | Medium | snmp_data, host | SNMP enumeration |
+| **onesixtyone** | Medium | snmp_community, host | SNMP scanner |
+| **nbtscan** | Low | netbios_name, host | NetBIOS scanner |
+| **fierce** | Medium | domain, host | DNS reconnaissance |
+| **dnsmap** | Low | subdomain | DNS bruteforcing |
+
+---
+
+### Vulnerability Assessment (TA0043/TA0007)
+
+Tools for identifying vulnerabilities.
+
+#### Vulnerability Scanners
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **nuclei** | ✅ Done | finding, vulnerability | Template-based scanner |
+| **nikto** | High | vulnerability, endpoint | Web vulnerability scanner |
+| **openvas** | Medium | vulnerability, host | Open-source vulnerability scanner |
+| **nessus** | Medium | vulnerability, host | Commercial vulnerability scanner |
+| **trivy** | High | vulnerability, container, package | Container vulnerability scanner |
+| **grype** | High | vulnerability, package | Container/SBOM vulnerability scanner |
+| **snyk** | Medium | vulnerability, package | Developer-first security |
+| **retire.js** | Medium | vulnerability, javascript | JavaScript vulnerability scanner |
+
+#### Web Application Scanners
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **burpsuite** | High | vulnerability, endpoint, parameter | Web security testing platform |
+| **zaproxy** | High | vulnerability, endpoint | OWASP ZAP proxy |
+| **arachni** | Medium | vulnerability, endpoint | Web application scanner |
+| **w3af** | Medium | vulnerability, endpoint | Web application attack framework |
+| **skipfish** | Low | vulnerability, endpoint | Web application security scanner |
+| **vega** | Low | vulnerability, endpoint | Web vulnerability scanner |
+
+#### API Security Testing
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **postman** | Medium | endpoint, parameter | API platform |
+| **insomnia** | Medium | endpoint | API client |
+| **kiterunner** | High | endpoint, api | API endpoint discovery |
+| **mitmproxy** | High | endpoint, request, response | Interactive HTTPS proxy |
+| **fuzzapi** | Medium | endpoint, parameter | REST API fuzzer |
+
+---
+
+### Initial Access (TA0001) - Exploitation
+
+Tools for gaining initial access through vulnerabilities.
+
+#### Web Exploitation
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **sqlmap** | High | vulnerability, database, credential | SQL injection automation |
+| **nosqlmap** | Medium | vulnerability, database | NoSQL injection |
+| **commix** | Medium | vulnerability, command | Command injection exploitation |
+| **tplmap** | Medium | vulnerability | Template injection exploitation |
+| **sstimap** | Medium | vulnerability | SSTI exploitation |
+| **xsstrike** | High | vulnerability, parameter | XSS scanner and exploiter |
+| **dalfox** | High | vulnerability, parameter | XSS scanner |
+| **kxss** | Medium | vulnerability | XSS detection |
+| **xxeinjector** | Medium | vulnerability | XXE exploitation |
+| **crlfuzz** | Medium | vulnerability | CRLF injection scanner |
+| **corsscanner** | Medium | vulnerability | CORS misconfiguration scanner |
+
+#### Authentication Attacks
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **hydra** | High | credential, service | Network login cracker |
+| **medusa** | Medium | credential, service | Parallel login brute-forcer |
+| **ncrack** | Medium | credential, service | Network authentication cracker |
+| **patator** | Medium | credential | Multi-purpose brute-forcer |
+| **crowbar** | Medium | credential | Brute-forcing tool for services |
+| **sprayhound** | Medium | credential, ad_user | Password spraying for AD |
+| **trevorspray** | Medium | credential | Microsoft Online password sprayer |
+| **o365spray** | Medium | credential | Microsoft O365 password sprayer |
+
+#### Exploit Frameworks
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **metasploit** | High | exploit, payload, session | Penetration testing framework |
+| **exploitdb** | High | exploit, vulnerability | Exploit database (searchsploit) |
+| **routersploit** | Medium | exploit, vulnerability | Router exploitation |
+| **autosploit** | Low | exploit | Automated mass exploitation |
+| **pwntools** | Medium | exploit | CTF/exploit development |
+| **ropper** | Medium | gadget | ROP gadget finder |
+| **one_gadget** | Medium | gadget | One-shot RCE gadget finder |
+
+---
+
+### Credential Access (TA0006) - Credential Theft
+
+Tools for obtaining credentials.
+
+#### Password Cracking
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **hashcat** | High | credential, hash | GPU-accelerated password cracker |
+| **john** | High | credential, hash | John the Ripper |
+| **ophcrack** | Low | credential | Windows password cracker |
+| **rainbowcrack** | Low | credential | Rainbow table cracker |
+| **hash-identifier** | Low | hash | Hash type identification |
+| **haiti** | Medium | hash | Hash type identifier |
+| **name-that-hash** | Medium | hash | Modern hash identifier |
+
+#### Credential Extraction
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **mimikatz** | High | credential, token | Windows credential dumper |
+| **secretsdump** | High | credential, hash | Impacket secret dumping |
+| **pypykatz** | High | credential | Mimikatz in Python |
+| **LaZagne** | Medium | credential | Credentials recovery |
+| **credentialfileview** | Low | credential | Windows credential viewer |
+| **dploot** | Medium | credential | DPAPI looting |
+| **dpat** | Medium | credential | Domain Password Audit Tool |
+
+#### Network Credential Capture
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **responder** | High | credential, hash | LLMNR/NBT-NS poisoner |
+| **ntlmrelayx** | High | credential, session | NTLM relay attacks |
+| **mitm6** | Medium | credential | IPv6 MITM attack |
+| **bettercap** | Medium | credential, packet | Network attack framework |
+| **ettercap** | Low | credential, packet | MITM attacks |
+| **wireshark** | Medium | packet, credential | Network protocol analyzer |
+| **tcpdump** | Low | packet | Command-line packet analyzer |
+
+---
+
+### Privilege Escalation (TA0004) - Elevating Access
+
+Tools for escalating privileges on compromised systems.
+
+#### Linux Privilege Escalation
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **linpeas** | High | misconfiguration, credential, suid | Linux privilege escalation scanner |
+| **linuxprivchecker** | Medium | misconfiguration | Linux privesc checker |
+| **linux-exploit-suggester** | Medium | vulnerability, kernel | Kernel exploit suggester |
+| **linux-smart-enumeration** | Medium | misconfiguration | Linux enumeration |
+| **pspy** | High | process, cron | Process snooping |
+| **gtfobins-cli** | Medium | binary, privesc | GTFOBins lookup |
+
+#### Windows Privilege Escalation
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **winpeas** | High | misconfiguration, credential, service | Windows privilege escalation scanner |
+| **powerup** | Medium | misconfiguration | PowerShell privesc checker |
+| **seatbelt** | High | misconfiguration, credential | Windows security audit |
+| **sharpup** | Medium | misconfiguration | SharpUp for privesc |
+| **watson** | Medium | vulnerability | Windows exploit suggester |
+| **beroot** | Medium | misconfiguration | Common misconfiguration check |
+| **privesccheck** | Medium | misconfiguration | Windows privilege escalation check |
+| **accesschk** | Medium | permission | Windows access checker |
+
+#### Container & Cloud Escalation
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **deepce** | High | container, misconfiguration | Docker enumeration |
+| **botb** | Medium | container, escape | Container breakout |
+| **CDK** | Medium | container, misconfiguration | Container penetration toolkit |
+| **kubeletctl** | Medium | kubernetes, misconfiguration | Kubelet exploitation |
+| **peirates** | Medium | kubernetes, credential | Kubernetes pentesting |
+
+---
+
+### Lateral Movement (TA0008) - Moving Through Networks
+
+Tools for moving between systems.
+
+#### Remote Execution
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **impacket** | High | session, credential | Python network protocols |
+| **psexec** | High | session | Remote command execution |
+| **wmiexec** | High | session | WMI execution |
+| **smbexec** | High | session | SMB execution |
+| **atexec** | Medium | session | AT scheduled task execution |
+| **dcomexec** | Medium | session | DCOM execution |
+| **evil-winrm** | High | session | WinRM shell |
+| **crackmapexec** | High | session, credential | Network penetration |
+| **netexec** | High | session, credential | CrackMapExec successor |
+
+#### Tunneling & Pivoting
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **chisel** | High | tunnel | Fast TCP/UDP tunnel |
+| **ligolo-ng** | High | tunnel | Tunneling with TUN interface |
+| **proxychains** | High | tunnel, proxy | Proxy chaining |
+| **socat** | Medium | tunnel | Multipurpose relay |
+| **sshuttle** | Medium | tunnel | SSH-based VPN |
+| **plink** | Medium | tunnel | PuTTY command-line |
+| **rpivot** | Medium | tunnel | Reverse SOCKS proxy |
+| **revsocks** | Medium | tunnel | Reverse SOCKS5 tunnel |
+
+#### Pass-the-Hash/Ticket
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **impacket-ticketer** | High | ticket, credential | Ticket forging |
+| **getTGT** | High | ticket | TGT retrieval |
+| **getST** | High | ticket | Service ticket retrieval |
+| **rubeus** | High | ticket, credential | Kerberos abuse |
+| **kekeo** | Medium | ticket, credential | Kerberos toolkit |
+| **ticketconverter** | Medium | ticket | Ticket format conversion |
+
+---
+
+### Post-Exploitation & C2 (TA0011)
+
+Command and control frameworks.
+
+#### C2 Frameworks
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **sliver** | High | implant, session | Modern C2 framework |
+| **covenant** | Medium | implant, session | .NET C2 framework |
+| **cobalt-strike** | Medium | beacon, session | Commercial C2 |
+| **havoc** | Medium | implant, session | Modern C2 |
+| **mythic** | Medium | implant, session | Collaborative C2 |
+| **villain** | Low | session | C2 framework |
+| **poshc2** | Medium | implant, session | PowerShell C2 |
+
+#### Post-Exploitation
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **powershell-empire** | Medium | session, module | PowerShell post-exploitation |
+| **silenttrinity** | Medium | session | Post-exploitation agent |
+| **pupy** | Medium | session | Cross-platform RAT |
+| **merlin** | Medium | session | Cross-platform C2 |
+
+---
+
+### Specialized Tools
+
+#### Mobile Security
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **mobsf** | High | apk, finding, vulnerability | Mobile security framework |
+| **frida** | High | hook, function | Dynamic instrumentation |
+| **objection** | High | hook, bypass | Runtime mobile exploration |
+| **jadx** | Medium | apk, source | Android decompiler |
+| **apktool** | Medium | apk | Android reverse engineering |
+| **drozer** | Medium | android, vulnerability | Android security audit |
+| **needle** | Medium | ios, vulnerability | iOS security testing |
+
+#### Wireless Security
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **aircrack-ng** | Medium | wireless, credential | WiFi security suite |
+| **wifite** | Medium | wireless, credential | Automated WiFi attacks |
+| **bettercap** | Medium | wireless, packet | Network attacks |
+| **kismet** | Medium | wireless, device | Wireless detector |
+| **fluxion** | Low | wireless, credential | WiFi phishing |
+
+#### Binary Analysis
+
+| Tool | Priority | Node Types | Description |
+|------|----------|------------|-------------|
+| **ghidra** | Medium | binary, function | NSA reverse engineering |
+| **ida** | Medium | binary, function | Interactive disassembler |
+| **radare2** | Medium | binary, function | Reverse engineering framework |
+| **binary-ninja** | Low | binary, function | Binary analysis platform |
+| **angr** | Medium | binary, symbolic | Binary analysis framework |
+| **cutter** | Medium | binary, function | Radare2 GUI |
+
+---
+
+### Tool Development Guidelines
+
+When implementing new tools, follow these guidelines:
+
+1. **Use Standard Node Types**: Reuse existing node types (host, port, domain, etc.) for consistency
+2. **Meaningful ID Templates**: IDs should be deterministic and unique across runs
+3. **Capture Relationships**: Connect findings to hosts, ports, domains appropriately
+4. **Include Metadata**: Add timestamps, confidence scores, sources where applicable
+5. **Test Taxonomy Extraction**: Verify the knowledge graph populates correctly
+
+### Priority Definitions
+
+| Priority | Criteria |
+|----------|----------|
+| **High** | Core bug bounty workflow, frequently used, unique capability |
+| **Medium** | Specialized use case, good to have, complements high-priority tools |
+| **Low** | Niche use case, redundant with other tools, legacy |
+| **✅ Done** | Already implemented with embedded taxonomy |
+
+### Contributing
+
+To add a new tool with GraphRAG taxonomy:
+
+1. Create tool directory: `mkdir -p {phase}/{tool-name}`
+2. Initialize Go module: `go mod init github.com/zero-day-ai/gibson-oss-tools/{phase}/{tool-name}`
+3. Implement `tool.go` with the Tool interface
+4. Implement `schema.go` with TaxonomyMapping in OutputSchema()
+5. Implement `main.go` with --schema support
+6. Add to `go.work` and `Makefile`
+7. Test with `./bin/{tool} --schema` to verify taxonomy embedding
+8. Submit PR with example output showing knowledge graph extraction
