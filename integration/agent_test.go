@@ -178,7 +178,7 @@ func TestAgentLifecycle(t *testing.T) {
 
 	// Test execution
 	t.Run("execute", func(t *testing.T) {
-		task := agent.NewTask("test-task-1", "Perform a test")
+		task := agent.NewTask("test-task-1")
 		result, err := a.Execute(ctx, &mockHarness{}, *task)
 		require.NoError(t, err)
 		assert.True(t, executed, "execute function should have been called")
@@ -204,7 +204,6 @@ func TestAgentExecution(t *testing.T) {
 			sdk.WithExecuteFunc(func(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
 				// Verify task data is accessible
 				assert.Equal(t, "test-task", task.ID)
-				assert.Equal(t, "Test goal", task.Goal)
 
 				result := agent.NewSuccessResult(map[string]any{
 					"status": "completed",
@@ -216,7 +215,7 @@ func TestAgentExecution(t *testing.T) {
 
 		require.NoError(t, err)
 
-		task := agent.NewTask("test-task", "Test goal")
+		task := agent.NewTask("test-task")
 		ctx := context.Background()
 		result, err := a.Execute(ctx, &mockHarness{}, *task)
 
@@ -242,7 +241,7 @@ func TestAgentExecution(t *testing.T) {
 
 		require.NoError(t, err)
 
-		task := agent.NewTask("fail-task", "This will fail")
+		task := agent.NewTask("fail-task")
 		ctx := context.Background()
 		result, err := a.Execute(ctx, &mockHarness{}, *task)
 
@@ -268,7 +267,7 @@ func TestAgentExecution(t *testing.T) {
 
 		require.NoError(t, err)
 
-		task := agent.NewTask("scan-task", "Scan for vulnerabilities")
+		task := agent.NewTask("scan-task")
 		ctx := context.Background()
 		result, err := a.Execute(ctx, &mockHarness{}, *task)
 

@@ -22,10 +22,6 @@ package planning
 //	    // ...
 //	}
 type PlanningContext interface {
-	// OriginalGoal returns the immutable mission goal statement.
-	// This helps agents stay focused on the overall objective.
-	OriginalGoal() string
-
 	// CurrentStepIndex returns the 0-based index of the current step in the plan.
 	CurrentStepIndex() int
 

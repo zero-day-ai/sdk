@@ -26,7 +26,7 @@ func main() {
 		ID: "example-001",
 		Task: agent.Task{
 			ID:   "task-001",
-			Goal: "Demonstrate logger functionality",
+			Context: map[string]any{"objective": "Demonstrate logger functionality"},
 		},
 		Tags: []string{"example", "demo"},
 	}

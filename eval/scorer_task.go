@@ -273,10 +273,13 @@ func (s *taskCompletionScorer) llmJudge(ctx context.Context, sample Sample) (flo
 
 // buildJudgePrompt constructs the prompt for LLM-as-judge evaluation.
 func (s *taskCompletionScorer) buildJudgePrompt(sample Sample) string {
-	// Use the task's Goal field as the description
-	taskDesc := sample.Task.Goal
+	// Use the task's Context["objective"] field as the description
+	taskDesc := ""
+	if objective, ok := sample.Task.Context["objective"]; ok {
+		taskDesc = fmt.Sprintf("%v", objective)
+	}
 	if taskDesc == "" {
-		// Fallback to context if goal is empty
+		// Fallback to full context if objective is empty
 		if len(sample.Task.Context) > 0 {
 			taskDesc = fmt.Sprintf("%v", sample.Task.Context)
 		} else {

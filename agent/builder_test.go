@@ -366,7 +366,7 @@ func TestSDKAgent_Execute(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	task := NewTask("task-1", "test goal")
+	task := NewTask("task-1")
 
 	result, err := agent.Execute(ctx, nil, *task)
 	if err != nil {
@@ -396,7 +396,7 @@ func TestSDKAgent_ExecuteError(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	task := NewTask("task-1", "test goal")
+	task := NewTask("task-1")
 
 	result, err := agent.Execute(ctx, nil, *task)
 	if err == nil {
@@ -447,7 +447,7 @@ func TestSDKAgent_FullLifecycle(t *testing.T) {
 	}
 
 	// Execute
-	task := NewTask("task-1", "test")
+	task := NewTask("task-1")
 	result, err := agent.Execute(ctx, nil, *task)
 	if err != nil {
 		t.Errorf("Execute() error = %v", err)

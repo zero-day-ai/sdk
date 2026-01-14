@@ -36,7 +36,7 @@ package eval
 //	        // Run evaluation - scores automatically exported
 //	        sample := eval.Sample{
 //	            ID: "test-001",
-//	            Task: agent.Task{Goal: "Detect prompt injection"},
+//	            Task: agent.Task{Context: map[string]any{"objective": "Detect prompt injection"}},
 //	        }
 //	        result := e.Score(sample,
 //	            eval.NewToolCorrectnessScorer(opts),

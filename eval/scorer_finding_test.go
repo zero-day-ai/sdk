@@ -50,7 +50,7 @@ func TestFindingAccuracyScorer_PerfectMatch(t *testing.T) {
 	// Create sample with trajectory containing findings
 	sample := Sample{
 		ID:   "test-001",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -149,7 +149,7 @@ func TestFindingAccuracyScorer_FalsePositive(t *testing.T) {
 
 	sample := Sample{
 		ID:   "test-002",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -242,7 +242,7 @@ func TestFindingAccuracyScorer_FalseNegative(t *testing.T) {
 
 	sample := Sample{
 		ID:   "test-003",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -322,7 +322,7 @@ func TestFindingAccuracyScorer_FuzzyTitleMatch(t *testing.T) {
 
 	sample := Sample{
 		ID:   "test-004",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -392,7 +392,7 @@ func TestFindingAccuracyScorer_SeverityWeighting(t *testing.T) {
 
 	sample := Sample{
 		ID:   "test-005",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -462,7 +462,7 @@ func TestFindingAccuracyScorer_CategoryMatching(t *testing.T) {
 
 	sample := Sample{
 		ID:   "test-006",
-		Task: agent.Task{Goal: "Find vulnerabilities"},
+		Task: agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		Trajectory: Trajectory{
 			Steps: []TrajectoryStep{
 				{
@@ -505,7 +505,7 @@ func TestFindingAccuracyScorer_CategoryMatching(t *testing.T) {
 func TestFindingAccuracyScorer_NoGroundTruth(t *testing.T) {
 	sample := Sample{
 		ID:               "test-007",
-		Task:             agent.Task{Goal: "Find vulnerabilities"},
+		Task:             agent.Task{Context: map[string]any{"objective": "Find vulnerabilities"}},
 		ExpectedFindings: nil,
 	}
 

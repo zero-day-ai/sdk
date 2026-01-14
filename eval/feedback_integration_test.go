@@ -408,7 +408,7 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 		ID: "feedback-workflow-test",
 		Task: agent.Task{
 			ID:   "test-001",
-			Goal: "Perform reconnaissance on target system",
+			Context: map[string]any{"objective": "Perform reconnaissance on target system"},
 		},
 		ExpectedTools: []ExpectedToolCall{
 			{Name: "nmap", Arguments: map[string]any{"target": "example.com"}, Required: true},

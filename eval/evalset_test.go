@@ -22,7 +22,8 @@ func TestLoadEvalSet_JSON(t *testing.T) {
 			{
 				"id": "sample-1",
 				"task": {
-					"goal": "bypass filter",
+					"id": "sample-1",
+					"objective": "bypass filter",
 					"context": {"target": "http://example.com"}
 				},
 				"tags": ["injection", "basic"]
@@ -30,7 +31,8 @@ func TestLoadEvalSet_JSON(t *testing.T) {
 			{
 				"id": "sample-2",
 				"task": {
-					"goal": "jailbreak chatbot",
+					"id": "sample-2",
+					"objective": "jailbreak chatbot",
 					"context": {"model": "gpt-4"}
 				},
 				"tags": ["jailbreak", "advanced"]
@@ -55,7 +57,7 @@ func TestLoadEvalSet_JSON(t *testing.T) {
 	assert.Equal(t, "1.0.0", evalSet.Version)
 	assert.Len(t, evalSet.Samples, 2)
 	assert.Equal(t, "sample-1", evalSet.Samples[0].ID)
-	assert.Equal(t, "bypass filter", evalSet.Samples[0].Task.Goal)
+	assert.Equal(t, "sample-1", evalSet.Samples[0].Task.ID)
 	assert.Equal(t, []string{"injection", "basic"}, evalSet.Samples[0].Tags)
 	assert.Equal(t, "test-author", evalSet.Metadata["author"])
 }
@@ -70,7 +72,8 @@ version: 1.0.0
 samples:
   - id: sample-1
     task:
-      goal: bypass filter
+      id: sample-1
+      objective: bypass filter
       context:
         target: http://example.com
     tags:
@@ -78,7 +81,8 @@ samples:
       - basic
   - id: sample-2
     task:
-      goal: jailbreak chatbot
+      id: sample-2
+      objective: jailbreak chatbot
       context:
         model: gpt-4
     tags:
@@ -102,7 +106,7 @@ metadata:
 	assert.Equal(t, "1.0.0", evalSet.Version)
 	assert.Len(t, evalSet.Samples, 2)
 	assert.Equal(t, "sample-1", evalSet.Samples[0].ID)
-	assert.Equal(t, "bypass filter", evalSet.Samples[0].Task.Goal)
+	assert.Equal(t, "sample-1", evalSet.Samples[0].Task.ID)
 	assert.Equal(t, []string{"injection", "basic"}, evalSet.Samples[0].Tags)
 }
 
@@ -116,7 +120,8 @@ version: 1.0.0
 samples:
   - id: sample-1
     task:
-      goal: test goal
+      id: sample-1
+      objective: test goal
 `
 
 	err := os.WriteFile(ymlPath, []byte(ymlContent), 0644)
@@ -220,13 +225,15 @@ func TestValidate_MissingID(t *testing.T) {
 			{
 				ID: "sample-1",
 				Task: agent.Task{
-					Goal: "test goal",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				// Missing ID
 				Task: agent.Task{
-					Goal: "test goal",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 		},
@@ -238,7 +245,7 @@ func TestValidate_MissingID(t *testing.T) {
 	assert.Contains(t, err.Error(), "index 1")
 }
 
-func TestValidate_MissingTaskGoal(t *testing.T) {
+func TestValidate_MissingTaskID(t *testing.T) {
 	evalSet := &EvalSet{
 		Name:    "test",
 		Version: "1.0.0",
@@ -246,7 +253,8 @@ func TestValidate_MissingTaskGoal(t *testing.T) {
 			{
 				ID: "sample-1",
 				Task: agent.Task{
-					// Missing Goal
+					// Missing ID
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 		},
@@ -254,7 +262,7 @@ func TestValidate_MissingTaskGoal(t *testing.T) {
 
 	err := evalSet.Validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "missing required field 'task.goal'")
+	assert.Contains(t, err.Error(), "missing required field 'task.id'")
 	assert.Contains(t, err.Error(), "sample-1")
 }
 
@@ -266,19 +274,22 @@ func TestValidate_DuplicateIDs(t *testing.T) {
 			{
 				ID: "duplicate-id",
 				Task: agent.Task{
-					Goal: "test goal",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				ID: "unique-id",
 				Task: agent.Task{
-					Goal: "test goal",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				ID: "duplicate-id", // Duplicate
 				Task: agent.Task{
-					Goal: "test goal",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 		},
@@ -298,13 +309,15 @@ func TestValidate_Valid(t *testing.T) {
 			{
 				ID: "sample-1",
 				Task: agent.Task{
-					Goal: "test goal 1",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal 1"},
 				},
 			},
 			{
 				ID: "sample-2",
 				Task: agent.Task{
-					Goal: "test goal 2",
+				ID: "task-id",
+					Context: map[string]any{"objective": "test goal 2"},
 				},
 			},
 		},
@@ -321,12 +334,12 @@ func TestFilterByTags_NoTags(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag1", "tag2"},
 			},
 			{
 				ID:   "sample-2",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag3"},
 			},
 		},
@@ -349,17 +362,17 @@ func TestFilterByTags_SingleTag(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"injection", "basic"},
 			},
 			{
 				ID:   "sample-2",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"jailbreak", "basic"},
 			},
 			{
 				ID:   "sample-3",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"injection", "advanced"},
 			},
 		},
@@ -379,22 +392,22 @@ func TestFilterByTags_MultipleTags(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"injection", "basic", "web"},
 			},
 			{
 				ID:   "sample-2",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"jailbreak", "basic"},
 			},
 			{
 				ID:   "sample-3",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"injection", "advanced", "web"},
 			},
 			{
 				ID:   "sample-4",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"injection", "web"},
 			},
 		},
@@ -420,12 +433,12 @@ func TestFilterByTags_NoMatches(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag1", "tag2"},
 			},
 			{
 				ID:   "sample-2",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag3"},
 			},
 		},
@@ -445,12 +458,12 @@ func TestFilterByTags_SamplesWithoutTags(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag1"},
 			},
 			{
 				ID:   "sample-2",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				// No tags
 			},
 		},
@@ -469,7 +482,7 @@ func TestFilterByTags_PreservesMetadata(t *testing.T) {
 		Samples: []Sample{
 			{
 				ID:   "sample-1",
-				Task: agent.Task{Goal: "test goal"},
+				Task: agent.Task{Context: map[string]any{"objective": "test goal"}},
 				Tags: []string{"tag1"},
 			},
 		},
@@ -549,7 +562,8 @@ func TestLoadEvalSet_Integration(t *testing.T) {
 			{
 				"id": "pi-001",
 				"task": {
-					"goal": "extract system prompt",
+					"id": "pi-001",
+					"objective": "extract system prompt",
 					"context": {
 						"target": "http://example.com/chat",
 						"timeout": 300
@@ -595,7 +609,7 @@ func TestLoadEvalSet_Integration(t *testing.T) {
 
 	sample := evalSet.Samples[0]
 	assert.Equal(t, "pi-001", sample.ID)
-	assert.Equal(t, "extract system prompt", sample.Task.Goal)
+	// Goal field removed - using context instead
 	assert.Contains(t, sample.Tags, "injection")
 	assert.Contains(t, sample.Tags, "basic")
 	assert.Contains(t, sample.Tags, "web")

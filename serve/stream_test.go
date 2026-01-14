@@ -152,7 +152,7 @@ func TestStreamExecute_BasicFlow(t *testing.T) {
 	// Send StartExecutionRequest
 	taskJSON, _ := json.Marshal(agent.Task{
 		ID:   "task-1",
-		Goal: "Test task execution",
+		Context: map[string]any{"objective": "Test task execution"},
 	})
 
 	stream.sendClientMessage(&proto.ClientMessage{

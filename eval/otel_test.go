@@ -30,7 +30,7 @@ func TestOTelIntegration_Tracer(t *testing.T) {
 	sample := Sample{
 		ID: "test-001",
 		Task: agent.Task{
-			Goal: "Test goal",
+			Context: map[string]any{"objective": "Test goal"},
 		},
 	}
 
@@ -71,7 +71,7 @@ func TestOTelIntegration_Metrics(t *testing.T) {
 	sample := Sample{
 		ID: "test-002",
 		Task: agent.Task{
-			Goal: "Test goal",
+			Context: map[string]any{"objective": "Test goal"},
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestOTelIntegration_BothTracerAndMetrics(t *testing.T) {
 	sample := Sample{
 		ID: "test-003",
 		Task: agent.Task{
-			Goal: "Test goal",
+			Context: map[string]any{"objective": "Test goal"},
 		},
 	}
 
@@ -142,7 +142,7 @@ func TestOTelIntegration_GracefulDegradation_NilOTel(t *testing.T) {
 	sample := Sample{
 		ID: "test-004",
 		Task: agent.Task{
-			Goal: "Test goal",
+			Context: map[string]any{"objective": "Test goal"},
 		},
 	}
 
@@ -191,7 +191,7 @@ func TestOTelIntegration_ScoreMethod(t *testing.T) {
 	sample := Sample{
 		ID: "test-005",
 		Task: agent.Task{
-			Goal: "Test OTel integration",
+			Context: map[string]any{"objective": "Test OTel integration"},
 		},
 	}
 

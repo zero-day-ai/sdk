@@ -1499,10 +1499,14 @@ func (x *ListToolsResponse) GetError() *HarnessError {
 }
 
 type HarnessToolDescriptor struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	SchemaJson    string                 `protobuf:"bytes,3,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"` // JSON-encoded map[string]any
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Name             string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description      string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	SchemaJson       string                 `protobuf:"bytes,3,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"`                     // JSON-encoded input schema (legacy, use input_schema for structured)
+	OutputSchemaJson string                 `protobuf:"bytes,4,opt,name=output_schema_json,json=outputSchemaJson,proto3" json:"output_schema_json,omitempty"` // JSON-encoded output schema with taxonomy
+	// Structured schemas with full taxonomy support (preferred over JSON)
+	InputSchema   *JSONSchemaNode `protobuf:"bytes,5,opt,name=input_schema,json=inputSchema,proto3" json:"input_schema,omitempty"`
+	OutputSchema  *JSONSchemaNode `protobuf:"bytes,6,opt,name=output_schema,json=outputSchema,proto3" json:"output_schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1558,6 +1562,384 @@ func (x *HarnessToolDescriptor) GetSchemaJson() string {
 	return ""
 }
 
+func (x *HarnessToolDescriptor) GetOutputSchemaJson() string {
+	if x != nil {
+		return x.OutputSchemaJson
+	}
+	return ""
+}
+
+func (x *HarnessToolDescriptor) GetInputSchema() *JSONSchemaNode {
+	if x != nil {
+		return x.InputSchema
+	}
+	return nil
+}
+
+func (x *HarnessToolDescriptor) GetOutputSchema() *JSONSchemaNode {
+	if x != nil {
+		return x.OutputSchema
+	}
+	return nil
+}
+
+// JSONSchemaNode represents a JSON Schema node with taxonomy support.
+// Used for structured schema transmission that preserves taxonomy mappings.
+type JSONSchemaNode struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Type          string                     `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"` // "string", "number", "integer", "boolean", "array", "object"
+	Description   string                     `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Properties    map[string]*JSONSchemaNode `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Required      []string                   `protobuf:"bytes,4,rep,name=required,proto3" json:"required,omitempty"`
+	Items         *JSONSchemaNode            `protobuf:"bytes,5,opt,name=items,proto3" json:"items,omitempty"` // For array types
+	EnumValues    []string                   `protobuf:"bytes,6,rep,name=enum_values,json=enumValues,proto3" json:"enum_values,omitempty"`
+	Format        string                     `protobuf:"bytes,7,opt,name=format,proto3" json:"format,omitempty"`
+	Minimum       *float64                   `protobuf:"fixed64,8,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum       *float64                   `protobuf:"fixed64,9,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	MinLength     *int32                     `protobuf:"varint,10,opt,name=min_length,json=minLength,proto3,oneof" json:"min_length,omitempty"`
+	MaxLength     *int32                     `protobuf:"varint,11,opt,name=max_length,json=maxLength,proto3,oneof" json:"max_length,omitempty"`
+	MinItems      *int32                     `protobuf:"varint,12,opt,name=min_items,json=minItems,proto3,oneof" json:"min_items,omitempty"`
+	MaxItems      *int32                     `protobuf:"varint,13,opt,name=max_items,json=maxItems,proto3,oneof" json:"max_items,omitempty"`
+	Pattern       *string                    `protobuf:"bytes,14,opt,name=pattern,proto3,oneof" json:"pattern,omitempty"`
+	DefaultValue  *string                    `protobuf:"bytes,15,opt,name=default_value,json=defaultValue,proto3,oneof" json:"default_value,omitempty"`
+	Nullable      bool                       `protobuf:"varint,16,opt,name=nullable,proto3" json:"nullable,omitempty"`
+	Taxonomy      *TaxonomyMapping           `protobuf:"bytes,17,opt,name=taxonomy,proto3" json:"taxonomy,omitempty"` // Taxonomy mapping for knowledge graph extraction
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JSONSchemaNode) Reset() {
+	*x = JSONSchemaNode{}
+	mi := &file_harness_callback_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JSONSchemaNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JSONSchemaNode) ProtoMessage() {}
+
+func (x *JSONSchemaNode) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JSONSchemaNode.ProtoReflect.Descriptor instead.
+func (*JSONSchemaNode) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *JSONSchemaNode) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *JSONSchemaNode) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *JSONSchemaNode) GetProperties() map[string]*JSONSchemaNode {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
+}
+
+func (x *JSONSchemaNode) GetRequired() []string {
+	if x != nil {
+		return x.Required
+	}
+	return nil
+}
+
+func (x *JSONSchemaNode) GetItems() *JSONSchemaNode {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *JSONSchemaNode) GetEnumValues() []string {
+	if x != nil {
+		return x.EnumValues
+	}
+	return nil
+}
+
+func (x *JSONSchemaNode) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
+func (x *JSONSchemaNode) GetMinimum() float64 {
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetMaximum() float64 {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetMinLength() int32 {
+	if x != nil && x.MinLength != nil {
+		return *x.MinLength
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetMaxLength() int32 {
+	if x != nil && x.MaxLength != nil {
+		return *x.MaxLength
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetMinItems() int32 {
+	if x != nil && x.MinItems != nil {
+		return *x.MinItems
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetMaxItems() int32 {
+	if x != nil && x.MaxItems != nil {
+		return *x.MaxItems
+	}
+	return 0
+}
+
+func (x *JSONSchemaNode) GetPattern() string {
+	if x != nil && x.Pattern != nil {
+		return *x.Pattern
+	}
+	return ""
+}
+
+func (x *JSONSchemaNode) GetDefaultValue() string {
+	if x != nil && x.DefaultValue != nil {
+		return *x.DefaultValue
+	}
+	return ""
+}
+
+func (x *JSONSchemaNode) GetNullable() bool {
+	if x != nil {
+		return x.Nullable
+	}
+	return false
+}
+
+func (x *JSONSchemaNode) GetTaxonomy() *TaxonomyMapping {
+	if x != nil {
+		return x.Taxonomy
+	}
+	return nil
+}
+
+// TaxonomyMapping defines how tool output maps to knowledge graph nodes.
+type TaxonomyMapping struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NodeType      string                 `protobuf:"bytes,1,opt,name=node_type,json=nodeType,proto3" json:"node_type,omitempty"`       // e.g., "host", "port", "finding"
+	IdTemplate    string                 `protobuf:"bytes,2,opt,name=id_template,json=idTemplate,proto3" json:"id_template,omitempty"` // e.g., "host:{.ip}"
+	Properties    []*PropertyMapping     `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty"`
+	Relationships []*RelationshipMapping `protobuf:"bytes,4,rep,name=relationships,proto3" json:"relationships,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaxonomyMapping) Reset() {
+	*x = TaxonomyMapping{}
+	mi := &file_harness_callback_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaxonomyMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaxonomyMapping) ProtoMessage() {}
+
+func (x *TaxonomyMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaxonomyMapping.ProtoReflect.Descriptor instead.
+func (*TaxonomyMapping) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *TaxonomyMapping) GetNodeType() string {
+	if x != nil {
+		return x.NodeType
+	}
+	return ""
+}
+
+func (x *TaxonomyMapping) GetIdTemplate() string {
+	if x != nil {
+		return x.IdTemplate
+	}
+	return ""
+}
+
+func (x *TaxonomyMapping) GetProperties() []*PropertyMapping {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
+}
+
+func (x *TaxonomyMapping) GetRelationships() []*RelationshipMapping {
+	if x != nil {
+		return x.Relationships
+	}
+	return nil
+}
+
+// PropertyMapping maps a source field to a target property.
+type PropertyMapping struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"` // JSONPath expression, e.g., "{.ip}"
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // Property name, e.g., "ip_address"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PropertyMapping) Reset() {
+	*x = PropertyMapping{}
+	mi := &file_harness_callback_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PropertyMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PropertyMapping) ProtoMessage() {}
+
+func (x *PropertyMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PropertyMapping.ProtoReflect.Descriptor instead.
+func (*PropertyMapping) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *PropertyMapping) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *PropertyMapping) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+// RelationshipMapping defines relationships to other nodes.
+type RelationshipMapping struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Type           string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`                                           // e.g., "HAS_PORT", "DISCOVERED_BY"
+	TargetType     string                 `protobuf:"bytes,2,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`             // e.g., "port", "agent"
+	TargetTemplate string                 `protobuf:"bytes,3,opt,name=target_template,json=targetTemplate,proto3" json:"target_template,omitempty"` // e.g., "port:{.ip}:{.port}"
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RelationshipMapping) Reset() {
+	*x = RelationshipMapping{}
+	mi := &file_harness_callback_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RelationshipMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RelationshipMapping) ProtoMessage() {}
+
+func (x *RelationshipMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RelationshipMapping.ProtoReflect.Descriptor instead.
+func (*RelationshipMapping) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *RelationshipMapping) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *RelationshipMapping) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *RelationshipMapping) GetTargetTemplate() string {
+	if x != nil {
+		return x.TargetTemplate
+	}
+	return ""
+}
+
 type QueryPluginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
@@ -1570,7 +1952,7 @@ type QueryPluginRequest struct {
 
 func (x *QueryPluginRequest) Reset() {
 	*x = QueryPluginRequest{}
-	mi := &file_harness_callback_proto_msgTypes[20]
+	mi := &file_harness_callback_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1582,7 +1964,7 @@ func (x *QueryPluginRequest) String() string {
 func (*QueryPluginRequest) ProtoMessage() {}
 
 func (x *QueryPluginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[20]
+	mi := &file_harness_callback_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1977,7 @@ func (x *QueryPluginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPluginRequest.ProtoReflect.Descriptor instead.
 func (*QueryPluginRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{20}
+	return file_harness_callback_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *QueryPluginRequest) GetContext() *ContextInfo {
@@ -1636,7 +2018,7 @@ type QueryPluginResponse struct {
 
 func (x *QueryPluginResponse) Reset() {
 	*x = QueryPluginResponse{}
-	mi := &file_harness_callback_proto_msgTypes[21]
+	mi := &file_harness_callback_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1648,7 +2030,7 @@ func (x *QueryPluginResponse) String() string {
 func (*QueryPluginResponse) ProtoMessage() {}
 
 func (x *QueryPluginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[21]
+	mi := &file_harness_callback_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1661,7 +2043,7 @@ func (x *QueryPluginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPluginResponse.ProtoReflect.Descriptor instead.
 func (*QueryPluginResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{21}
+	return file_harness_callback_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *QueryPluginResponse) GetResultJson() string {
@@ -1687,7 +2069,7 @@ type ListPluginsRequest struct {
 
 func (x *ListPluginsRequest) Reset() {
 	*x = ListPluginsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[22]
+	mi := &file_harness_callback_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1699,7 +2081,7 @@ func (x *ListPluginsRequest) String() string {
 func (*ListPluginsRequest) ProtoMessage() {}
 
 func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[22]
+	mi := &file_harness_callback_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1712,7 +2094,7 @@ func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsRequest.ProtoReflect.Descriptor instead.
 func (*ListPluginsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{22}
+	return file_harness_callback_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListPluginsRequest) GetContext() *ContextInfo {
@@ -1732,7 +2114,7 @@ type ListPluginsResponse struct {
 
 func (x *ListPluginsResponse) Reset() {
 	*x = ListPluginsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[23]
+	mi := &file_harness_callback_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1744,7 +2126,7 @@ func (x *ListPluginsResponse) String() string {
 func (*ListPluginsResponse) ProtoMessage() {}
 
 func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[23]
+	mi := &file_harness_callback_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1757,7 +2139,7 @@ func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsResponse.ProtoReflect.Descriptor instead.
 func (*ListPluginsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{23}
+	return file_harness_callback_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListPluginsResponse) GetPlugins() []*HarnessPluginDescriptor {
@@ -1786,7 +2168,7 @@ type HarnessPluginDescriptor struct {
 
 func (x *HarnessPluginDescriptor) Reset() {
 	*x = HarnessPluginDescriptor{}
-	mi := &file_harness_callback_proto_msgTypes[24]
+	mi := &file_harness_callback_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1798,7 +2180,7 @@ func (x *HarnessPluginDescriptor) String() string {
 func (*HarnessPluginDescriptor) ProtoMessage() {}
 
 func (x *HarnessPluginDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[24]
+	mi := &file_harness_callback_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1811,7 +2193,7 @@ func (x *HarnessPluginDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HarnessPluginDescriptor.ProtoReflect.Descriptor instead.
 func (*HarnessPluginDescriptor) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{24}
+	return file_harness_callback_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *HarnessPluginDescriptor) GetName() string {
@@ -1853,7 +2235,7 @@ type DelegateToAgentRequest struct {
 
 func (x *DelegateToAgentRequest) Reset() {
 	*x = DelegateToAgentRequest{}
-	mi := &file_harness_callback_proto_msgTypes[25]
+	mi := &file_harness_callback_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1865,7 +2247,7 @@ func (x *DelegateToAgentRequest) String() string {
 func (*DelegateToAgentRequest) ProtoMessage() {}
 
 func (x *DelegateToAgentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[25]
+	mi := &file_harness_callback_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1878,7 +2260,7 @@ func (x *DelegateToAgentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DelegateToAgentRequest.ProtoReflect.Descriptor instead.
 func (*DelegateToAgentRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{25}
+	return file_harness_callback_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *DelegateToAgentRequest) GetContext() *ContextInfo {
@@ -1912,7 +2294,7 @@ type DelegateToAgentResponse struct {
 
 func (x *DelegateToAgentResponse) Reset() {
 	*x = DelegateToAgentResponse{}
-	mi := &file_harness_callback_proto_msgTypes[26]
+	mi := &file_harness_callback_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1924,7 +2306,7 @@ func (x *DelegateToAgentResponse) String() string {
 func (*DelegateToAgentResponse) ProtoMessage() {}
 
 func (x *DelegateToAgentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[26]
+	mi := &file_harness_callback_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1937,7 +2319,7 @@ func (x *DelegateToAgentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DelegateToAgentResponse.ProtoReflect.Descriptor instead.
 func (*DelegateToAgentResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{26}
+	return file_harness_callback_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *DelegateToAgentResponse) GetResultJson() string {
@@ -1963,7 +2345,7 @@ type ListAgentsRequest struct {
 
 func (x *ListAgentsRequest) Reset() {
 	*x = ListAgentsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[27]
+	mi := &file_harness_callback_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1975,7 +2357,7 @@ func (x *ListAgentsRequest) String() string {
 func (*ListAgentsRequest) ProtoMessage() {}
 
 func (x *ListAgentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[27]
+	mi := &file_harness_callback_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1988,7 +2370,7 @@ func (x *ListAgentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentsRequest.ProtoReflect.Descriptor instead.
 func (*ListAgentsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{27}
+	return file_harness_callback_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListAgentsRequest) GetContext() *ContextInfo {
@@ -2008,7 +2390,7 @@ type ListAgentsResponse struct {
 
 func (x *ListAgentsResponse) Reset() {
 	*x = ListAgentsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[28]
+	mi := &file_harness_callback_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2020,7 +2402,7 @@ func (x *ListAgentsResponse) String() string {
 func (*ListAgentsResponse) ProtoMessage() {}
 
 func (x *ListAgentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[28]
+	mi := &file_harness_callback_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2033,7 +2415,7 @@ func (x *ListAgentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentsResponse.ProtoReflect.Descriptor instead.
 func (*ListAgentsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{28}
+	return file_harness_callback_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListAgentsResponse) GetAgents() []*HarnessAgentDescriptor {
@@ -2064,7 +2446,7 @@ type HarnessAgentDescriptor struct {
 
 func (x *HarnessAgentDescriptor) Reset() {
 	*x = HarnessAgentDescriptor{}
-	mi := &file_harness_callback_proto_msgTypes[29]
+	mi := &file_harness_callback_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2076,7 +2458,7 @@ func (x *HarnessAgentDescriptor) String() string {
 func (*HarnessAgentDescriptor) ProtoMessage() {}
 
 func (x *HarnessAgentDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[29]
+	mi := &file_harness_callback_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2089,7 +2471,7 @@ func (x *HarnessAgentDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HarnessAgentDescriptor.ProtoReflect.Descriptor instead.
 func (*HarnessAgentDescriptor) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{29}
+	return file_harness_callback_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *HarnessAgentDescriptor) GetName() string {
@@ -2144,7 +2526,7 @@ type SubmitFindingRequest struct {
 
 func (x *SubmitFindingRequest) Reset() {
 	*x = SubmitFindingRequest{}
-	mi := &file_harness_callback_proto_msgTypes[30]
+	mi := &file_harness_callback_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2156,7 +2538,7 @@ func (x *SubmitFindingRequest) String() string {
 func (*SubmitFindingRequest) ProtoMessage() {}
 
 func (x *SubmitFindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[30]
+	mi := &file_harness_callback_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2169,7 +2551,7 @@ func (x *SubmitFindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitFindingRequest.ProtoReflect.Descriptor instead.
 func (*SubmitFindingRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{30}
+	return file_harness_callback_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *SubmitFindingRequest) GetContext() *ContextInfo {
@@ -2195,7 +2577,7 @@ type SubmitFindingResponse struct {
 
 func (x *SubmitFindingResponse) Reset() {
 	*x = SubmitFindingResponse{}
-	mi := &file_harness_callback_proto_msgTypes[31]
+	mi := &file_harness_callback_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2207,7 +2589,7 @@ func (x *SubmitFindingResponse) String() string {
 func (*SubmitFindingResponse) ProtoMessage() {}
 
 func (x *SubmitFindingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[31]
+	mi := &file_harness_callback_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2220,7 +2602,7 @@ func (x *SubmitFindingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitFindingResponse.ProtoReflect.Descriptor instead.
 func (*SubmitFindingResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{31}
+	return file_harness_callback_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *SubmitFindingResponse) GetError() *HarnessError {
@@ -2240,7 +2622,7 @@ type GetFindingsRequest struct {
 
 func (x *GetFindingsRequest) Reset() {
 	*x = GetFindingsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[32]
+	mi := &file_harness_callback_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2252,7 +2634,7 @@ func (x *GetFindingsRequest) String() string {
 func (*GetFindingsRequest) ProtoMessage() {}
 
 func (x *GetFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[32]
+	mi := &file_harness_callback_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2265,7 +2647,7 @@ func (x *GetFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFindingsRequest.ProtoReflect.Descriptor instead.
 func (*GetFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{32}
+	return file_harness_callback_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GetFindingsRequest) GetContext() *ContextInfo {
@@ -2292,7 +2674,7 @@ type GetFindingsResponse struct {
 
 func (x *GetFindingsResponse) Reset() {
 	*x = GetFindingsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[33]
+	mi := &file_harness_callback_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2304,7 +2686,7 @@ func (x *GetFindingsResponse) String() string {
 func (*GetFindingsResponse) ProtoMessage() {}
 
 func (x *GetFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[33]
+	mi := &file_harness_callback_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2317,7 +2699,7 @@ func (x *GetFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFindingsResponse.ProtoReflect.Descriptor instead.
 func (*GetFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{33}
+	return file_harness_callback_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetFindingsResponse) GetFindingsJson() []string {
@@ -2345,7 +2727,7 @@ type MemoryGetRequest struct {
 
 func (x *MemoryGetRequest) Reset() {
 	*x = MemoryGetRequest{}
-	mi := &file_harness_callback_proto_msgTypes[34]
+	mi := &file_harness_callback_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2357,7 +2739,7 @@ func (x *MemoryGetRequest) String() string {
 func (*MemoryGetRequest) ProtoMessage() {}
 
 func (x *MemoryGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[34]
+	mi := &file_harness_callback_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2370,7 +2752,7 @@ func (x *MemoryGetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryGetRequest.ProtoReflect.Descriptor instead.
 func (*MemoryGetRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{34}
+	return file_harness_callback_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *MemoryGetRequest) GetContext() *ContextInfo {
@@ -2408,7 +2790,7 @@ type MemoryGetResponse struct {
 
 func (x *MemoryGetResponse) Reset() {
 	*x = MemoryGetResponse{}
-	mi := &file_harness_callback_proto_msgTypes[35]
+	mi := &file_harness_callback_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2420,7 +2802,7 @@ func (x *MemoryGetResponse) String() string {
 func (*MemoryGetResponse) ProtoMessage() {}
 
 func (x *MemoryGetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[35]
+	mi := &file_harness_callback_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2433,7 +2815,7 @@ func (x *MemoryGetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryGetResponse.ProtoReflect.Descriptor instead.
 func (*MemoryGetResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{35}
+	return file_harness_callback_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *MemoryGetResponse) GetValueJson() string {
@@ -2491,7 +2873,7 @@ type MemorySetRequest struct {
 
 func (x *MemorySetRequest) Reset() {
 	*x = MemorySetRequest{}
-	mi := &file_harness_callback_proto_msgTypes[36]
+	mi := &file_harness_callback_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2503,7 +2885,7 @@ func (x *MemorySetRequest) String() string {
 func (*MemorySetRequest) ProtoMessage() {}
 
 func (x *MemorySetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[36]
+	mi := &file_harness_callback_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2516,7 +2898,7 @@ func (x *MemorySetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemorySetRequest.ProtoReflect.Descriptor instead.
 func (*MemorySetRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{36}
+	return file_harness_callback_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *MemorySetRequest) GetContext() *ContextInfo {
@@ -2563,7 +2945,7 @@ type MemorySetResponse struct {
 
 func (x *MemorySetResponse) Reset() {
 	*x = MemorySetResponse{}
-	mi := &file_harness_callback_proto_msgTypes[37]
+	mi := &file_harness_callback_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2575,7 +2957,7 @@ func (x *MemorySetResponse) String() string {
 func (*MemorySetResponse) ProtoMessage() {}
 
 func (x *MemorySetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[37]
+	mi := &file_harness_callback_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2588,7 +2970,7 @@ func (x *MemorySetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemorySetResponse.ProtoReflect.Descriptor instead.
 func (*MemorySetResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{37}
+	return file_harness_callback_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *MemorySetResponse) GetError() *HarnessError {
@@ -2609,7 +2991,7 @@ type MemoryDeleteRequest struct {
 
 func (x *MemoryDeleteRequest) Reset() {
 	*x = MemoryDeleteRequest{}
-	mi := &file_harness_callback_proto_msgTypes[38]
+	mi := &file_harness_callback_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2621,7 +3003,7 @@ func (x *MemoryDeleteRequest) String() string {
 func (*MemoryDeleteRequest) ProtoMessage() {}
 
 func (x *MemoryDeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[38]
+	mi := &file_harness_callback_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2634,7 +3016,7 @@ func (x *MemoryDeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryDeleteRequest.ProtoReflect.Descriptor instead.
 func (*MemoryDeleteRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{38}
+	return file_harness_callback_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *MemoryDeleteRequest) GetContext() *ContextInfo {
@@ -2667,7 +3049,7 @@ type MemoryDeleteResponse struct {
 
 func (x *MemoryDeleteResponse) Reset() {
 	*x = MemoryDeleteResponse{}
-	mi := &file_harness_callback_proto_msgTypes[39]
+	mi := &file_harness_callback_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2679,7 +3061,7 @@ func (x *MemoryDeleteResponse) String() string {
 func (*MemoryDeleteResponse) ProtoMessage() {}
 
 func (x *MemoryDeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[39]
+	mi := &file_harness_callback_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2692,7 +3074,7 @@ func (x *MemoryDeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryDeleteResponse.ProtoReflect.Descriptor instead.
 func (*MemoryDeleteResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{39}
+	return file_harness_callback_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *MemoryDeleteResponse) GetError() *HarnessError {
@@ -2713,7 +3095,7 @@ type MemoryListRequest struct {
 
 func (x *MemoryListRequest) Reset() {
 	*x = MemoryListRequest{}
-	mi := &file_harness_callback_proto_msgTypes[40]
+	mi := &file_harness_callback_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2725,7 +3107,7 @@ func (x *MemoryListRequest) String() string {
 func (*MemoryListRequest) ProtoMessage() {}
 
 func (x *MemoryListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[40]
+	mi := &file_harness_callback_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2738,7 +3120,7 @@ func (x *MemoryListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryListRequest.ProtoReflect.Descriptor instead.
 func (*MemoryListRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{40}
+	return file_harness_callback_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *MemoryListRequest) GetContext() *ContextInfo {
@@ -2772,7 +3154,7 @@ type MemoryListResponse struct {
 
 func (x *MemoryListResponse) Reset() {
 	*x = MemoryListResponse{}
-	mi := &file_harness_callback_proto_msgTypes[41]
+	mi := &file_harness_callback_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2784,7 +3166,7 @@ func (x *MemoryListResponse) String() string {
 func (*MemoryListResponse) ProtoMessage() {}
 
 func (x *MemoryListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[41]
+	mi := &file_harness_callback_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2797,7 +3179,7 @@ func (x *MemoryListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryListResponse.ProtoReflect.Descriptor instead.
 func (*MemoryListResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{41}
+	return file_harness_callback_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *MemoryListResponse) GetKeys() []string {
@@ -2825,7 +3207,7 @@ type MissionMemorySearchRequest struct {
 
 func (x *MissionMemorySearchRequest) Reset() {
 	*x = MissionMemorySearchRequest{}
-	mi := &file_harness_callback_proto_msgTypes[42]
+	mi := &file_harness_callback_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2837,7 +3219,7 @@ func (x *MissionMemorySearchRequest) String() string {
 func (*MissionMemorySearchRequest) ProtoMessage() {}
 
 func (x *MissionMemorySearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[42]
+	mi := &file_harness_callback_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2850,7 +3232,7 @@ func (x *MissionMemorySearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemorySearchRequest.ProtoReflect.Descriptor instead.
 func (*MissionMemorySearchRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{42}
+	return file_harness_callback_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *MissionMemorySearchRequest) GetContext() *ContextInfo {
@@ -2884,7 +3266,7 @@ type MissionMemorySearchResponse struct {
 
 func (x *MissionMemorySearchResponse) Reset() {
 	*x = MissionMemorySearchResponse{}
-	mi := &file_harness_callback_proto_msgTypes[43]
+	mi := &file_harness_callback_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2896,7 +3278,7 @@ func (x *MissionMemorySearchResponse) String() string {
 func (*MissionMemorySearchResponse) ProtoMessage() {}
 
 func (x *MissionMemorySearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[43]
+	mi := &file_harness_callback_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2909,7 +3291,7 @@ func (x *MissionMemorySearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemorySearchResponse.ProtoReflect.Descriptor instead.
 func (*MissionMemorySearchResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{43}
+	return file_harness_callback_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *MissionMemorySearchResponse) GetResults() []*MissionMemoryResult {
@@ -2940,7 +3322,7 @@ type MissionMemoryResult struct {
 
 func (x *MissionMemoryResult) Reset() {
 	*x = MissionMemoryResult{}
-	mi := &file_harness_callback_proto_msgTypes[44]
+	mi := &file_harness_callback_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2952,7 +3334,7 @@ func (x *MissionMemoryResult) String() string {
 func (*MissionMemoryResult) ProtoMessage() {}
 
 func (x *MissionMemoryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[44]
+	mi := &file_harness_callback_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2965,7 +3347,7 @@ func (x *MissionMemoryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemoryResult.ProtoReflect.Descriptor instead.
 func (*MissionMemoryResult) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{44}
+	return file_harness_callback_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *MissionMemoryResult) GetKey() string {
@@ -3020,7 +3402,7 @@ type MissionMemoryHistoryRequest struct {
 
 func (x *MissionMemoryHistoryRequest) Reset() {
 	*x = MissionMemoryHistoryRequest{}
-	mi := &file_harness_callback_proto_msgTypes[45]
+	mi := &file_harness_callback_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3032,7 +3414,7 @@ func (x *MissionMemoryHistoryRequest) String() string {
 func (*MissionMemoryHistoryRequest) ProtoMessage() {}
 
 func (x *MissionMemoryHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[45]
+	mi := &file_harness_callback_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3045,7 +3427,7 @@ func (x *MissionMemoryHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemoryHistoryRequest.ProtoReflect.Descriptor instead.
 func (*MissionMemoryHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{45}
+	return file_harness_callback_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *MissionMemoryHistoryRequest) GetContext() *ContextInfo {
@@ -3072,7 +3454,7 @@ type MissionMemoryHistoryResponse struct {
 
 func (x *MissionMemoryHistoryResponse) Reset() {
 	*x = MissionMemoryHistoryResponse{}
-	mi := &file_harness_callback_proto_msgTypes[46]
+	mi := &file_harness_callback_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3084,7 +3466,7 @@ func (x *MissionMemoryHistoryResponse) String() string {
 func (*MissionMemoryHistoryResponse) ProtoMessage() {}
 
 func (x *MissionMemoryHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[46]
+	mi := &file_harness_callback_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3097,7 +3479,7 @@ func (x *MissionMemoryHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemoryHistoryResponse.ProtoReflect.Descriptor instead.
 func (*MissionMemoryHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{46}
+	return file_harness_callback_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *MissionMemoryHistoryResponse) GetItems() []*MissionMemoryItem {
@@ -3127,7 +3509,7 @@ type MissionMemoryItem struct {
 
 func (x *MissionMemoryItem) Reset() {
 	*x = MissionMemoryItem{}
-	mi := &file_harness_callback_proto_msgTypes[47]
+	mi := &file_harness_callback_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3139,7 +3521,7 @@ func (x *MissionMemoryItem) String() string {
 func (*MissionMemoryItem) ProtoMessage() {}
 
 func (x *MissionMemoryItem) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[47]
+	mi := &file_harness_callback_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3152,7 +3534,7 @@ func (x *MissionMemoryItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMemoryItem.ProtoReflect.Descriptor instead.
 func (*MissionMemoryItem) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{47}
+	return file_harness_callback_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *MissionMemoryItem) GetKey() string {
@@ -3200,7 +3582,7 @@ type MissionMemoryGetPreviousRunValueRequest struct {
 
 func (x *MissionMemoryGetPreviousRunValueRequest) Reset() {
 	*x = MissionMemoryGetPreviousRunValueRequest{}
-	mi := &file_harness_callback_proto_msgTypes[48]
+	mi := &file_harness_callback_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3212,7 +3594,7 @@ func (x *MissionMemoryGetPreviousRunValueRequest) String() string {
 func (*MissionMemoryGetPreviousRunValueRequest) ProtoMessage() {}
 
 func (x *MissionMemoryGetPreviousRunValueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[48]
+	mi := &file_harness_callback_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3225,7 +3607,7 @@ func (x *MissionMemoryGetPreviousRunValueRequest) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use MissionMemoryGetPreviousRunValueRequest.ProtoReflect.Descriptor instead.
 func (*MissionMemoryGetPreviousRunValueRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{48}
+	return file_harness_callback_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *MissionMemoryGetPreviousRunValueRequest) GetContext() *ContextInfo {
@@ -3253,7 +3635,7 @@ type MissionMemoryGetPreviousRunValueResponse struct {
 
 func (x *MissionMemoryGetPreviousRunValueResponse) Reset() {
 	*x = MissionMemoryGetPreviousRunValueResponse{}
-	mi := &file_harness_callback_proto_msgTypes[49]
+	mi := &file_harness_callback_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3265,7 +3647,7 @@ func (x *MissionMemoryGetPreviousRunValueResponse) String() string {
 func (*MissionMemoryGetPreviousRunValueResponse) ProtoMessage() {}
 
 func (x *MissionMemoryGetPreviousRunValueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[49]
+	mi := &file_harness_callback_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3278,7 +3660,7 @@ func (x *MissionMemoryGetPreviousRunValueResponse) ProtoReflect() protoreflect.M
 
 // Deprecated: Use MissionMemoryGetPreviousRunValueResponse.ProtoReflect.Descriptor instead.
 func (*MissionMemoryGetPreviousRunValueResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{49}
+	return file_harness_callback_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *MissionMemoryGetPreviousRunValueResponse) GetValueJson() string {
@@ -3312,7 +3694,7 @@ type MissionMemoryGetValueHistoryRequest struct {
 
 func (x *MissionMemoryGetValueHistoryRequest) Reset() {
 	*x = MissionMemoryGetValueHistoryRequest{}
-	mi := &file_harness_callback_proto_msgTypes[50]
+	mi := &file_harness_callback_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3324,7 +3706,7 @@ func (x *MissionMemoryGetValueHistoryRequest) String() string {
 func (*MissionMemoryGetValueHistoryRequest) ProtoMessage() {}
 
 func (x *MissionMemoryGetValueHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[50]
+	mi := &file_harness_callback_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3337,7 +3719,7 @@ func (x *MissionMemoryGetValueHistoryRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use MissionMemoryGetValueHistoryRequest.ProtoReflect.Descriptor instead.
 func (*MissionMemoryGetValueHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{50}
+	return file_harness_callback_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *MissionMemoryGetValueHistoryRequest) GetContext() *ContextInfo {
@@ -3364,7 +3746,7 @@ type MissionMemoryGetValueHistoryResponse struct {
 
 func (x *MissionMemoryGetValueHistoryResponse) Reset() {
 	*x = MissionMemoryGetValueHistoryResponse{}
-	mi := &file_harness_callback_proto_msgTypes[51]
+	mi := &file_harness_callback_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3376,7 +3758,7 @@ func (x *MissionMemoryGetValueHistoryResponse) String() string {
 func (*MissionMemoryGetValueHistoryResponse) ProtoMessage() {}
 
 func (x *MissionMemoryGetValueHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[51]
+	mi := &file_harness_callback_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3389,7 +3771,7 @@ func (x *MissionMemoryGetValueHistoryResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use MissionMemoryGetValueHistoryResponse.ProtoReflect.Descriptor instead.
 func (*MissionMemoryGetValueHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{51}
+	return file_harness_callback_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *MissionMemoryGetValueHistoryResponse) GetValues() []*HistoricalValueItem {
@@ -3418,7 +3800,7 @@ type HistoricalValueItem struct {
 
 func (x *HistoricalValueItem) Reset() {
 	*x = HistoricalValueItem{}
-	mi := &file_harness_callback_proto_msgTypes[52]
+	mi := &file_harness_callback_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3430,7 +3812,7 @@ func (x *HistoricalValueItem) String() string {
 func (*HistoricalValueItem) ProtoMessage() {}
 
 func (x *HistoricalValueItem) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[52]
+	mi := &file_harness_callback_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3443,7 +3825,7 @@ func (x *HistoricalValueItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoricalValueItem.ProtoReflect.Descriptor instead.
 func (*HistoricalValueItem) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{52}
+	return file_harness_callback_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *HistoricalValueItem) GetValueJson() string {
@@ -3483,7 +3865,7 @@ type MissionMemoryContinuityModeRequest struct {
 
 func (x *MissionMemoryContinuityModeRequest) Reset() {
 	*x = MissionMemoryContinuityModeRequest{}
-	mi := &file_harness_callback_proto_msgTypes[53]
+	mi := &file_harness_callback_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3495,7 +3877,7 @@ func (x *MissionMemoryContinuityModeRequest) String() string {
 func (*MissionMemoryContinuityModeRequest) ProtoMessage() {}
 
 func (x *MissionMemoryContinuityModeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[53]
+	mi := &file_harness_callback_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3508,7 +3890,7 @@ func (x *MissionMemoryContinuityModeRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use MissionMemoryContinuityModeRequest.ProtoReflect.Descriptor instead.
 func (*MissionMemoryContinuityModeRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{53}
+	return file_harness_callback_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *MissionMemoryContinuityModeRequest) GetContext() *ContextInfo {
@@ -3528,7 +3910,7 @@ type MissionMemoryContinuityModeResponse struct {
 
 func (x *MissionMemoryContinuityModeResponse) Reset() {
 	*x = MissionMemoryContinuityModeResponse{}
-	mi := &file_harness_callback_proto_msgTypes[54]
+	mi := &file_harness_callback_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3540,7 +3922,7 @@ func (x *MissionMemoryContinuityModeResponse) String() string {
 func (*MissionMemoryContinuityModeResponse) ProtoMessage() {}
 
 func (x *MissionMemoryContinuityModeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[54]
+	mi := &file_harness_callback_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3553,7 +3935,7 @@ func (x *MissionMemoryContinuityModeResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use MissionMemoryContinuityModeResponse.ProtoReflect.Descriptor instead.
 func (*MissionMemoryContinuityModeResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{54}
+	return file_harness_callback_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *MissionMemoryContinuityModeResponse) GetMode() string {
@@ -3581,7 +3963,7 @@ type LongTermMemoryStoreRequest struct {
 
 func (x *LongTermMemoryStoreRequest) Reset() {
 	*x = LongTermMemoryStoreRequest{}
-	mi := &file_harness_callback_proto_msgTypes[55]
+	mi := &file_harness_callback_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3593,7 +3975,7 @@ func (x *LongTermMemoryStoreRequest) String() string {
 func (*LongTermMemoryStoreRequest) ProtoMessage() {}
 
 func (x *LongTermMemoryStoreRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[55]
+	mi := &file_harness_callback_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3606,7 +3988,7 @@ func (x *LongTermMemoryStoreRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemoryStoreRequest.ProtoReflect.Descriptor instead.
 func (*LongTermMemoryStoreRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{55}
+	return file_harness_callback_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *LongTermMemoryStoreRequest) GetContext() *ContextInfo {
@@ -3640,7 +4022,7 @@ type LongTermMemoryStoreResponse struct {
 
 func (x *LongTermMemoryStoreResponse) Reset() {
 	*x = LongTermMemoryStoreResponse{}
-	mi := &file_harness_callback_proto_msgTypes[56]
+	mi := &file_harness_callback_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3652,7 +4034,7 @@ func (x *LongTermMemoryStoreResponse) String() string {
 func (*LongTermMemoryStoreResponse) ProtoMessage() {}
 
 func (x *LongTermMemoryStoreResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[56]
+	mi := &file_harness_callback_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3665,7 +4047,7 @@ func (x *LongTermMemoryStoreResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemoryStoreResponse.ProtoReflect.Descriptor instead.
 func (*LongTermMemoryStoreResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{56}
+	return file_harness_callback_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *LongTermMemoryStoreResponse) GetId() string {
@@ -3694,7 +4076,7 @@ type LongTermMemorySearchRequest struct {
 
 func (x *LongTermMemorySearchRequest) Reset() {
 	*x = LongTermMemorySearchRequest{}
-	mi := &file_harness_callback_proto_msgTypes[57]
+	mi := &file_harness_callback_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3706,7 +4088,7 @@ func (x *LongTermMemorySearchRequest) String() string {
 func (*LongTermMemorySearchRequest) ProtoMessage() {}
 
 func (x *LongTermMemorySearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[57]
+	mi := &file_harness_callback_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3719,7 +4101,7 @@ func (x *LongTermMemorySearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemorySearchRequest.ProtoReflect.Descriptor instead.
 func (*LongTermMemorySearchRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{57}
+	return file_harness_callback_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *LongTermMemorySearchRequest) GetContext() *ContextInfo {
@@ -3760,7 +4142,7 @@ type LongTermMemorySearchResponse struct {
 
 func (x *LongTermMemorySearchResponse) Reset() {
 	*x = LongTermMemorySearchResponse{}
-	mi := &file_harness_callback_proto_msgTypes[58]
+	mi := &file_harness_callback_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3772,7 +4154,7 @@ func (x *LongTermMemorySearchResponse) String() string {
 func (*LongTermMemorySearchResponse) ProtoMessage() {}
 
 func (x *LongTermMemorySearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[58]
+	mi := &file_harness_callback_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3785,7 +4167,7 @@ func (x *LongTermMemorySearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemorySearchResponse.ProtoReflect.Descriptor instead.
 func (*LongTermMemorySearchResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{58}
+	return file_harness_callback_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *LongTermMemorySearchResponse) GetResults() []*LongTermMemoryResult {
@@ -3815,7 +4197,7 @@ type LongTermMemoryResult struct {
 
 func (x *LongTermMemoryResult) Reset() {
 	*x = LongTermMemoryResult{}
-	mi := &file_harness_callback_proto_msgTypes[59]
+	mi := &file_harness_callback_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3827,7 +4209,7 @@ func (x *LongTermMemoryResult) String() string {
 func (*LongTermMemoryResult) ProtoMessage() {}
 
 func (x *LongTermMemoryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[59]
+	mi := &file_harness_callback_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3840,7 +4222,7 @@ func (x *LongTermMemoryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemoryResult.ProtoReflect.Descriptor instead.
 func (*LongTermMemoryResult) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{59}
+	return file_harness_callback_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *LongTermMemoryResult) GetId() string {
@@ -3888,7 +4270,7 @@ type LongTermMemoryDeleteRequest struct {
 
 func (x *LongTermMemoryDeleteRequest) Reset() {
 	*x = LongTermMemoryDeleteRequest{}
-	mi := &file_harness_callback_proto_msgTypes[60]
+	mi := &file_harness_callback_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3900,7 +4282,7 @@ func (x *LongTermMemoryDeleteRequest) String() string {
 func (*LongTermMemoryDeleteRequest) ProtoMessage() {}
 
 func (x *LongTermMemoryDeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[60]
+	mi := &file_harness_callback_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3913,7 +4295,7 @@ func (x *LongTermMemoryDeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemoryDeleteRequest.ProtoReflect.Descriptor instead.
 func (*LongTermMemoryDeleteRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{60}
+	return file_harness_callback_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *LongTermMemoryDeleteRequest) GetContext() *ContextInfo {
@@ -3939,7 +4321,7 @@ type LongTermMemoryDeleteResponse struct {
 
 func (x *LongTermMemoryDeleteResponse) Reset() {
 	*x = LongTermMemoryDeleteResponse{}
-	mi := &file_harness_callback_proto_msgTypes[61]
+	mi := &file_harness_callback_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3951,7 +4333,7 @@ func (x *LongTermMemoryDeleteResponse) String() string {
 func (*LongTermMemoryDeleteResponse) ProtoMessage() {}
 
 func (x *LongTermMemoryDeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[61]
+	mi := &file_harness_callback_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3964,7 +4346,7 @@ func (x *LongTermMemoryDeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongTermMemoryDeleteResponse.ProtoReflect.Descriptor instead.
 func (*LongTermMemoryDeleteResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{61}
+	return file_harness_callback_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *LongTermMemoryDeleteResponse) GetError() *HarnessError {
@@ -3984,7 +4366,7 @@ type GraphRAGQueryRequest struct {
 
 func (x *GraphRAGQueryRequest) Reset() {
 	*x = GraphRAGQueryRequest{}
-	mi := &file_harness_callback_proto_msgTypes[62]
+	mi := &file_harness_callback_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3996,7 +4378,7 @@ func (x *GraphRAGQueryRequest) String() string {
 func (*GraphRAGQueryRequest) ProtoMessage() {}
 
 func (x *GraphRAGQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[62]
+	mi := &file_harness_callback_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4009,7 +4391,7 @@ func (x *GraphRAGQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphRAGQueryRequest.ProtoReflect.Descriptor instead.
 func (*GraphRAGQueryRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{62}
+	return file_harness_callback_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GraphRAGQueryRequest) GetContext() *ContextInfo {
@@ -4036,7 +4418,7 @@ type GraphRAGQueryResponse struct {
 
 func (x *GraphRAGQueryResponse) Reset() {
 	*x = GraphRAGQueryResponse{}
-	mi := &file_harness_callback_proto_msgTypes[63]
+	mi := &file_harness_callback_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4048,7 +4430,7 @@ func (x *GraphRAGQueryResponse) String() string {
 func (*GraphRAGQueryResponse) ProtoMessage() {}
 
 func (x *GraphRAGQueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[63]
+	mi := &file_harness_callback_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4061,7 +4443,7 @@ func (x *GraphRAGQueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphRAGQueryResponse.ProtoReflect.Descriptor instead.
 func (*GraphRAGQueryResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{63}
+	return file_harness_callback_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *GraphRAGQueryResponse) GetResults() []*GraphRAGResult {
@@ -4092,7 +4474,7 @@ type GraphRAGResult struct {
 
 func (x *GraphRAGResult) Reset() {
 	*x = GraphRAGResult{}
-	mi := &file_harness_callback_proto_msgTypes[64]
+	mi := &file_harness_callback_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4104,7 +4486,7 @@ func (x *GraphRAGResult) String() string {
 func (*GraphRAGResult) ProtoMessage() {}
 
 func (x *GraphRAGResult) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[64]
+	mi := &file_harness_callback_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4117,7 +4499,7 @@ func (x *GraphRAGResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphRAGResult.ProtoReflect.Descriptor instead.
 func (*GraphRAGResult) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{64}
+	return file_harness_callback_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *GraphRAGResult) GetNode() *GraphNode {
@@ -4178,7 +4560,7 @@ type GraphNode struct {
 
 func (x *GraphNode) Reset() {
 	*x = GraphNode{}
-	mi := &file_harness_callback_proto_msgTypes[65]
+	mi := &file_harness_callback_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4190,7 +4572,7 @@ func (x *GraphNode) String() string {
 func (*GraphNode) ProtoMessage() {}
 
 func (x *GraphNode) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[65]
+	mi := &file_harness_callback_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4203,7 +4585,7 @@ func (x *GraphNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphNode.ProtoReflect.Descriptor instead.
 func (*GraphNode) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{65}
+	return file_harness_callback_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *GraphNode) GetId() string {
@@ -4273,7 +4655,7 @@ type FindSimilarAttacksRequest struct {
 
 func (x *FindSimilarAttacksRequest) Reset() {
 	*x = FindSimilarAttacksRequest{}
-	mi := &file_harness_callback_proto_msgTypes[66]
+	mi := &file_harness_callback_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4285,7 +4667,7 @@ func (x *FindSimilarAttacksRequest) String() string {
 func (*FindSimilarAttacksRequest) ProtoMessage() {}
 
 func (x *FindSimilarAttacksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[66]
+	mi := &file_harness_callback_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4298,7 +4680,7 @@ func (x *FindSimilarAttacksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarAttacksRequest.ProtoReflect.Descriptor instead.
 func (*FindSimilarAttacksRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{66}
+	return file_harness_callback_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *FindSimilarAttacksRequest) GetContext() *ContextInfo {
@@ -4332,7 +4714,7 @@ type FindSimilarAttacksResponse struct {
 
 func (x *FindSimilarAttacksResponse) Reset() {
 	*x = FindSimilarAttacksResponse{}
-	mi := &file_harness_callback_proto_msgTypes[67]
+	mi := &file_harness_callback_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4344,7 +4726,7 @@ func (x *FindSimilarAttacksResponse) String() string {
 func (*FindSimilarAttacksResponse) ProtoMessage() {}
 
 func (x *FindSimilarAttacksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[67]
+	mi := &file_harness_callback_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4357,7 +4739,7 @@ func (x *FindSimilarAttacksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarAttacksResponse.ProtoReflect.Descriptor instead.
 func (*FindSimilarAttacksResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{67}
+	return file_harness_callback_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *FindSimilarAttacksResponse) GetAttacks() []*AttackPattern {
@@ -4388,7 +4770,7 @@ type AttackPattern struct {
 
 func (x *AttackPattern) Reset() {
 	*x = AttackPattern{}
-	mi := &file_harness_callback_proto_msgTypes[68]
+	mi := &file_harness_callback_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4400,7 +4782,7 @@ func (x *AttackPattern) String() string {
 func (*AttackPattern) ProtoMessage() {}
 
 func (x *AttackPattern) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[68]
+	mi := &file_harness_callback_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4413,7 +4795,7 @@ func (x *AttackPattern) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttackPattern.ProtoReflect.Descriptor instead.
 func (*AttackPattern) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{68}
+	return file_harness_callback_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *AttackPattern) GetTechniqueId() string {
@@ -4469,7 +4851,7 @@ type FindSimilarFindingsRequest struct {
 
 func (x *FindSimilarFindingsRequest) Reset() {
 	*x = FindSimilarFindingsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[69]
+	mi := &file_harness_callback_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4481,7 +4863,7 @@ func (x *FindSimilarFindingsRequest) String() string {
 func (*FindSimilarFindingsRequest) ProtoMessage() {}
 
 func (x *FindSimilarFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[69]
+	mi := &file_harness_callback_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4494,7 +4876,7 @@ func (x *FindSimilarFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarFindingsRequest.ProtoReflect.Descriptor instead.
 func (*FindSimilarFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{69}
+	return file_harness_callback_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *FindSimilarFindingsRequest) GetContext() *ContextInfo {
@@ -4528,7 +4910,7 @@ type FindSimilarFindingsResponse struct {
 
 func (x *FindSimilarFindingsResponse) Reset() {
 	*x = FindSimilarFindingsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[70]
+	mi := &file_harness_callback_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4540,7 +4922,7 @@ func (x *FindSimilarFindingsResponse) String() string {
 func (*FindSimilarFindingsResponse) ProtoMessage() {}
 
 func (x *FindSimilarFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[70]
+	mi := &file_harness_callback_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4553,7 +4935,7 @@ func (x *FindSimilarFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarFindingsResponse.ProtoReflect.Descriptor instead.
 func (*FindSimilarFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{70}
+	return file_harness_callback_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *FindSimilarFindingsResponse) GetFindings() []*FindingNode {
@@ -4585,7 +4967,7 @@ type FindingNode struct {
 
 func (x *FindingNode) Reset() {
 	*x = FindingNode{}
-	mi := &file_harness_callback_proto_msgTypes[71]
+	mi := &file_harness_callback_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4597,7 +4979,7 @@ func (x *FindingNode) String() string {
 func (*FindingNode) ProtoMessage() {}
 
 func (x *FindingNode) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[71]
+	mi := &file_harness_callback_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4610,7 +4992,7 @@ func (x *FindingNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindingNode.ProtoReflect.Descriptor instead.
 func (*FindingNode) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{71}
+	return file_harness_callback_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *FindingNode) GetId() string {
@@ -4673,7 +5055,7 @@ type GetAttackChainsRequest struct {
 
 func (x *GetAttackChainsRequest) Reset() {
 	*x = GetAttackChainsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[72]
+	mi := &file_harness_callback_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4685,7 +5067,7 @@ func (x *GetAttackChainsRequest) String() string {
 func (*GetAttackChainsRequest) ProtoMessage() {}
 
 func (x *GetAttackChainsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[72]
+	mi := &file_harness_callback_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4698,7 +5080,7 @@ func (x *GetAttackChainsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttackChainsRequest.ProtoReflect.Descriptor instead.
 func (*GetAttackChainsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{72}
+	return file_harness_callback_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *GetAttackChainsRequest) GetContext() *ContextInfo {
@@ -4732,7 +5114,7 @@ type GetAttackChainsResponse struct {
 
 func (x *GetAttackChainsResponse) Reset() {
 	*x = GetAttackChainsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[73]
+	mi := &file_harness_callback_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4744,7 +5126,7 @@ func (x *GetAttackChainsResponse) String() string {
 func (*GetAttackChainsResponse) ProtoMessage() {}
 
 func (x *GetAttackChainsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[73]
+	mi := &file_harness_callback_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4757,7 +5139,7 @@ func (x *GetAttackChainsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttackChainsResponse.ProtoReflect.Descriptor instead.
 func (*GetAttackChainsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{73}
+	return file_harness_callback_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *GetAttackChainsResponse) GetChains() []*AttackChain {
@@ -4786,7 +5168,7 @@ type AttackChain struct {
 
 func (x *AttackChain) Reset() {
 	*x = AttackChain{}
-	mi := &file_harness_callback_proto_msgTypes[74]
+	mi := &file_harness_callback_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4798,7 +5180,7 @@ func (x *AttackChain) String() string {
 func (*AttackChain) ProtoMessage() {}
 
 func (x *AttackChain) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[74]
+	mi := &file_harness_callback_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4811,7 +5193,7 @@ func (x *AttackChain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttackChain.ProtoReflect.Descriptor instead.
 func (*AttackChain) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{74}
+	return file_harness_callback_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *AttackChain) GetId() string {
@@ -4855,7 +5237,7 @@ type AttackStep struct {
 
 func (x *AttackStep) Reset() {
 	*x = AttackStep{}
-	mi := &file_harness_callback_proto_msgTypes[75]
+	mi := &file_harness_callback_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4867,7 +5249,7 @@ func (x *AttackStep) String() string {
 func (*AttackStep) ProtoMessage() {}
 
 func (x *AttackStep) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[75]
+	mi := &file_harness_callback_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4880,7 +5262,7 @@ func (x *AttackStep) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttackStep.ProtoReflect.Descriptor instead.
 func (*AttackStep) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{75}
+	return file_harness_callback_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *AttackStep) GetOrder() int32 {
@@ -4928,7 +5310,7 @@ type GetRelatedFindingsRequest struct {
 
 func (x *GetRelatedFindingsRequest) Reset() {
 	*x = GetRelatedFindingsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[76]
+	mi := &file_harness_callback_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4940,7 +5322,7 @@ func (x *GetRelatedFindingsRequest) String() string {
 func (*GetRelatedFindingsRequest) ProtoMessage() {}
 
 func (x *GetRelatedFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[76]
+	mi := &file_harness_callback_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4953,7 +5335,7 @@ func (x *GetRelatedFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelatedFindingsRequest.ProtoReflect.Descriptor instead.
 func (*GetRelatedFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{76}
+	return file_harness_callback_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *GetRelatedFindingsRequest) GetContext() *ContextInfo {
@@ -4980,7 +5362,7 @@ type GetRelatedFindingsResponse struct {
 
 func (x *GetRelatedFindingsResponse) Reset() {
 	*x = GetRelatedFindingsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[77]
+	mi := &file_harness_callback_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4992,7 +5374,7 @@ func (x *GetRelatedFindingsResponse) String() string {
 func (*GetRelatedFindingsResponse) ProtoMessage() {}
 
 func (x *GetRelatedFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[77]
+	mi := &file_harness_callback_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5005,7 +5387,7 @@ func (x *GetRelatedFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelatedFindingsResponse.ProtoReflect.Descriptor instead.
 func (*GetRelatedFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{77}
+	return file_harness_callback_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *GetRelatedFindingsResponse) GetFindings() []*FindingNode {
@@ -5032,7 +5414,7 @@ type StoreGraphNodeRequest struct {
 
 func (x *StoreGraphNodeRequest) Reset() {
 	*x = StoreGraphNodeRequest{}
-	mi := &file_harness_callback_proto_msgTypes[78]
+	mi := &file_harness_callback_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5044,7 +5426,7 @@ func (x *StoreGraphNodeRequest) String() string {
 func (*StoreGraphNodeRequest) ProtoMessage() {}
 
 func (x *StoreGraphNodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[78]
+	mi := &file_harness_callback_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5057,7 +5439,7 @@ func (x *StoreGraphNodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreGraphNodeRequest.ProtoReflect.Descriptor instead.
 func (*StoreGraphNodeRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{78}
+	return file_harness_callback_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *StoreGraphNodeRequest) GetContext() *ContextInfo {
@@ -5084,7 +5466,7 @@ type StoreGraphNodeResponse struct {
 
 func (x *StoreGraphNodeResponse) Reset() {
 	*x = StoreGraphNodeResponse{}
-	mi := &file_harness_callback_proto_msgTypes[79]
+	mi := &file_harness_callback_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5096,7 +5478,7 @@ func (x *StoreGraphNodeResponse) String() string {
 func (*StoreGraphNodeResponse) ProtoMessage() {}
 
 func (x *StoreGraphNodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[79]
+	mi := &file_harness_callback_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5109,7 +5491,7 @@ func (x *StoreGraphNodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreGraphNodeResponse.ProtoReflect.Descriptor instead.
 func (*StoreGraphNodeResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{79}
+	return file_harness_callback_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *StoreGraphNodeResponse) GetNodeId() string {
@@ -5136,7 +5518,7 @@ type CreateGraphRelationshipRequest struct {
 
 func (x *CreateGraphRelationshipRequest) Reset() {
 	*x = CreateGraphRelationshipRequest{}
-	mi := &file_harness_callback_proto_msgTypes[80]
+	mi := &file_harness_callback_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5148,7 +5530,7 @@ func (x *CreateGraphRelationshipRequest) String() string {
 func (*CreateGraphRelationshipRequest) ProtoMessage() {}
 
 func (x *CreateGraphRelationshipRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[80]
+	mi := &file_harness_callback_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5161,7 +5543,7 @@ func (x *CreateGraphRelationshipRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGraphRelationshipRequest.ProtoReflect.Descriptor instead.
 func (*CreateGraphRelationshipRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{80}
+	return file_harness_callback_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *CreateGraphRelationshipRequest) GetContext() *ContextInfo {
@@ -5187,7 +5569,7 @@ type CreateGraphRelationshipResponse struct {
 
 func (x *CreateGraphRelationshipResponse) Reset() {
 	*x = CreateGraphRelationshipResponse{}
-	mi := &file_harness_callback_proto_msgTypes[81]
+	mi := &file_harness_callback_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5199,7 +5581,7 @@ func (x *CreateGraphRelationshipResponse) String() string {
 func (*CreateGraphRelationshipResponse) ProtoMessage() {}
 
 func (x *CreateGraphRelationshipResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[81]
+	mi := &file_harness_callback_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5212,7 +5594,7 @@ func (x *CreateGraphRelationshipResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGraphRelationshipResponse.ProtoReflect.Descriptor instead.
 func (*CreateGraphRelationshipResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{81}
+	return file_harness_callback_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *CreateGraphRelationshipResponse) GetError() *HarnessError {
@@ -5235,7 +5617,7 @@ type Relationship struct {
 
 func (x *Relationship) Reset() {
 	*x = Relationship{}
-	mi := &file_harness_callback_proto_msgTypes[82]
+	mi := &file_harness_callback_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5247,7 +5629,7 @@ func (x *Relationship) String() string {
 func (*Relationship) ProtoMessage() {}
 
 func (x *Relationship) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[82]
+	mi := &file_harness_callback_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5260,7 +5642,7 @@ func (x *Relationship) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Relationship.ProtoReflect.Descriptor instead.
 func (*Relationship) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{82}
+	return file_harness_callback_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *Relationship) GetFromId() string {
@@ -5309,7 +5691,7 @@ type StoreGraphBatchRequest struct {
 
 func (x *StoreGraphBatchRequest) Reset() {
 	*x = StoreGraphBatchRequest{}
-	mi := &file_harness_callback_proto_msgTypes[83]
+	mi := &file_harness_callback_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5321,7 +5703,7 @@ func (x *StoreGraphBatchRequest) String() string {
 func (*StoreGraphBatchRequest) ProtoMessage() {}
 
 func (x *StoreGraphBatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[83]
+	mi := &file_harness_callback_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5334,7 +5716,7 @@ func (x *StoreGraphBatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreGraphBatchRequest.ProtoReflect.Descriptor instead.
 func (*StoreGraphBatchRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{83}
+	return file_harness_callback_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *StoreGraphBatchRequest) GetContext() *ContextInfo {
@@ -5368,7 +5750,7 @@ type StoreGraphBatchResponse struct {
 
 func (x *StoreGraphBatchResponse) Reset() {
 	*x = StoreGraphBatchResponse{}
-	mi := &file_harness_callback_proto_msgTypes[84]
+	mi := &file_harness_callback_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5380,7 +5762,7 @@ func (x *StoreGraphBatchResponse) String() string {
 func (*StoreGraphBatchResponse) ProtoMessage() {}
 
 func (x *StoreGraphBatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[84]
+	mi := &file_harness_callback_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5393,7 +5775,7 @@ func (x *StoreGraphBatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreGraphBatchResponse.ProtoReflect.Descriptor instead.
 func (*StoreGraphBatchResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{84}
+	return file_harness_callback_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *StoreGraphBatchResponse) GetNodeIds() []string {
@@ -5421,7 +5803,7 @@ type TraverseGraphRequest struct {
 
 func (x *TraverseGraphRequest) Reset() {
 	*x = TraverseGraphRequest{}
-	mi := &file_harness_callback_proto_msgTypes[85]
+	mi := &file_harness_callback_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5433,7 +5815,7 @@ func (x *TraverseGraphRequest) String() string {
 func (*TraverseGraphRequest) ProtoMessage() {}
 
 func (x *TraverseGraphRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[85]
+	mi := &file_harness_callback_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5446,7 +5828,7 @@ func (x *TraverseGraphRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TraverseGraphRequest.ProtoReflect.Descriptor instead.
 func (*TraverseGraphRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{85}
+	return file_harness_callback_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *TraverseGraphRequest) GetContext() *ContextInfo {
@@ -5480,7 +5862,7 @@ type TraverseGraphResponse struct {
 
 func (x *TraverseGraphResponse) Reset() {
 	*x = TraverseGraphResponse{}
-	mi := &file_harness_callback_proto_msgTypes[86]
+	mi := &file_harness_callback_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5492,7 +5874,7 @@ func (x *TraverseGraphResponse) String() string {
 func (*TraverseGraphResponse) ProtoMessage() {}
 
 func (x *TraverseGraphResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[86]
+	mi := &file_harness_callback_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5505,7 +5887,7 @@ func (x *TraverseGraphResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TraverseGraphResponse.ProtoReflect.Descriptor instead.
 func (*TraverseGraphResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{86}
+	return file_harness_callback_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *TraverseGraphResponse) GetResults() []*TraversalResult {
@@ -5534,7 +5916,7 @@ type TraversalOptions struct {
 
 func (x *TraversalOptions) Reset() {
 	*x = TraversalOptions{}
-	mi := &file_harness_callback_proto_msgTypes[87]
+	mi := &file_harness_callback_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5546,7 +5928,7 @@ func (x *TraversalOptions) String() string {
 func (*TraversalOptions) ProtoMessage() {}
 
 func (x *TraversalOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[87]
+	mi := &file_harness_callback_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5559,7 +5941,7 @@ func (x *TraversalOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TraversalOptions.ProtoReflect.Descriptor instead.
 func (*TraversalOptions) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{87}
+	return file_harness_callback_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *TraversalOptions) GetMaxDepth() int32 {
@@ -5601,7 +5983,7 @@ type TraversalResult struct {
 
 func (x *TraversalResult) Reset() {
 	*x = TraversalResult{}
-	mi := &file_harness_callback_proto_msgTypes[88]
+	mi := &file_harness_callback_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5613,7 +5995,7 @@ func (x *TraversalResult) String() string {
 func (*TraversalResult) ProtoMessage() {}
 
 func (x *TraversalResult) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[88]
+	mi := &file_harness_callback_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5626,7 +6008,7 @@ func (x *TraversalResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TraversalResult.ProtoReflect.Descriptor instead.
 func (*TraversalResult) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{88}
+	return file_harness_callback_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *TraversalResult) GetNode() *GraphNode {
@@ -5659,7 +6041,7 @@ type GraphRAGHealthRequest struct {
 
 func (x *GraphRAGHealthRequest) Reset() {
 	*x = GraphRAGHealthRequest{}
-	mi := &file_harness_callback_proto_msgTypes[89]
+	mi := &file_harness_callback_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5671,7 +6053,7 @@ func (x *GraphRAGHealthRequest) String() string {
 func (*GraphRAGHealthRequest) ProtoMessage() {}
 
 func (x *GraphRAGHealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[89]
+	mi := &file_harness_callback_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5684,7 +6066,7 @@ func (x *GraphRAGHealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphRAGHealthRequest.ProtoReflect.Descriptor instead.
 func (*GraphRAGHealthRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{89}
+	return file_harness_callback_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *GraphRAGHealthRequest) GetContext() *ContextInfo {
@@ -5703,7 +6085,7 @@ type GraphRAGHealthResponse struct {
 
 func (x *GraphRAGHealthResponse) Reset() {
 	*x = GraphRAGHealthResponse{}
-	mi := &file_harness_callback_proto_msgTypes[90]
+	mi := &file_harness_callback_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5715,7 +6097,7 @@ func (x *GraphRAGHealthResponse) String() string {
 func (*GraphRAGHealthResponse) ProtoMessage() {}
 
 func (x *GraphRAGHealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[90]
+	mi := &file_harness_callback_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5728,7 +6110,7 @@ func (x *GraphRAGHealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphRAGHealthResponse.ProtoReflect.Descriptor instead.
 func (*GraphRAGHealthResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{90}
+	return file_harness_callback_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *GraphRAGHealthResponse) GetStatus() *HarnessHealthStatus {
@@ -5747,7 +6129,7 @@ type GetPlanContextRequest struct {
 
 func (x *GetPlanContextRequest) Reset() {
 	*x = GetPlanContextRequest{}
-	mi := &file_harness_callback_proto_msgTypes[91]
+	mi := &file_harness_callback_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5759,7 +6141,7 @@ func (x *GetPlanContextRequest) String() string {
 func (*GetPlanContextRequest) ProtoMessage() {}
 
 func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[91]
+	mi := &file_harness_callback_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5772,7 +6154,7 @@ func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextRequest.ProtoReflect.Descriptor instead.
 func (*GetPlanContextRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{91}
+	return file_harness_callback_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *GetPlanContextRequest) GetContext() *ContextInfo {
@@ -5792,7 +6174,7 @@ type GetPlanContextResponse struct {
 
 func (x *GetPlanContextResponse) Reset() {
 	*x = GetPlanContextResponse{}
-	mi := &file_harness_callback_proto_msgTypes[92]
+	mi := &file_harness_callback_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5804,7 +6186,7 @@ func (x *GetPlanContextResponse) String() string {
 func (*GetPlanContextResponse) ProtoMessage() {}
 
 func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[92]
+	mi := &file_harness_callback_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5817,7 +6199,7 @@ func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextResponse.ProtoReflect.Descriptor instead.
 func (*GetPlanContextResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{92}
+	return file_harness_callback_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *GetPlanContextResponse) GetPlanContext() *PlanContext {
@@ -5836,19 +6218,18 @@ func (x *GetPlanContextResponse) GetError() *HarnessError {
 
 type PlanContext struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	OriginalGoal           string                 `protobuf:"bytes,1,opt,name=original_goal,json=originalGoal,proto3" json:"original_goal,omitempty"`
-	CurrentStepIndex       int32                  `protobuf:"varint,2,opt,name=current_step_index,json=currentStepIndex,proto3" json:"current_step_index,omitempty"`
-	TotalSteps             int32                  `protobuf:"varint,3,opt,name=total_steps,json=totalSteps,proto3" json:"total_steps,omitempty"`
-	RemainingSteps         []string               `protobuf:"bytes,4,rep,name=remaining_steps,json=remainingSteps,proto3" json:"remaining_steps,omitempty"`
-	StepBudget             int32                  `protobuf:"varint,5,opt,name=step_budget,json=stepBudget,proto3" json:"step_budget,omitempty"`
-	MissionBudgetRemaining int32                  `protobuf:"varint,6,opt,name=mission_budget_remaining,json=missionBudgetRemaining,proto3" json:"mission_budget_remaining,omitempty"`
+	CurrentStepIndex       int32                  `protobuf:"varint,1,opt,name=current_step_index,json=currentStepIndex,proto3" json:"current_step_index,omitempty"`
+	TotalSteps             int32                  `protobuf:"varint,2,opt,name=total_steps,json=totalSteps,proto3" json:"total_steps,omitempty"`
+	RemainingSteps         []string               `protobuf:"bytes,3,rep,name=remaining_steps,json=remainingSteps,proto3" json:"remaining_steps,omitempty"`
+	StepBudget             int32                  `protobuf:"varint,4,opt,name=step_budget,json=stepBudget,proto3" json:"step_budget,omitempty"`
+	MissionBudgetRemaining int32                  `protobuf:"varint,5,opt,name=mission_budget_remaining,json=missionBudgetRemaining,proto3" json:"mission_budget_remaining,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PlanContext) Reset() {
 	*x = PlanContext{}
-	mi := &file_harness_callback_proto_msgTypes[93]
+	mi := &file_harness_callback_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5860,7 +6241,7 @@ func (x *PlanContext) String() string {
 func (*PlanContext) ProtoMessage() {}
 
 func (x *PlanContext) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[93]
+	mi := &file_harness_callback_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5873,14 +6254,7 @@ func (x *PlanContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanContext.ProtoReflect.Descriptor instead.
 func (*PlanContext) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{93}
-}
-
-func (x *PlanContext) GetOriginalGoal() string {
-	if x != nil {
-		return x.OriginalGoal
-	}
-	return ""
+	return file_harness_callback_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *PlanContext) GetCurrentStepIndex() int32 {
@@ -5928,7 +6302,7 @@ type ReportStepHintsRequest struct {
 
 func (x *ReportStepHintsRequest) Reset() {
 	*x = ReportStepHintsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[94]
+	mi := &file_harness_callback_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5940,7 +6314,7 @@ func (x *ReportStepHintsRequest) String() string {
 func (*ReportStepHintsRequest) ProtoMessage() {}
 
 func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[94]
+	mi := &file_harness_callback_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5953,7 +6327,7 @@ func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsRequest.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{94}
+	return file_harness_callback_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *ReportStepHintsRequest) GetContext() *ContextInfo {
@@ -5979,7 +6353,7 @@ type ReportStepHintsResponse struct {
 
 func (x *ReportStepHintsResponse) Reset() {
 	*x = ReportStepHintsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[95]
+	mi := &file_harness_callback_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5991,7 +6365,7 @@ func (x *ReportStepHintsResponse) String() string {
 func (*ReportStepHintsResponse) ProtoMessage() {}
 
 func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[95]
+	mi := &file_harness_callback_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6004,7 +6378,7 @@ func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsResponse.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{95}
+	return file_harness_callback_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *ReportStepHintsResponse) GetError() *HarnessError {
@@ -6026,7 +6400,7 @@ type StepHints struct {
 
 func (x *StepHints) Reset() {
 	*x = StepHints{}
-	mi := &file_harness_callback_proto_msgTypes[96]
+	mi := &file_harness_callback_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6038,7 +6412,7 @@ func (x *StepHints) String() string {
 func (*StepHints) ProtoMessage() {}
 
 func (x *StepHints) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[96]
+	mi := &file_harness_callback_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6051,7 +6425,7 @@ func (x *StepHints) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StepHints.ProtoReflect.Descriptor instead.
 func (*StepHints) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{96}
+	return file_harness_callback_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *StepHints) GetConfidence() float64 {
@@ -6099,7 +6473,7 @@ type AnyValue struct {
 
 func (x *AnyValue) Reset() {
 	*x = AnyValue{}
-	mi := &file_harness_callback_proto_msgTypes[97]
+	mi := &file_harness_callback_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6111,7 +6485,7 @@ func (x *AnyValue) String() string {
 func (*AnyValue) ProtoMessage() {}
 
 func (x *AnyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[97]
+	mi := &file_harness_callback_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6124,7 +6498,7 @@ func (x *AnyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnyValue.ProtoReflect.Descriptor instead.
 func (*AnyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{97}
+	return file_harness_callback_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *AnyValue) GetValue() isAnyValue_Value {
@@ -6224,7 +6598,7 @@ type KeyValue struct {
 
 func (x *KeyValue) Reset() {
 	*x = KeyValue{}
-	mi := &file_harness_callback_proto_msgTypes[98]
+	mi := &file_harness_callback_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6236,7 +6610,7 @@ func (x *KeyValue) String() string {
 func (*KeyValue) ProtoMessage() {}
 
 func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[98]
+	mi := &file_harness_callback_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6249,7 +6623,7 @@ func (x *KeyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{98}
+	return file_harness_callback_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *KeyValue) GetKey() string {
@@ -6278,7 +6652,7 @@ type SpanEvent struct {
 
 func (x *SpanEvent) Reset() {
 	*x = SpanEvent{}
-	mi := &file_harness_callback_proto_msgTypes[99]
+	mi := &file_harness_callback_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6290,7 +6664,7 @@ func (x *SpanEvent) String() string {
 func (*SpanEvent) ProtoMessage() {}
 
 func (x *SpanEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[99]
+	mi := &file_harness_callback_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6303,7 +6677,7 @@ func (x *SpanEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpanEvent.ProtoReflect.Descriptor instead.
 func (*SpanEvent) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{99}
+	return file_harness_callback_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *SpanEvent) GetName() string {
@@ -6347,7 +6721,7 @@ type Span struct {
 
 func (x *Span) Reset() {
 	*x = Span{}
-	mi := &file_harness_callback_proto_msgTypes[100]
+	mi := &file_harness_callback_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6359,7 +6733,7 @@ func (x *Span) String() string {
 func (*Span) ProtoMessage() {}
 
 func (x *Span) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[100]
+	mi := &file_harness_callback_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6372,7 +6746,7 @@ func (x *Span) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Span.ProtoReflect.Descriptor instead.
 func (*Span) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{100}
+	return file_harness_callback_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *Span) GetTraceId() string {
@@ -6462,7 +6836,7 @@ type RecordSpanRequest struct {
 
 func (x *RecordSpanRequest) Reset() {
 	*x = RecordSpanRequest{}
-	mi := &file_harness_callback_proto_msgTypes[101]
+	mi := &file_harness_callback_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6474,7 +6848,7 @@ func (x *RecordSpanRequest) String() string {
 func (*RecordSpanRequest) ProtoMessage() {}
 
 func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[101]
+	mi := &file_harness_callback_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6487,7 +6861,7 @@ func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpanRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{101}
+	return file_harness_callback_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *RecordSpanRequest) GetContext() *ContextInfo {
@@ -6513,7 +6887,7 @@ type RecordSpanResponse struct {
 
 func (x *RecordSpanResponse) Reset() {
 	*x = RecordSpanResponse{}
-	mi := &file_harness_callback_proto_msgTypes[102]
+	mi := &file_harness_callback_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6525,7 +6899,7 @@ func (x *RecordSpanResponse) String() string {
 func (*RecordSpanResponse) ProtoMessage() {}
 
 func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[102]
+	mi := &file_harness_callback_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6538,7 +6912,7 @@ func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpanResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{102}
+	return file_harness_callback_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *RecordSpanResponse) GetError() *HarnessError {
@@ -6558,7 +6932,7 @@ type RecordSpansRequest struct {
 
 func (x *RecordSpansRequest) Reset() {
 	*x = RecordSpansRequest{}
-	mi := &file_harness_callback_proto_msgTypes[103]
+	mi := &file_harness_callback_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6570,7 +6944,7 @@ func (x *RecordSpansRequest) String() string {
 func (*RecordSpansRequest) ProtoMessage() {}
 
 func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[103]
+	mi := &file_harness_callback_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6583,7 +6957,7 @@ func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpansRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{103}
+	return file_harness_callback_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *RecordSpansRequest) GetContext() *ContextInfo {
@@ -6609,7 +6983,7 @@ type RecordSpansResponse struct {
 
 func (x *RecordSpansResponse) Reset() {
 	*x = RecordSpansResponse{}
-	mi := &file_harness_callback_proto_msgTypes[104]
+	mi := &file_harness_callback_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6621,7 +6995,7 @@ func (x *RecordSpansResponse) String() string {
 func (*RecordSpansResponse) ProtoMessage() {}
 
 func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[104]
+	mi := &file_harness_callback_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6634,7 +7008,7 @@ func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpansResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{104}
+	return file_harness_callback_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *RecordSpansResponse) GetError() *HarnessError {
@@ -6654,7 +7028,7 @@ type GetCredentialRequest struct {
 
 func (x *GetCredentialRequest) Reset() {
 	*x = GetCredentialRequest{}
-	mi := &file_harness_callback_proto_msgTypes[105]
+	mi := &file_harness_callback_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6666,7 +7040,7 @@ func (x *GetCredentialRequest) String() string {
 func (*GetCredentialRequest) ProtoMessage() {}
 
 func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[105]
+	mi := &file_harness_callback_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6679,7 +7053,7 @@ func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialRequest.ProtoReflect.Descriptor instead.
 func (*GetCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{105}
+	return file_harness_callback_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *GetCredentialRequest) GetContext() *ContextInfo {
@@ -6706,7 +7080,7 @@ type GetCredentialResponse struct {
 
 func (x *GetCredentialResponse) Reset() {
 	*x = GetCredentialResponse{}
-	mi := &file_harness_callback_proto_msgTypes[106]
+	mi := &file_harness_callback_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6718,7 +7092,7 @@ func (x *GetCredentialResponse) String() string {
 func (*GetCredentialResponse) ProtoMessage() {}
 
 func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[106]
+	mi := &file_harness_callback_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6731,7 +7105,7 @@ func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialResponse.ProtoReflect.Descriptor instead.
 func (*GetCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{106}
+	return file_harness_callback_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *GetCredentialResponse) GetCredential() *Credential {
@@ -6761,7 +7135,7 @@ type Credential struct {
 
 func (x *Credential) Reset() {
 	*x = Credential{}
-	mi := &file_harness_callback_proto_msgTypes[107]
+	mi := &file_harness_callback_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6773,7 +7147,7 @@ func (x *Credential) String() string {
 func (*Credential) ProtoMessage() {}
 
 func (x *Credential) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[107]
+	mi := &file_harness_callback_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6786,7 +7160,7 @@ func (x *Credential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Credential.ProtoReflect.Descriptor instead.
 func (*Credential) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{107}
+	return file_harness_callback_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *Credential) GetName() string {
@@ -6940,12 +7314,71 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\"\x84\x01\n" +
 	"\x11ListToolsResponse\x12;\n" +
 	"\x05tools\x18\x01 \x03(\v2%.gibson.harness.HarnessToolDescriptorR\x05tools\x122\n" +
-	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"n\n" +
+	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"\xa4\x02\n" +
 	"\x15HarnessToolDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1f\n" +
 	"\vschema_json\x18\x03 \x01(\tR\n" +
-	"schemaJson\"\x98\x01\n" +
+	"schemaJson\x12,\n" +
+	"\x12output_schema_json\x18\x04 \x01(\tR\x10outputSchemaJson\x12A\n" +
+	"\finput_schema\x18\x05 \x01(\v2\x1e.gibson.harness.JSONSchemaNodeR\vinputSchema\x12C\n" +
+	"\routput_schema\x18\x06 \x01(\v2\x1e.gibson.harness.JSONSchemaNodeR\foutputSchema\"\xdc\x06\n" +
+	"\x0eJSONSchemaNode\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12N\n" +
+	"\n" +
+	"properties\x18\x03 \x03(\v2..gibson.harness.JSONSchemaNode.PropertiesEntryR\n" +
+	"properties\x12\x1a\n" +
+	"\brequired\x18\x04 \x03(\tR\brequired\x124\n" +
+	"\x05items\x18\x05 \x01(\v2\x1e.gibson.harness.JSONSchemaNodeR\x05items\x12\x1f\n" +
+	"\venum_values\x18\x06 \x03(\tR\n" +
+	"enumValues\x12\x16\n" +
+	"\x06format\x18\a \x01(\tR\x06format\x12\x1d\n" +
+	"\aminimum\x18\b \x01(\x01H\x00R\aminimum\x88\x01\x01\x12\x1d\n" +
+	"\amaximum\x18\t \x01(\x01H\x01R\amaximum\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"min_length\x18\n" +
+	" \x01(\x05H\x02R\tminLength\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"max_length\x18\v \x01(\x05H\x03R\tmaxLength\x88\x01\x01\x12 \n" +
+	"\tmin_items\x18\f \x01(\x05H\x04R\bminItems\x88\x01\x01\x12 \n" +
+	"\tmax_items\x18\r \x01(\x05H\x05R\bmaxItems\x88\x01\x01\x12\x1d\n" +
+	"\apattern\x18\x0e \x01(\tH\x06R\apattern\x88\x01\x01\x12(\n" +
+	"\rdefault_value\x18\x0f \x01(\tH\aR\fdefaultValue\x88\x01\x01\x12\x1a\n" +
+	"\bnullable\x18\x10 \x01(\bR\bnullable\x12;\n" +
+	"\btaxonomy\x18\x11 \x01(\v2\x1f.gibson.harness.TaxonomyMappingR\btaxonomy\x1a]\n" +
+	"\x0fPropertiesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x124\n" +
+	"\x05value\x18\x02 \x01(\v2\x1e.gibson.harness.JSONSchemaNodeR\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_minimumB\n" +
+	"\n" +
+	"\b_maximumB\r\n" +
+	"\v_min_lengthB\r\n" +
+	"\v_max_lengthB\f\n" +
+	"\n" +
+	"_min_itemsB\f\n" +
+	"\n" +
+	"_max_itemsB\n" +
+	"\n" +
+	"\b_patternB\x10\n" +
+	"\x0e_default_value\"\xdb\x01\n" +
+	"\x0fTaxonomyMapping\x12\x1b\n" +
+	"\tnode_type\x18\x01 \x01(\tR\bnodeType\x12\x1f\n" +
+	"\vid_template\x18\x02 \x01(\tR\n" +
+	"idTemplate\x12?\n" +
+	"\n" +
+	"properties\x18\x03 \x03(\v2\x1f.gibson.harness.PropertyMappingR\n" +
+	"properties\x12I\n" +
+	"\rrelationships\x18\x04 \x03(\v2#.gibson.harness.RelationshipMappingR\rrelationships\"A\n" +
+	"\x0fPropertyMapping\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\"s\n" +
+	"\x13RelationshipMapping\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12\x1f\n" +
+	"\vtarget_type\x18\x02 \x01(\tR\n" +
+	"targetType\x12'\n" +
+	"\x0ftarget_template\x18\x03 \x01(\tR\x0etargetTemplate\"\x98\x01\n" +
 	"\x12QueryPluginRequest\x125\n" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -7261,16 +7694,15 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\"\x8c\x01\n" +
 	"\x16GetPlanContextResponse\x12>\n" +
 	"\fplan_context\x18\x01 \x01(\v2\x1b.gibson.harness.PlanContextR\vplanContext\x122\n" +
-	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"\x85\x02\n" +
-	"\vPlanContext\x12#\n" +
-	"\roriginal_goal\x18\x01 \x01(\tR\foriginalGoal\x12,\n" +
-	"\x12current_step_index\x18\x02 \x01(\x05R\x10currentStepIndex\x12\x1f\n" +
-	"\vtotal_steps\x18\x03 \x01(\x05R\n" +
+	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"\xe0\x01\n" +
+	"\vPlanContext\x12,\n" +
+	"\x12current_step_index\x18\x01 \x01(\x05R\x10currentStepIndex\x12\x1f\n" +
+	"\vtotal_steps\x18\x02 \x01(\x05R\n" +
 	"totalSteps\x12'\n" +
-	"\x0fremaining_steps\x18\x04 \x03(\tR\x0eremainingSteps\x12\x1f\n" +
-	"\vstep_budget\x18\x05 \x01(\x05R\n" +
+	"\x0fremaining_steps\x18\x03 \x03(\tR\x0eremainingSteps\x12\x1f\n" +
+	"\vstep_budget\x18\x04 \x01(\x05R\n" +
 	"stepBudget\x128\n" +
-	"\x18mission_budget_remaining\x18\x06 \x01(\x05R\x16missionBudgetRemaining\"\x80\x01\n" +
+	"\x18mission_budget_remaining\x18\x05 \x01(\x05R\x16missionBudgetRemaining\"\x80\x01\n" +
 	"\x16ReportStepHintsRequest\x125\n" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x12/\n" +
 	"\x05hints\x18\x02 \x01(\v2\x19.gibson.harness.StepHintsR\x05hints\"M\n" +
@@ -7424,7 +7856,7 @@ func file_harness_callback_proto_rawDescGZIP() []byte {
 }
 
 var file_harness_callback_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 108)
+var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 113)
 var file_harness_callback_proto_goTypes = []any{
 	(MemoryTier)(0),                                  // 0: gibson.harness.MemoryTier
 	(SpanKind)(0),                                    // 1: gibson.harness.SpanKind
@@ -7450,94 +7882,99 @@ var file_harness_callback_proto_goTypes = []any{
 	(*ListToolsRequest)(nil),                         // 21: gibson.harness.ListToolsRequest
 	(*ListToolsResponse)(nil),                        // 22: gibson.harness.ListToolsResponse
 	(*HarnessToolDescriptor)(nil),                    // 23: gibson.harness.HarnessToolDescriptor
-	(*QueryPluginRequest)(nil),                       // 24: gibson.harness.QueryPluginRequest
-	(*QueryPluginResponse)(nil),                      // 25: gibson.harness.QueryPluginResponse
-	(*ListPluginsRequest)(nil),                       // 26: gibson.harness.ListPluginsRequest
-	(*ListPluginsResponse)(nil),                      // 27: gibson.harness.ListPluginsResponse
-	(*HarnessPluginDescriptor)(nil),                  // 28: gibson.harness.HarnessPluginDescriptor
-	(*DelegateToAgentRequest)(nil),                   // 29: gibson.harness.DelegateToAgentRequest
-	(*DelegateToAgentResponse)(nil),                  // 30: gibson.harness.DelegateToAgentResponse
-	(*ListAgentsRequest)(nil),                        // 31: gibson.harness.ListAgentsRequest
-	(*ListAgentsResponse)(nil),                       // 32: gibson.harness.ListAgentsResponse
-	(*HarnessAgentDescriptor)(nil),                   // 33: gibson.harness.HarnessAgentDescriptor
-	(*SubmitFindingRequest)(nil),                     // 34: gibson.harness.SubmitFindingRequest
-	(*SubmitFindingResponse)(nil),                    // 35: gibson.harness.SubmitFindingResponse
-	(*GetFindingsRequest)(nil),                       // 36: gibson.harness.GetFindingsRequest
-	(*GetFindingsResponse)(nil),                      // 37: gibson.harness.GetFindingsResponse
-	(*MemoryGetRequest)(nil),                         // 38: gibson.harness.MemoryGetRequest
-	(*MemoryGetResponse)(nil),                        // 39: gibson.harness.MemoryGetResponse
-	(*MemorySetRequest)(nil),                         // 40: gibson.harness.MemorySetRequest
-	(*MemorySetResponse)(nil),                        // 41: gibson.harness.MemorySetResponse
-	(*MemoryDeleteRequest)(nil),                      // 42: gibson.harness.MemoryDeleteRequest
-	(*MemoryDeleteResponse)(nil),                     // 43: gibson.harness.MemoryDeleteResponse
-	(*MemoryListRequest)(nil),                        // 44: gibson.harness.MemoryListRequest
-	(*MemoryListResponse)(nil),                       // 45: gibson.harness.MemoryListResponse
-	(*MissionMemorySearchRequest)(nil),               // 46: gibson.harness.MissionMemorySearchRequest
-	(*MissionMemorySearchResponse)(nil),              // 47: gibson.harness.MissionMemorySearchResponse
-	(*MissionMemoryResult)(nil),                      // 48: gibson.harness.MissionMemoryResult
-	(*MissionMemoryHistoryRequest)(nil),              // 49: gibson.harness.MissionMemoryHistoryRequest
-	(*MissionMemoryHistoryResponse)(nil),             // 50: gibson.harness.MissionMemoryHistoryResponse
-	(*MissionMemoryItem)(nil),                        // 51: gibson.harness.MissionMemoryItem
-	(*MissionMemoryGetPreviousRunValueRequest)(nil),  // 52: gibson.harness.MissionMemoryGetPreviousRunValueRequest
-	(*MissionMemoryGetPreviousRunValueResponse)(nil), // 53: gibson.harness.MissionMemoryGetPreviousRunValueResponse
-	(*MissionMemoryGetValueHistoryRequest)(nil),      // 54: gibson.harness.MissionMemoryGetValueHistoryRequest
-	(*MissionMemoryGetValueHistoryResponse)(nil),     // 55: gibson.harness.MissionMemoryGetValueHistoryResponse
-	(*HistoricalValueItem)(nil),                      // 56: gibson.harness.HistoricalValueItem
-	(*MissionMemoryContinuityModeRequest)(nil),       // 57: gibson.harness.MissionMemoryContinuityModeRequest
-	(*MissionMemoryContinuityModeResponse)(nil),      // 58: gibson.harness.MissionMemoryContinuityModeResponse
-	(*LongTermMemoryStoreRequest)(nil),               // 59: gibson.harness.LongTermMemoryStoreRequest
-	(*LongTermMemoryStoreResponse)(nil),              // 60: gibson.harness.LongTermMemoryStoreResponse
-	(*LongTermMemorySearchRequest)(nil),              // 61: gibson.harness.LongTermMemorySearchRequest
-	(*LongTermMemorySearchResponse)(nil),             // 62: gibson.harness.LongTermMemorySearchResponse
-	(*LongTermMemoryResult)(nil),                     // 63: gibson.harness.LongTermMemoryResult
-	(*LongTermMemoryDeleteRequest)(nil),              // 64: gibson.harness.LongTermMemoryDeleteRequest
-	(*LongTermMemoryDeleteResponse)(nil),             // 65: gibson.harness.LongTermMemoryDeleteResponse
-	(*GraphRAGQueryRequest)(nil),                     // 66: gibson.harness.GraphRAGQueryRequest
-	(*GraphRAGQueryResponse)(nil),                    // 67: gibson.harness.GraphRAGQueryResponse
-	(*GraphRAGResult)(nil),                           // 68: gibson.harness.GraphRAGResult
-	(*GraphNode)(nil),                                // 69: gibson.harness.GraphNode
-	(*FindSimilarAttacksRequest)(nil),                // 70: gibson.harness.FindSimilarAttacksRequest
-	(*FindSimilarAttacksResponse)(nil),               // 71: gibson.harness.FindSimilarAttacksResponse
-	(*AttackPattern)(nil),                            // 72: gibson.harness.AttackPattern
-	(*FindSimilarFindingsRequest)(nil),               // 73: gibson.harness.FindSimilarFindingsRequest
-	(*FindSimilarFindingsResponse)(nil),              // 74: gibson.harness.FindSimilarFindingsResponse
-	(*FindingNode)(nil),                              // 75: gibson.harness.FindingNode
-	(*GetAttackChainsRequest)(nil),                   // 76: gibson.harness.GetAttackChainsRequest
-	(*GetAttackChainsResponse)(nil),                  // 77: gibson.harness.GetAttackChainsResponse
-	(*AttackChain)(nil),                              // 78: gibson.harness.AttackChain
-	(*AttackStep)(nil),                               // 79: gibson.harness.AttackStep
-	(*GetRelatedFindingsRequest)(nil),                // 80: gibson.harness.GetRelatedFindingsRequest
-	(*GetRelatedFindingsResponse)(nil),               // 81: gibson.harness.GetRelatedFindingsResponse
-	(*StoreGraphNodeRequest)(nil),                    // 82: gibson.harness.StoreGraphNodeRequest
-	(*StoreGraphNodeResponse)(nil),                   // 83: gibson.harness.StoreGraphNodeResponse
-	(*CreateGraphRelationshipRequest)(nil),           // 84: gibson.harness.CreateGraphRelationshipRequest
-	(*CreateGraphRelationshipResponse)(nil),          // 85: gibson.harness.CreateGraphRelationshipResponse
-	(*Relationship)(nil),                             // 86: gibson.harness.Relationship
-	(*StoreGraphBatchRequest)(nil),                   // 87: gibson.harness.StoreGraphBatchRequest
-	(*StoreGraphBatchResponse)(nil),                  // 88: gibson.harness.StoreGraphBatchResponse
-	(*TraverseGraphRequest)(nil),                     // 89: gibson.harness.TraverseGraphRequest
-	(*TraverseGraphResponse)(nil),                    // 90: gibson.harness.TraverseGraphResponse
-	(*TraversalOptions)(nil),                         // 91: gibson.harness.TraversalOptions
-	(*TraversalResult)(nil),                          // 92: gibson.harness.TraversalResult
-	(*GraphRAGHealthRequest)(nil),                    // 93: gibson.harness.GraphRAGHealthRequest
-	(*GraphRAGHealthResponse)(nil),                   // 94: gibson.harness.GraphRAGHealthResponse
-	(*GetPlanContextRequest)(nil),                    // 95: gibson.harness.GetPlanContextRequest
-	(*GetPlanContextResponse)(nil),                   // 96: gibson.harness.GetPlanContextResponse
-	(*PlanContext)(nil),                              // 97: gibson.harness.PlanContext
-	(*ReportStepHintsRequest)(nil),                   // 98: gibson.harness.ReportStepHintsRequest
-	(*ReportStepHintsResponse)(nil),                  // 99: gibson.harness.ReportStepHintsResponse
-	(*StepHints)(nil),                                // 100: gibson.harness.StepHints
-	(*AnyValue)(nil),                                 // 101: gibson.harness.AnyValue
-	(*KeyValue)(nil),                                 // 102: gibson.harness.KeyValue
-	(*SpanEvent)(nil),                                // 103: gibson.harness.SpanEvent
-	(*Span)(nil),                                     // 104: gibson.harness.Span
-	(*RecordSpanRequest)(nil),                        // 105: gibson.harness.RecordSpanRequest
-	(*RecordSpanResponse)(nil),                       // 106: gibson.harness.RecordSpanResponse
-	(*RecordSpansRequest)(nil),                       // 107: gibson.harness.RecordSpansRequest
-	(*RecordSpansResponse)(nil),                      // 108: gibson.harness.RecordSpansResponse
-	(*GetCredentialRequest)(nil),                     // 109: gibson.harness.GetCredentialRequest
-	(*GetCredentialResponse)(nil),                    // 110: gibson.harness.GetCredentialResponse
-	(*Credential)(nil),                               // 111: gibson.harness.Credential
+	(*JSONSchemaNode)(nil),                           // 24: gibson.harness.JSONSchemaNode
+	(*TaxonomyMapping)(nil),                          // 25: gibson.harness.TaxonomyMapping
+	(*PropertyMapping)(nil),                          // 26: gibson.harness.PropertyMapping
+	(*RelationshipMapping)(nil),                      // 27: gibson.harness.RelationshipMapping
+	(*QueryPluginRequest)(nil),                       // 28: gibson.harness.QueryPluginRequest
+	(*QueryPluginResponse)(nil),                      // 29: gibson.harness.QueryPluginResponse
+	(*ListPluginsRequest)(nil),                       // 30: gibson.harness.ListPluginsRequest
+	(*ListPluginsResponse)(nil),                      // 31: gibson.harness.ListPluginsResponse
+	(*HarnessPluginDescriptor)(nil),                  // 32: gibson.harness.HarnessPluginDescriptor
+	(*DelegateToAgentRequest)(nil),                   // 33: gibson.harness.DelegateToAgentRequest
+	(*DelegateToAgentResponse)(nil),                  // 34: gibson.harness.DelegateToAgentResponse
+	(*ListAgentsRequest)(nil),                        // 35: gibson.harness.ListAgentsRequest
+	(*ListAgentsResponse)(nil),                       // 36: gibson.harness.ListAgentsResponse
+	(*HarnessAgentDescriptor)(nil),                   // 37: gibson.harness.HarnessAgentDescriptor
+	(*SubmitFindingRequest)(nil),                     // 38: gibson.harness.SubmitFindingRequest
+	(*SubmitFindingResponse)(nil),                    // 39: gibson.harness.SubmitFindingResponse
+	(*GetFindingsRequest)(nil),                       // 40: gibson.harness.GetFindingsRequest
+	(*GetFindingsResponse)(nil),                      // 41: gibson.harness.GetFindingsResponse
+	(*MemoryGetRequest)(nil),                         // 42: gibson.harness.MemoryGetRequest
+	(*MemoryGetResponse)(nil),                        // 43: gibson.harness.MemoryGetResponse
+	(*MemorySetRequest)(nil),                         // 44: gibson.harness.MemorySetRequest
+	(*MemorySetResponse)(nil),                        // 45: gibson.harness.MemorySetResponse
+	(*MemoryDeleteRequest)(nil),                      // 46: gibson.harness.MemoryDeleteRequest
+	(*MemoryDeleteResponse)(nil),                     // 47: gibson.harness.MemoryDeleteResponse
+	(*MemoryListRequest)(nil),                        // 48: gibson.harness.MemoryListRequest
+	(*MemoryListResponse)(nil),                       // 49: gibson.harness.MemoryListResponse
+	(*MissionMemorySearchRequest)(nil),               // 50: gibson.harness.MissionMemorySearchRequest
+	(*MissionMemorySearchResponse)(nil),              // 51: gibson.harness.MissionMemorySearchResponse
+	(*MissionMemoryResult)(nil),                      // 52: gibson.harness.MissionMemoryResult
+	(*MissionMemoryHistoryRequest)(nil),              // 53: gibson.harness.MissionMemoryHistoryRequest
+	(*MissionMemoryHistoryResponse)(nil),             // 54: gibson.harness.MissionMemoryHistoryResponse
+	(*MissionMemoryItem)(nil),                        // 55: gibson.harness.MissionMemoryItem
+	(*MissionMemoryGetPreviousRunValueRequest)(nil),  // 56: gibson.harness.MissionMemoryGetPreviousRunValueRequest
+	(*MissionMemoryGetPreviousRunValueResponse)(nil), // 57: gibson.harness.MissionMemoryGetPreviousRunValueResponse
+	(*MissionMemoryGetValueHistoryRequest)(nil),      // 58: gibson.harness.MissionMemoryGetValueHistoryRequest
+	(*MissionMemoryGetValueHistoryResponse)(nil),     // 59: gibson.harness.MissionMemoryGetValueHistoryResponse
+	(*HistoricalValueItem)(nil),                      // 60: gibson.harness.HistoricalValueItem
+	(*MissionMemoryContinuityModeRequest)(nil),       // 61: gibson.harness.MissionMemoryContinuityModeRequest
+	(*MissionMemoryContinuityModeResponse)(nil),      // 62: gibson.harness.MissionMemoryContinuityModeResponse
+	(*LongTermMemoryStoreRequest)(nil),               // 63: gibson.harness.LongTermMemoryStoreRequest
+	(*LongTermMemoryStoreResponse)(nil),              // 64: gibson.harness.LongTermMemoryStoreResponse
+	(*LongTermMemorySearchRequest)(nil),              // 65: gibson.harness.LongTermMemorySearchRequest
+	(*LongTermMemorySearchResponse)(nil),             // 66: gibson.harness.LongTermMemorySearchResponse
+	(*LongTermMemoryResult)(nil),                     // 67: gibson.harness.LongTermMemoryResult
+	(*LongTermMemoryDeleteRequest)(nil),              // 68: gibson.harness.LongTermMemoryDeleteRequest
+	(*LongTermMemoryDeleteResponse)(nil),             // 69: gibson.harness.LongTermMemoryDeleteResponse
+	(*GraphRAGQueryRequest)(nil),                     // 70: gibson.harness.GraphRAGQueryRequest
+	(*GraphRAGQueryResponse)(nil),                    // 71: gibson.harness.GraphRAGQueryResponse
+	(*GraphRAGResult)(nil),                           // 72: gibson.harness.GraphRAGResult
+	(*GraphNode)(nil),                                // 73: gibson.harness.GraphNode
+	(*FindSimilarAttacksRequest)(nil),                // 74: gibson.harness.FindSimilarAttacksRequest
+	(*FindSimilarAttacksResponse)(nil),               // 75: gibson.harness.FindSimilarAttacksResponse
+	(*AttackPattern)(nil),                            // 76: gibson.harness.AttackPattern
+	(*FindSimilarFindingsRequest)(nil),               // 77: gibson.harness.FindSimilarFindingsRequest
+	(*FindSimilarFindingsResponse)(nil),              // 78: gibson.harness.FindSimilarFindingsResponse
+	(*FindingNode)(nil),                              // 79: gibson.harness.FindingNode
+	(*GetAttackChainsRequest)(nil),                   // 80: gibson.harness.GetAttackChainsRequest
+	(*GetAttackChainsResponse)(nil),                  // 81: gibson.harness.GetAttackChainsResponse
+	(*AttackChain)(nil),                              // 82: gibson.harness.AttackChain
+	(*AttackStep)(nil),                               // 83: gibson.harness.AttackStep
+	(*GetRelatedFindingsRequest)(nil),                // 84: gibson.harness.GetRelatedFindingsRequest
+	(*GetRelatedFindingsResponse)(nil),               // 85: gibson.harness.GetRelatedFindingsResponse
+	(*StoreGraphNodeRequest)(nil),                    // 86: gibson.harness.StoreGraphNodeRequest
+	(*StoreGraphNodeResponse)(nil),                   // 87: gibson.harness.StoreGraphNodeResponse
+	(*CreateGraphRelationshipRequest)(nil),           // 88: gibson.harness.CreateGraphRelationshipRequest
+	(*CreateGraphRelationshipResponse)(nil),          // 89: gibson.harness.CreateGraphRelationshipResponse
+	(*Relationship)(nil),                             // 90: gibson.harness.Relationship
+	(*StoreGraphBatchRequest)(nil),                   // 91: gibson.harness.StoreGraphBatchRequest
+	(*StoreGraphBatchResponse)(nil),                  // 92: gibson.harness.StoreGraphBatchResponse
+	(*TraverseGraphRequest)(nil),                     // 93: gibson.harness.TraverseGraphRequest
+	(*TraverseGraphResponse)(nil),                    // 94: gibson.harness.TraverseGraphResponse
+	(*TraversalOptions)(nil),                         // 95: gibson.harness.TraversalOptions
+	(*TraversalResult)(nil),                          // 96: gibson.harness.TraversalResult
+	(*GraphRAGHealthRequest)(nil),                    // 97: gibson.harness.GraphRAGHealthRequest
+	(*GraphRAGHealthResponse)(nil),                   // 98: gibson.harness.GraphRAGHealthResponse
+	(*GetPlanContextRequest)(nil),                    // 99: gibson.harness.GetPlanContextRequest
+	(*GetPlanContextResponse)(nil),                   // 100: gibson.harness.GetPlanContextResponse
+	(*PlanContext)(nil),                              // 101: gibson.harness.PlanContext
+	(*ReportStepHintsRequest)(nil),                   // 102: gibson.harness.ReportStepHintsRequest
+	(*ReportStepHintsResponse)(nil),                  // 103: gibson.harness.ReportStepHintsResponse
+	(*StepHints)(nil),                                // 104: gibson.harness.StepHints
+	(*AnyValue)(nil),                                 // 105: gibson.harness.AnyValue
+	(*KeyValue)(nil),                                 // 106: gibson.harness.KeyValue
+	(*SpanEvent)(nil),                                // 107: gibson.harness.SpanEvent
+	(*Span)(nil),                                     // 108: gibson.harness.Span
+	(*RecordSpanRequest)(nil),                        // 109: gibson.harness.RecordSpanRequest
+	(*RecordSpanResponse)(nil),                       // 110: gibson.harness.RecordSpanResponse
+	(*RecordSpansRequest)(nil),                       // 111: gibson.harness.RecordSpansRequest
+	(*RecordSpansResponse)(nil),                      // 112: gibson.harness.RecordSpansResponse
+	(*GetCredentialRequest)(nil),                     // 113: gibson.harness.GetCredentialRequest
+	(*GetCredentialResponse)(nil),                    // 114: gibson.harness.GetCredentialResponse
+	(*Credential)(nil),                               // 115: gibson.harness.Credential
+	nil,                                              // 116: gibson.harness.JSONSchemaNode.PropertiesEntry
 }
 var file_harness_callback_proto_depIdxs = []int32{
 	9,   // 0: gibson.harness.LLMMessage.tool_calls:type_name -> gibson.harness.ToolCall
@@ -7564,191 +8001,199 @@ var file_harness_callback_proto_depIdxs = []int32{
 	6,   // 21: gibson.harness.ListToolsRequest.context:type_name -> gibson.harness.ContextInfo
 	23,  // 22: gibson.harness.ListToolsResponse.tools:type_name -> gibson.harness.HarnessToolDescriptor
 	4,   // 23: gibson.harness.ListToolsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 24: gibson.harness.QueryPluginRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 25: gibson.harness.QueryPluginResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 26: gibson.harness.ListPluginsRequest.context:type_name -> gibson.harness.ContextInfo
-	28,  // 27: gibson.harness.ListPluginsResponse.plugins:type_name -> gibson.harness.HarnessPluginDescriptor
-	4,   // 28: gibson.harness.ListPluginsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 29: gibson.harness.DelegateToAgentRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 30: gibson.harness.DelegateToAgentResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 31: gibson.harness.ListAgentsRequest.context:type_name -> gibson.harness.ContextInfo
-	33,  // 32: gibson.harness.ListAgentsResponse.agents:type_name -> gibson.harness.HarnessAgentDescriptor
-	4,   // 33: gibson.harness.ListAgentsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 34: gibson.harness.SubmitFindingRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 35: gibson.harness.SubmitFindingResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 36: gibson.harness.GetFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 37: gibson.harness.GetFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 38: gibson.harness.MemoryGetRequest.context:type_name -> gibson.harness.ContextInfo
-	0,   // 39: gibson.harness.MemoryGetRequest.tier:type_name -> gibson.harness.MemoryTier
-	4,   // 40: gibson.harness.MemoryGetResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 41: gibson.harness.MemorySetRequest.context:type_name -> gibson.harness.ContextInfo
-	0,   // 42: gibson.harness.MemorySetRequest.tier:type_name -> gibson.harness.MemoryTier
-	4,   // 43: gibson.harness.MemorySetResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 44: gibson.harness.MemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
-	0,   // 45: gibson.harness.MemoryDeleteRequest.tier:type_name -> gibson.harness.MemoryTier
-	4,   // 46: gibson.harness.MemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 47: gibson.harness.MemoryListRequest.context:type_name -> gibson.harness.ContextInfo
-	0,   // 48: gibson.harness.MemoryListRequest.tier:type_name -> gibson.harness.MemoryTier
-	4,   // 49: gibson.harness.MemoryListResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 50: gibson.harness.MissionMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
-	48,  // 51: gibson.harness.MissionMemorySearchResponse.results:type_name -> gibson.harness.MissionMemoryResult
-	4,   // 52: gibson.harness.MissionMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 53: gibson.harness.MissionMemoryHistoryRequest.context:type_name -> gibson.harness.ContextInfo
-	51,  // 54: gibson.harness.MissionMemoryHistoryResponse.items:type_name -> gibson.harness.MissionMemoryItem
-	4,   // 55: gibson.harness.MissionMemoryHistoryResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 56: gibson.harness.MissionMemoryGetPreviousRunValueRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 57: gibson.harness.MissionMemoryGetPreviousRunValueResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 58: gibson.harness.MissionMemoryGetValueHistoryRequest.context:type_name -> gibson.harness.ContextInfo
-	56,  // 59: gibson.harness.MissionMemoryGetValueHistoryResponse.values:type_name -> gibson.harness.HistoricalValueItem
-	4,   // 60: gibson.harness.MissionMemoryGetValueHistoryResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 61: gibson.harness.MissionMemoryContinuityModeRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 62: gibson.harness.MissionMemoryContinuityModeResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 63: gibson.harness.LongTermMemoryStoreRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 64: gibson.harness.LongTermMemoryStoreResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 65: gibson.harness.LongTermMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
-	63,  // 66: gibson.harness.LongTermMemorySearchResponse.results:type_name -> gibson.harness.LongTermMemoryResult
-	4,   // 67: gibson.harness.LongTermMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 68: gibson.harness.LongTermMemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
-	4,   // 69: gibson.harness.LongTermMemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 70: gibson.harness.GraphRAGQueryRequest.context:type_name -> gibson.harness.ContextInfo
-	68,  // 71: gibson.harness.GraphRAGQueryResponse.results:type_name -> gibson.harness.GraphRAGResult
-	4,   // 72: gibson.harness.GraphRAGQueryResponse.error:type_name -> gibson.harness.HarnessError
-	69,  // 73: gibson.harness.GraphRAGResult.node:type_name -> gibson.harness.GraphNode
-	6,   // 74: gibson.harness.FindSimilarAttacksRequest.context:type_name -> gibson.harness.ContextInfo
-	72,  // 75: gibson.harness.FindSimilarAttacksResponse.attacks:type_name -> gibson.harness.AttackPattern
-	4,   // 76: gibson.harness.FindSimilarAttacksResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 77: gibson.harness.FindSimilarFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	75,  // 78: gibson.harness.FindSimilarFindingsResponse.findings:type_name -> gibson.harness.FindingNode
-	4,   // 79: gibson.harness.FindSimilarFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 80: gibson.harness.GetAttackChainsRequest.context:type_name -> gibson.harness.ContextInfo
-	78,  // 81: gibson.harness.GetAttackChainsResponse.chains:type_name -> gibson.harness.AttackChain
-	4,   // 82: gibson.harness.GetAttackChainsResponse.error:type_name -> gibson.harness.HarnessError
-	79,  // 83: gibson.harness.AttackChain.steps:type_name -> gibson.harness.AttackStep
-	6,   // 84: gibson.harness.GetRelatedFindingsRequest.context:type_name -> gibson.harness.ContextInfo
-	75,  // 85: gibson.harness.GetRelatedFindingsResponse.findings:type_name -> gibson.harness.FindingNode
-	4,   // 86: gibson.harness.GetRelatedFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 87: gibson.harness.StoreGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
-	69,  // 88: gibson.harness.StoreGraphNodeRequest.node:type_name -> gibson.harness.GraphNode
-	4,   // 89: gibson.harness.StoreGraphNodeResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 90: gibson.harness.CreateGraphRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
-	86,  // 91: gibson.harness.CreateGraphRelationshipRequest.relationship:type_name -> gibson.harness.Relationship
-	4,   // 92: gibson.harness.CreateGraphRelationshipResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 93: gibson.harness.StoreGraphBatchRequest.context:type_name -> gibson.harness.ContextInfo
-	69,  // 94: gibson.harness.StoreGraphBatchRequest.nodes:type_name -> gibson.harness.GraphNode
-	86,  // 95: gibson.harness.StoreGraphBatchRequest.relationships:type_name -> gibson.harness.Relationship
-	4,   // 96: gibson.harness.StoreGraphBatchResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 97: gibson.harness.TraverseGraphRequest.context:type_name -> gibson.harness.ContextInfo
-	91,  // 98: gibson.harness.TraverseGraphRequest.options:type_name -> gibson.harness.TraversalOptions
-	92,  // 99: gibson.harness.TraverseGraphResponse.results:type_name -> gibson.harness.TraversalResult
-	4,   // 100: gibson.harness.TraverseGraphResponse.error:type_name -> gibson.harness.HarnessError
-	69,  // 101: gibson.harness.TraversalResult.node:type_name -> gibson.harness.GraphNode
-	6,   // 102: gibson.harness.GraphRAGHealthRequest.context:type_name -> gibson.harness.ContextInfo
-	5,   // 103: gibson.harness.GraphRAGHealthResponse.status:type_name -> gibson.harness.HarnessHealthStatus
-	6,   // 104: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
-	97,  // 105: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
-	4,   // 106: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 107: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
-	100, // 108: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
-	4,   // 109: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
-	101, // 110: gibson.harness.KeyValue.value:type_name -> gibson.harness.AnyValue
-	102, // 111: gibson.harness.SpanEvent.attributes:type_name -> gibson.harness.KeyValue
-	1,   // 112: gibson.harness.Span.kind:type_name -> gibson.harness.SpanKind
-	2,   // 113: gibson.harness.Span.status_code:type_name -> gibson.harness.StatusCode
-	102, // 114: gibson.harness.Span.attributes:type_name -> gibson.harness.KeyValue
-	103, // 115: gibson.harness.Span.events:type_name -> gibson.harness.SpanEvent
-	6,   // 116: gibson.harness.RecordSpanRequest.context:type_name -> gibson.harness.ContextInfo
-	104, // 117: gibson.harness.RecordSpanRequest.span:type_name -> gibson.harness.Span
-	4,   // 118: gibson.harness.RecordSpanResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 119: gibson.harness.RecordSpansRequest.context:type_name -> gibson.harness.ContextInfo
-	104, // 120: gibson.harness.RecordSpansRequest.spans:type_name -> gibson.harness.Span
-	4,   // 121: gibson.harness.RecordSpansResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 122: gibson.harness.GetCredentialRequest.context:type_name -> gibson.harness.ContextInfo
-	111, // 123: gibson.harness.GetCredentialResponse.credential:type_name -> gibson.harness.Credential
-	4,   // 124: gibson.harness.GetCredentialResponse.error:type_name -> gibson.harness.HarnessError
-	3,   // 125: gibson.harness.Credential.type:type_name -> gibson.harness.CredentialType
-	12,  // 126: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
-	13,  // 127: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
-	14,  // 128: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
-	17,  // 129: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
-	19,  // 130: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
-	21,  // 131: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
-	24,  // 132: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
-	26,  // 133: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
-	29,  // 134: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
-	31,  // 135: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
-	34,  // 136: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
-	36,  // 137: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
-	38,  // 138: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
-	40,  // 139: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
-	42,  // 140: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
-	44,  // 141: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
-	46,  // 142: gibson.harness.HarnessCallbackService.MissionMemorySearch:input_type -> gibson.harness.MissionMemorySearchRequest
-	49,  // 143: gibson.harness.HarnessCallbackService.MissionMemoryHistory:input_type -> gibson.harness.MissionMemoryHistoryRequest
-	52,  // 144: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:input_type -> gibson.harness.MissionMemoryGetPreviousRunValueRequest
-	54,  // 145: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:input_type -> gibson.harness.MissionMemoryGetValueHistoryRequest
-	57,  // 146: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:input_type -> gibson.harness.MissionMemoryContinuityModeRequest
-	59,  // 147: gibson.harness.HarnessCallbackService.LongTermMemoryStore:input_type -> gibson.harness.LongTermMemoryStoreRequest
-	61,  // 148: gibson.harness.HarnessCallbackService.LongTermMemorySearch:input_type -> gibson.harness.LongTermMemorySearchRequest
-	64,  // 149: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:input_type -> gibson.harness.LongTermMemoryDeleteRequest
-	66,  // 150: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
-	70,  // 151: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
-	73,  // 152: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
-	76,  // 153: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
-	80,  // 154: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
-	82,  // 155: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
-	84,  // 156: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
-	87,  // 157: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
-	89,  // 158: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
-	93,  // 159: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
-	95,  // 160: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
-	98,  // 161: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
-	105, // 162: gibson.harness.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.RecordSpanRequest
-	107, // 163: gibson.harness.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.RecordSpansRequest
-	109, // 164: gibson.harness.HarnessCallbackService.GetCredential:input_type -> gibson.harness.GetCredentialRequest
-	16,  // 165: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
-	16,  // 166: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
-	15,  // 167: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
-	18,  // 168: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
-	20,  // 169: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
-	22,  // 170: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
-	25,  // 171: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
-	27,  // 172: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
-	30,  // 173: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
-	32,  // 174: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
-	35,  // 175: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
-	37,  // 176: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
-	39,  // 177: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
-	41,  // 178: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
-	43,  // 179: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
-	45,  // 180: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
-	47,  // 181: gibson.harness.HarnessCallbackService.MissionMemorySearch:output_type -> gibson.harness.MissionMemorySearchResponse
-	50,  // 182: gibson.harness.HarnessCallbackService.MissionMemoryHistory:output_type -> gibson.harness.MissionMemoryHistoryResponse
-	53,  // 183: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:output_type -> gibson.harness.MissionMemoryGetPreviousRunValueResponse
-	55,  // 184: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:output_type -> gibson.harness.MissionMemoryGetValueHistoryResponse
-	58,  // 185: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:output_type -> gibson.harness.MissionMemoryContinuityModeResponse
-	60,  // 186: gibson.harness.HarnessCallbackService.LongTermMemoryStore:output_type -> gibson.harness.LongTermMemoryStoreResponse
-	62,  // 187: gibson.harness.HarnessCallbackService.LongTermMemorySearch:output_type -> gibson.harness.LongTermMemorySearchResponse
-	65,  // 188: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:output_type -> gibson.harness.LongTermMemoryDeleteResponse
-	67,  // 189: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
-	71,  // 190: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
-	74,  // 191: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
-	77,  // 192: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
-	81,  // 193: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
-	83,  // 194: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
-	85,  // 195: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
-	88,  // 196: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
-	90,  // 197: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
-	94,  // 198: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
-	96,  // 199: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
-	99,  // 200: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
-	106, // 201: gibson.harness.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.RecordSpanResponse
-	108, // 202: gibson.harness.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.RecordSpansResponse
-	110, // 203: gibson.harness.HarnessCallbackService.GetCredential:output_type -> gibson.harness.GetCredentialResponse
-	165, // [165:204] is the sub-list for method output_type
-	126, // [126:165] is the sub-list for method input_type
-	126, // [126:126] is the sub-list for extension type_name
-	126, // [126:126] is the sub-list for extension extendee
-	0,   // [0:126] is the sub-list for field type_name
+	24,  // 24: gibson.harness.HarnessToolDescriptor.input_schema:type_name -> gibson.harness.JSONSchemaNode
+	24,  // 25: gibson.harness.HarnessToolDescriptor.output_schema:type_name -> gibson.harness.JSONSchemaNode
+	116, // 26: gibson.harness.JSONSchemaNode.properties:type_name -> gibson.harness.JSONSchemaNode.PropertiesEntry
+	24,  // 27: gibson.harness.JSONSchemaNode.items:type_name -> gibson.harness.JSONSchemaNode
+	25,  // 28: gibson.harness.JSONSchemaNode.taxonomy:type_name -> gibson.harness.TaxonomyMapping
+	26,  // 29: gibson.harness.TaxonomyMapping.properties:type_name -> gibson.harness.PropertyMapping
+	27,  // 30: gibson.harness.TaxonomyMapping.relationships:type_name -> gibson.harness.RelationshipMapping
+	6,   // 31: gibson.harness.QueryPluginRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 32: gibson.harness.QueryPluginResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 33: gibson.harness.ListPluginsRequest.context:type_name -> gibson.harness.ContextInfo
+	32,  // 34: gibson.harness.ListPluginsResponse.plugins:type_name -> gibson.harness.HarnessPluginDescriptor
+	4,   // 35: gibson.harness.ListPluginsResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 36: gibson.harness.DelegateToAgentRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 37: gibson.harness.DelegateToAgentResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 38: gibson.harness.ListAgentsRequest.context:type_name -> gibson.harness.ContextInfo
+	37,  // 39: gibson.harness.ListAgentsResponse.agents:type_name -> gibson.harness.HarnessAgentDescriptor
+	4,   // 40: gibson.harness.ListAgentsResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 41: gibson.harness.SubmitFindingRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 42: gibson.harness.SubmitFindingResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 43: gibson.harness.GetFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 44: gibson.harness.GetFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 45: gibson.harness.MemoryGetRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 46: gibson.harness.MemoryGetRequest.tier:type_name -> gibson.harness.MemoryTier
+	4,   // 47: gibson.harness.MemoryGetResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 48: gibson.harness.MemorySetRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 49: gibson.harness.MemorySetRequest.tier:type_name -> gibson.harness.MemoryTier
+	4,   // 50: gibson.harness.MemorySetResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 51: gibson.harness.MemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 52: gibson.harness.MemoryDeleteRequest.tier:type_name -> gibson.harness.MemoryTier
+	4,   // 53: gibson.harness.MemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 54: gibson.harness.MemoryListRequest.context:type_name -> gibson.harness.ContextInfo
+	0,   // 55: gibson.harness.MemoryListRequest.tier:type_name -> gibson.harness.MemoryTier
+	4,   // 56: gibson.harness.MemoryListResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 57: gibson.harness.MissionMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
+	52,  // 58: gibson.harness.MissionMemorySearchResponse.results:type_name -> gibson.harness.MissionMemoryResult
+	4,   // 59: gibson.harness.MissionMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 60: gibson.harness.MissionMemoryHistoryRequest.context:type_name -> gibson.harness.ContextInfo
+	55,  // 61: gibson.harness.MissionMemoryHistoryResponse.items:type_name -> gibson.harness.MissionMemoryItem
+	4,   // 62: gibson.harness.MissionMemoryHistoryResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 63: gibson.harness.MissionMemoryGetPreviousRunValueRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 64: gibson.harness.MissionMemoryGetPreviousRunValueResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 65: gibson.harness.MissionMemoryGetValueHistoryRequest.context:type_name -> gibson.harness.ContextInfo
+	60,  // 66: gibson.harness.MissionMemoryGetValueHistoryResponse.values:type_name -> gibson.harness.HistoricalValueItem
+	4,   // 67: gibson.harness.MissionMemoryGetValueHistoryResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 68: gibson.harness.MissionMemoryContinuityModeRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 69: gibson.harness.MissionMemoryContinuityModeResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 70: gibson.harness.LongTermMemoryStoreRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 71: gibson.harness.LongTermMemoryStoreResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 72: gibson.harness.LongTermMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
+	67,  // 73: gibson.harness.LongTermMemorySearchResponse.results:type_name -> gibson.harness.LongTermMemoryResult
+	4,   // 74: gibson.harness.LongTermMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 75: gibson.harness.LongTermMemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
+	4,   // 76: gibson.harness.LongTermMemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 77: gibson.harness.GraphRAGQueryRequest.context:type_name -> gibson.harness.ContextInfo
+	72,  // 78: gibson.harness.GraphRAGQueryResponse.results:type_name -> gibson.harness.GraphRAGResult
+	4,   // 79: gibson.harness.GraphRAGQueryResponse.error:type_name -> gibson.harness.HarnessError
+	73,  // 80: gibson.harness.GraphRAGResult.node:type_name -> gibson.harness.GraphNode
+	6,   // 81: gibson.harness.FindSimilarAttacksRequest.context:type_name -> gibson.harness.ContextInfo
+	76,  // 82: gibson.harness.FindSimilarAttacksResponse.attacks:type_name -> gibson.harness.AttackPattern
+	4,   // 83: gibson.harness.FindSimilarAttacksResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 84: gibson.harness.FindSimilarFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	79,  // 85: gibson.harness.FindSimilarFindingsResponse.findings:type_name -> gibson.harness.FindingNode
+	4,   // 86: gibson.harness.FindSimilarFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 87: gibson.harness.GetAttackChainsRequest.context:type_name -> gibson.harness.ContextInfo
+	82,  // 88: gibson.harness.GetAttackChainsResponse.chains:type_name -> gibson.harness.AttackChain
+	4,   // 89: gibson.harness.GetAttackChainsResponse.error:type_name -> gibson.harness.HarnessError
+	83,  // 90: gibson.harness.AttackChain.steps:type_name -> gibson.harness.AttackStep
+	6,   // 91: gibson.harness.GetRelatedFindingsRequest.context:type_name -> gibson.harness.ContextInfo
+	79,  // 92: gibson.harness.GetRelatedFindingsResponse.findings:type_name -> gibson.harness.FindingNode
+	4,   // 93: gibson.harness.GetRelatedFindingsResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 94: gibson.harness.StoreGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
+	73,  // 95: gibson.harness.StoreGraphNodeRequest.node:type_name -> gibson.harness.GraphNode
+	4,   // 96: gibson.harness.StoreGraphNodeResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 97: gibson.harness.CreateGraphRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
+	90,  // 98: gibson.harness.CreateGraphRelationshipRequest.relationship:type_name -> gibson.harness.Relationship
+	4,   // 99: gibson.harness.CreateGraphRelationshipResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 100: gibson.harness.StoreGraphBatchRequest.context:type_name -> gibson.harness.ContextInfo
+	73,  // 101: gibson.harness.StoreGraphBatchRequest.nodes:type_name -> gibson.harness.GraphNode
+	90,  // 102: gibson.harness.StoreGraphBatchRequest.relationships:type_name -> gibson.harness.Relationship
+	4,   // 103: gibson.harness.StoreGraphBatchResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 104: gibson.harness.TraverseGraphRequest.context:type_name -> gibson.harness.ContextInfo
+	95,  // 105: gibson.harness.TraverseGraphRequest.options:type_name -> gibson.harness.TraversalOptions
+	96,  // 106: gibson.harness.TraverseGraphResponse.results:type_name -> gibson.harness.TraversalResult
+	4,   // 107: gibson.harness.TraverseGraphResponse.error:type_name -> gibson.harness.HarnessError
+	73,  // 108: gibson.harness.TraversalResult.node:type_name -> gibson.harness.GraphNode
+	6,   // 109: gibson.harness.GraphRAGHealthRequest.context:type_name -> gibson.harness.ContextInfo
+	5,   // 110: gibson.harness.GraphRAGHealthResponse.status:type_name -> gibson.harness.HarnessHealthStatus
+	6,   // 111: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
+	101, // 112: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
+	4,   // 113: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 114: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
+	104, // 115: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
+	4,   // 116: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
+	105, // 117: gibson.harness.KeyValue.value:type_name -> gibson.harness.AnyValue
+	106, // 118: gibson.harness.SpanEvent.attributes:type_name -> gibson.harness.KeyValue
+	1,   // 119: gibson.harness.Span.kind:type_name -> gibson.harness.SpanKind
+	2,   // 120: gibson.harness.Span.status_code:type_name -> gibson.harness.StatusCode
+	106, // 121: gibson.harness.Span.attributes:type_name -> gibson.harness.KeyValue
+	107, // 122: gibson.harness.Span.events:type_name -> gibson.harness.SpanEvent
+	6,   // 123: gibson.harness.RecordSpanRequest.context:type_name -> gibson.harness.ContextInfo
+	108, // 124: gibson.harness.RecordSpanRequest.span:type_name -> gibson.harness.Span
+	4,   // 125: gibson.harness.RecordSpanResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 126: gibson.harness.RecordSpansRequest.context:type_name -> gibson.harness.ContextInfo
+	108, // 127: gibson.harness.RecordSpansRequest.spans:type_name -> gibson.harness.Span
+	4,   // 128: gibson.harness.RecordSpansResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 129: gibson.harness.GetCredentialRequest.context:type_name -> gibson.harness.ContextInfo
+	115, // 130: gibson.harness.GetCredentialResponse.credential:type_name -> gibson.harness.Credential
+	4,   // 131: gibson.harness.GetCredentialResponse.error:type_name -> gibson.harness.HarnessError
+	3,   // 132: gibson.harness.Credential.type:type_name -> gibson.harness.CredentialType
+	24,  // 133: gibson.harness.JSONSchemaNode.PropertiesEntry.value:type_name -> gibson.harness.JSONSchemaNode
+	12,  // 134: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
+	13,  // 135: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
+	14,  // 136: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
+	17,  // 137: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
+	19,  // 138: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
+	21,  // 139: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
+	28,  // 140: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
+	30,  // 141: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
+	33,  // 142: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
+	35,  // 143: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
+	38,  // 144: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
+	40,  // 145: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
+	42,  // 146: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
+	44,  // 147: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
+	46,  // 148: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
+	48,  // 149: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
+	50,  // 150: gibson.harness.HarnessCallbackService.MissionMemorySearch:input_type -> gibson.harness.MissionMemorySearchRequest
+	53,  // 151: gibson.harness.HarnessCallbackService.MissionMemoryHistory:input_type -> gibson.harness.MissionMemoryHistoryRequest
+	56,  // 152: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:input_type -> gibson.harness.MissionMemoryGetPreviousRunValueRequest
+	58,  // 153: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:input_type -> gibson.harness.MissionMemoryGetValueHistoryRequest
+	61,  // 154: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:input_type -> gibson.harness.MissionMemoryContinuityModeRequest
+	63,  // 155: gibson.harness.HarnessCallbackService.LongTermMemoryStore:input_type -> gibson.harness.LongTermMemoryStoreRequest
+	65,  // 156: gibson.harness.HarnessCallbackService.LongTermMemorySearch:input_type -> gibson.harness.LongTermMemorySearchRequest
+	68,  // 157: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:input_type -> gibson.harness.LongTermMemoryDeleteRequest
+	70,  // 158: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
+	74,  // 159: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
+	77,  // 160: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
+	80,  // 161: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
+	84,  // 162: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
+	86,  // 163: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
+	88,  // 164: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
+	91,  // 165: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
+	93,  // 166: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
+	97,  // 167: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
+	99,  // 168: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
+	102, // 169: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
+	109, // 170: gibson.harness.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.RecordSpanRequest
+	111, // 171: gibson.harness.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.RecordSpansRequest
+	113, // 172: gibson.harness.HarnessCallbackService.GetCredential:input_type -> gibson.harness.GetCredentialRequest
+	16,  // 173: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
+	16,  // 174: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
+	15,  // 175: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
+	18,  // 176: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
+	20,  // 177: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
+	22,  // 178: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
+	29,  // 179: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
+	31,  // 180: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
+	34,  // 181: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
+	36,  // 182: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
+	39,  // 183: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
+	41,  // 184: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
+	43,  // 185: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
+	45,  // 186: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
+	47,  // 187: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
+	49,  // 188: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
+	51,  // 189: gibson.harness.HarnessCallbackService.MissionMemorySearch:output_type -> gibson.harness.MissionMemorySearchResponse
+	54,  // 190: gibson.harness.HarnessCallbackService.MissionMemoryHistory:output_type -> gibson.harness.MissionMemoryHistoryResponse
+	57,  // 191: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:output_type -> gibson.harness.MissionMemoryGetPreviousRunValueResponse
+	59,  // 192: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:output_type -> gibson.harness.MissionMemoryGetValueHistoryResponse
+	62,  // 193: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:output_type -> gibson.harness.MissionMemoryContinuityModeResponse
+	64,  // 194: gibson.harness.HarnessCallbackService.LongTermMemoryStore:output_type -> gibson.harness.LongTermMemoryStoreResponse
+	66,  // 195: gibson.harness.HarnessCallbackService.LongTermMemorySearch:output_type -> gibson.harness.LongTermMemorySearchResponse
+	69,  // 196: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:output_type -> gibson.harness.LongTermMemoryDeleteResponse
+	71,  // 197: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
+	75,  // 198: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
+	78,  // 199: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
+	81,  // 200: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
+	85,  // 201: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
+	87,  // 202: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
+	89,  // 203: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
+	92,  // 204: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
+	94,  // 205: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
+	98,  // 206: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
+	100, // 207: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
+	103, // 208: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
+	110, // 209: gibson.harness.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.RecordSpanResponse
+	112, // 210: gibson.harness.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.RecordSpansResponse
+	114, // 211: gibson.harness.HarnessCallbackService.GetCredential:output_type -> gibson.harness.GetCredentialResponse
+	173, // [173:212] is the sub-list for method output_type
+	134, // [134:173] is the sub-list for method input_type
+	134, // [134:134] is the sub-list for extension type_name
+	134, // [134:134] is the sub-list for extension extendee
+	0,   // [0:134] is the sub-list for field type_name
 }
 
 func init() { file_harness_callback_proto_init() }
@@ -7758,7 +8203,8 @@ func file_harness_callback_proto_init() {
 	}
 	file_harness_callback_proto_msgTypes[8].OneofWrappers = []any{}
 	file_harness_callback_proto_msgTypes[13].OneofWrappers = []any{}
-	file_harness_callback_proto_msgTypes[97].OneofWrappers = []any{
+	file_harness_callback_proto_msgTypes[20].OneofWrappers = []any{}
+	file_harness_callback_proto_msgTypes[101].OneofWrappers = []any{
 		(*AnyValue_StringValue)(nil),
 		(*AnyValue_BoolValue)(nil),
 		(*AnyValue_IntValue)(nil),
@@ -7771,7 +8217,7 @@ func file_harness_callback_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_harness_callback_proto_rawDesc), len(file_harness_callback_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   108,
+			NumMessages:   113,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

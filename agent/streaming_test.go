@@ -37,7 +37,7 @@ func TestSetStreamingExecuteFunc(t *testing.T) {
 
 		// Test that ExecuteStreaming works
 		mockHarness := &mockStreamingHarness{}
-		task := NewTask("test", "test task")
+		task := NewTask("test")
 		result, err := sdkAgent.ExecuteStreaming(context.Background(), mockHarness, *task)
 		require.NoError(t, err)
 		assert.True(t, streamingCalled, "streaming func should be called")
@@ -65,7 +65,7 @@ func TestSetStreamingExecuteFunc(t *testing.T) {
 
 		// Test that ExecuteStreaming returns error
 		mockHarness := &mockStreamingHarness{}
-		task := NewTask("test", "test task")
+		task := NewTask("test")
 		result, err := sdkAgent.ExecuteStreaming(context.Background(), mockHarness, *task)
 		require.Error(t, err)
 		assert.Equal(t, StatusFailed, result.Status)

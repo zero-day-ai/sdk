@@ -62,9 +62,9 @@ func (e *EvalSet) Validate() error {
 			return fmt.Errorf("sample at index %d is missing required field 'id'", i)
 		}
 
-		// Check required field: Task.Goal
-		if sample.Task.Goal == "" {
-			return fmt.Errorf("sample %s at index %d is missing required field 'task.goal'", sample.ID, i)
+		// Check required field: Task.Context["objective"] or Task.ID
+		if sample.Task.ID == "" {
+			return fmt.Errorf("sample %s at index %d is missing required field 'task.id'", sample.ID, i)
 		}
 
 		// Check for duplicate IDs

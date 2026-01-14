@@ -27,7 +27,7 @@ func Example_simpleAgent() {
 		SetExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 			// Agent implementation
 			logger := harness.Logger()
-			logger.Info("executing task", "task_id", task.ID, "goal", task.Goal)
+			logger.Info("executing task", "task_id", task.ID)
 
 			// Create test prompts
 			messages := []llm.Message{
@@ -109,8 +109,9 @@ func Example_agentWithLifecycle() {
 // Example_taskExecution demonstrates creating and executing tasks.
 func Example_taskExecution() {
 	// Create a task with constraints
-	task := agent.NewTask("task-1", "Find prompt injection vulnerabilities")
+	task := agent.NewTask("task-1")
 	task.SetContext("target_url", "https://example.com/api/chat")
+	task.SetContext("objective", "Find prompt injection vulnerabilities")
 	task.SetMetadata("priority", "high")
 
 	// Set constraints
@@ -122,7 +123,8 @@ func Example_taskExecution() {
 	}
 
 	fmt.Printf("Task ID: %s\n", task.ID)
-	fmt.Printf("Goal: %s\n", task.Goal)
+	objective, _ := task.GetContext("objective")
+	fmt.Printf("Objective: %s\n", objective)
 	fmt.Printf("Max Turns: %d\n", task.Constraints.MaxTurns)
 
 	// Check if a tool is allowed
@@ -134,7 +136,7 @@ func Example_taskExecution() {
 
 	// Output:
 	// Task ID: task-1
-	// Goal: Find prompt injection vulnerabilities
+	// Objective: Find prompt injection vulnerabilities
 	// Max Turns: 10
 	// http-client allowed: true
 	// destructive-tool allowed: false

@@ -149,7 +149,7 @@ func TestMockAgent(t *testing.T) {
 	}
 
 	// Test execution
-	task := NewTask("test-task", "test goal")
+	task := NewTask("test-task")
 	result, err := agent.Execute(ctx, nil, *task)
 	if err != nil {
 		t.Errorf("Execute() error = %v, want nil", err)

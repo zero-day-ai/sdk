@@ -7,14 +7,6 @@ type planContextWrapper struct {
 	proto *proto.PlanContext
 }
 
-// OriginalGoal returns the immutable mission goal statement.
-func (p *planContextWrapper) OriginalGoal() string {
-	if p.proto == nil {
-		return ""
-	}
-	return p.proto.OriginalGoal
-}
-
 // CurrentStepIndex returns the 0-based index of the current step in the plan.
 func (p *planContextWrapper) CurrentStepIndex() int {
 	if p.proto == nil {

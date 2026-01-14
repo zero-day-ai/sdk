@@ -33,7 +33,7 @@
 //	        sample := eval.Sample{
 //	            ID: "sqli-001",
 //	            Task: agent.Task{
-//	                Goal: "Detect SQL injection in login form",
+//	                Context: map[string]any{"objective": "Detect SQL injection in login form"},
 //	            },
 //	            ExpectedTools: []eval.ExpectedToolCall{
 //	                {Name: "http-client", Required: true},
@@ -527,7 +527,7 @@
 //	    fh, hasFeedback := h.(*eval.FeedbackHarness)
 //
 //	    strategy := a.defaultStrategy
-//	    messages := []llm.Message{{Role: "user", Content: task.Goal}}
+//	    messages := []llm.Message{{Role: "user", Content: task.Context["objective"]}}
 //
 //	    for attempt := 0; attempt < maxAttempts; attempt++ {
 //	        // Execute current strategy

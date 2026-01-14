@@ -6,10 +6,6 @@ type Task struct {
 	// ID is a unique identifier for this task.
 	ID string
 
-	// Goal describes what the agent should accomplish.
-	// This should be a clear, actionable objective.
-	Goal string
-
 	// Context provides additional information needed to complete the task.
 	// This can include target details, previous findings, or mission context.
 	Context map[string]any
@@ -114,11 +110,10 @@ func (s ResultStatus) IsSuccessful() bool {
 	return s == StatusSuccess || s == StatusPartial
 }
 
-// NewTask creates a new task with the given ID and goal.
-func NewTask(id, goal string) *Task {
+// NewTask creates a new task with the given ID.
+func NewTask(id string) *Task {
 	return &Task{
 		ID:          id,
-		Goal:        goal,
 		Context:     make(map[string]any),
 		Constraints: TaskConstraints{},
 		Metadata:    make(map[string]any),

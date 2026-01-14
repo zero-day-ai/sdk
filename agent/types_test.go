@@ -68,13 +68,10 @@ func TestResultStatus_IsSuccessful(t *testing.T) {
 }
 
 func TestNewTask(t *testing.T) {
-	task := NewTask("task-1", "Find vulnerabilities")
+	task := NewTask("task-1")
 
 	if task.ID != "task-1" {
 		t.Errorf("ID = %v, want task-1", task.ID)
-	}
-	if task.Goal != "Find vulnerabilities" {
-		t.Errorf("Goal = %v, want 'Find vulnerabilities'", task.Goal)
 	}
 	if task.Context == nil {
 		t.Error("Context should be initialized")
@@ -85,7 +82,7 @@ func TestNewTask(t *testing.T) {
 }
 
 func TestTask_Context(t *testing.T) {
-	task := NewTask("task-1", "test")
+	task := NewTask("task-1")
 
 	// Test SetContext and GetContext
 	task.SetContext("key1", "value1")
@@ -108,7 +105,7 @@ func TestTask_Context(t *testing.T) {
 }
 
 func TestTask_Metadata(t *testing.T) {
-	task := NewTask("task-1", "test")
+	task := NewTask("task-1")
 
 	// Test SetMetadata and GetMetadata
 	task.SetMetadata("priority", "high")

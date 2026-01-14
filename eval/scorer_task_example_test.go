@@ -18,7 +18,7 @@ func ExampleNewTaskCompletionScorer_exactMatch() {
 	sample := eval.Sample{
 		ID: "test-1",
 		Task: agent.Task{
-			Goal: "Find security vulnerabilities",
+			Context: map[string]any{"objective": "Find security vulnerabilities"},
 		},
 		Result: agent.Result{
 			Output: "vulnerability found",
@@ -50,7 +50,7 @@ func ExampleNewTaskCompletionScorer_binary() {
 	sample1 := eval.Sample{
 		ID: "test-2a",
 		Task: agent.Task{
-			Goal: "Identify vulnerability type",
+			Context: map[string]any{"objective": "Identify vulnerability type"},
 		},
 		Result: agent.Result{
 			Output: "Found SQL injection vulnerability in login form",
@@ -64,7 +64,7 @@ func ExampleNewTaskCompletionScorer_binary() {
 	sample2 := eval.Sample{
 		ID: "test-2b",
 		Task: agent.Task{
-			Goal: "Identify vulnerability type",
+			Context: map[string]any{"objective": "Identify vulnerability type"},
 		},
 		Result: agent.Result{
 			Output: "Found XSS vulnerability",
@@ -88,7 +88,7 @@ func ExampleNewTaskCompletionScorer_fuzzyMatch() {
 	sample := eval.Sample{
 		ID: "test-3",
 		Task: agent.Task{
-			Goal: "Complete the operation",
+			Context: map[string]any{"objective": "Complete the operation"},
 		},
 		Result: agent.Result{
 			Output: "Operation completed successfully!", // Contains "success"
@@ -115,7 +115,7 @@ func ExampleNewTaskCompletionScorer_complexOutput() {
 	sample := eval.Sample{
 		ID: "test-4",
 		Task: agent.Task{
-			Goal: "Count vulnerabilities",
+			Context: map[string]any{"objective": "Count vulnerabilities"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{

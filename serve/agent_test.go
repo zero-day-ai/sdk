@@ -176,7 +176,7 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 			name: "successful execution",
 			task: agent.Task{
 				ID:   "test-task-1",
-				Goal: "Test goal",
+				Context: map[string]any{"objective": "Test goal"},
 			},
 			executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 				return agent.NewSuccessResult(map[string]any{
@@ -199,7 +199,7 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 			name: "execution with error",
 			task: agent.Task{
 				ID:   "test-task-2",
-				Goal: "Test goal",
+				Context: map[string]any{"objective": "Test goal"},
 			},
 			executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 				return agent.Result{}, assert.AnError

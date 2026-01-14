@@ -310,7 +310,7 @@ func TestIntegration_LoadAndValidate(t *testing.T) {
 	// Verify each sample has required fields
 	for i, sample := range evalSet.Samples {
 		assert.NotEmpty(t, sample.ID, "Sample %d should have ID", i)
-		assert.NotEmpty(t, sample.Task.Goal, "Sample %d should have task goal", i)
+		// Goal field removed - samples use task.id now
 		assert.NotEmpty(t, sample.Tags, "Sample %d should have tags", i)
 
 		t.Logf("Sample %d: id=%s, tags=%v, expected_tools=%d, expected_findings=%d",
@@ -400,7 +400,7 @@ func TestIntegration_ScorerAccuracy(t *testing.T) {
 		ID: "perfect-execution",
 		Task: agent.Task{
 			ID:   "test-001",
-			Goal: "Test perfect execution",
+			Context: map[string]any{"objective": "Test perfect execution"},
 		},
 		ExpectedTools: []ExpectedToolCall{
 			{
@@ -519,7 +519,7 @@ func TestIntegration_JSONLFormat(t *testing.T) {
 		ID: "jsonl-test",
 		Task: agent.Task{
 			ID:   "test-001",
-			Goal: "Test JSONL format",
+			Context: map[string]any{"objective": "Test JSONL format"},
 		},
 		Tags: []string{"test"},
 		Metadata: map[string]any{

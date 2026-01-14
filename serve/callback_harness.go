@@ -543,17 +543,21 @@ func (h *CallbackHarness) ListTools(ctx context.Context) ([]tool.Descriptor, err
 		return nil, fmt.Errorf("list tools error: %s", resp.Error.Message)
 	}
 
-	// Convert to tool.Descriptor
-	// Note: The proto representation likely needs input/output schemas separately
-	// For now, create minimal descriptors - full conversion requires proto update
+	// Convert to tool.Descriptor with full schema support including taxonomy
 	tools := make([]tool.Descriptor, len(resp.Tools))
 	for i, protoTool := range resp.Tools {
 		tools[i] = tool.Descriptor{
 			Name:        protoTool.Name,
 			Description: protoTool.Description,
 			Version:     "unknown", // Proto doesn't include version yet
-			// TODO: Parse input/output schemas from proto once proto is updated
-			// Tags will also need to be added to proto
+		}
+
+		// Prefer structured schemas (with taxonomy) over JSON strings
+		if protoTool.InputSchema != nil {
+			tools[i].InputSchema = protoToSchema(protoTool.InputSchema)
+		}
+		if protoTool.OutputSchema != nil {
+			tools[i].OutputSchema = protoToSchema(protoTool.OutputSchema)
 		}
 	}
 
@@ -1477,4 +1481,109 @@ func (h *CallbackHarness) GetCredential(ctx context.Context, name string) (*type
 		Username: resp.Credential.Username,
 		Metadata: metadata,
 	}, nil
+}
+
+// ============================================================================
+// Proto to Schema Conversion (for taxonomy support)
+// ============================================================================
+
+// protoToSchema converts harness callback proto JSONSchemaNode to SDK schema.JSON.
+// This reconstructs the full SDK schema with taxonomy from the proto representation.
+func protoToSchema(node *proto.JSONSchemaNode) schema.JSON {
+	if node == nil {
+		return schema.JSON{}
+	}
+
+	s := schema.JSON{
+		Type:        node.Type,
+		Description: node.Description,
+		Required:    node.Required,
+		Format:      node.Format,
+	}
+
+	if node.Pattern != nil {
+		s.Pattern = *node.Pattern
+	}
+
+	// Convert properties recursively
+	if len(node.Properties) > 0 {
+		s.Properties = make(map[string]schema.JSON)
+		for name, prop := range node.Properties {
+			s.Properties[name] = protoToSchema(prop)
+		}
+	}
+
+	// Convert items recursively
+	if node.Items != nil {
+		items := protoToSchema(node.Items)
+		s.Items = &items
+	}
+
+	// Convert enum values
+	if len(node.EnumValues) > 0 {
+		for _, v := range node.EnumValues {
+			s.Enum = append(s.Enum, v)
+		}
+	}
+
+	// Convert numeric constraints
+	if node.Minimum != nil {
+		s.Minimum = node.Minimum
+	}
+	if node.Maximum != nil {
+		s.Maximum = node.Maximum
+	}
+	if node.MinLength != nil {
+		minLen := int(*node.MinLength)
+		s.MinLength = &minLen
+	}
+	if node.MaxLength != nil {
+		maxLen := int(*node.MaxLength)
+		s.MaxLength = &maxLen
+	}
+
+	// Convert default value (JSON decode)
+	if node.DefaultValue != nil && *node.DefaultValue != "" {
+		var def any
+		if err := json.Unmarshal([]byte(*node.DefaultValue), &def); err == nil {
+			s.Default = def
+		}
+	}
+
+	// Convert taxonomy (THE KEY FEATURE for knowledge graph extraction)
+	if node.Taxonomy != nil {
+		s.Taxonomy = protoToTaxonomy(node.Taxonomy)
+	}
+
+	return s
+}
+
+// protoToTaxonomy converts harness callback proto TaxonomyMapping to SDK TaxonomyMapping.
+func protoToTaxonomy(p *proto.TaxonomyMapping) *schema.TaxonomyMapping {
+	if p == nil {
+		return nil
+	}
+
+	t := &schema.TaxonomyMapping{
+		NodeType:   p.NodeType,
+		IDTemplate: p.IdTemplate,
+	}
+
+	// Convert property mappings
+	for _, prop := range p.Properties {
+		t.Properties = append(t.Properties, schema.PropertyMapping{
+			Source: prop.Source,
+			Target: prop.Target,
+		})
+	}
+
+	// Convert relationship mappings
+	for _, rel := range p.Relationships {
+		t.Relationships = append(t.Relationships, schema.RelationshipMapping{
+			Type:       rel.Type,
+			ToTemplate: rel.TargetTemplate,
+		})
+	}
+
+	return t
 }

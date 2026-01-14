@@ -128,7 +128,6 @@ func TestCallbackHarnessPlanContext(t *testing.T) {
 
 	// Create a mock planning context
 	mockCtx := &mockPlanningContext{
-		originalGoal:           "Test mission goal",
 		currentStepIndex:       2,
 		totalSteps:             5,
 		remainingSteps:         []string{"step3", "step4", "step5"},
@@ -142,7 +141,6 @@ func TestCallbackHarnessPlanContext(t *testing.T) {
 	// Verify it returns the context
 	ctx := harness.PlanContext()
 	assert.NotNil(t, ctx)
-	assert.Equal(t, "Test mission goal", ctx.OriginalGoal())
 	assert.Equal(t, 2, ctx.CurrentStepIndex())
 	assert.Equal(t, 5, ctx.TotalSteps())
 	assert.Equal(t, []string{"step3", "step4", "step5"}, ctx.RemainingSteps())
@@ -152,16 +150,11 @@ func TestCallbackHarnessPlanContext(t *testing.T) {
 
 // mockPlanningContext is a simple mock for testing PlanContext.
 type mockPlanningContext struct {
-	originalGoal           string
 	currentStepIndex       int
 	totalSteps             int
 	remainingSteps         []string
 	stepBudget             int
 	missionBudgetRemaining int
-}
-
-func (m *mockPlanningContext) OriginalGoal() string {
-	return m.originalGoal
 }
 
 func (m *mockPlanningContext) CurrentStepIndex() int {

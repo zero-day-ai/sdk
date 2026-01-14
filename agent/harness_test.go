@@ -568,7 +568,7 @@ func TestMockHarness_DelegateToAgent(t *testing.T) {
 	harness := &mockHarness{}
 	ctx := context.Background()
 
-	task := NewTask("task-1", "delegated task")
+	task := NewTask("task-1")
 	result, err := harness.DelegateToAgent(ctx, "agent1", *task)
 	if err != nil {
 		t.Errorf("DelegateToAgent() error = %v", err)

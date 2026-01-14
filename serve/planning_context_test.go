@@ -10,7 +10,6 @@ import (
 // TestPlanContextWrapper tests the planContextWrapper implementation.
 func TestPlanContextWrapper(t *testing.T) {
 	protoCtx := &proto.PlanContext{
-		OriginalGoal:           "Test mission goal",
 		CurrentStepIndex:       2,
 		TotalSteps:             5,
 		RemainingSteps:         []string{"step3", "step4", "step5"},
@@ -20,7 +19,6 @@ func TestPlanContextWrapper(t *testing.T) {
 
 	wrapper := &planContextWrapper{proto: protoCtx}
 
-	assert.Equal(t, "Test mission goal", wrapper.OriginalGoal())
 	assert.Equal(t, 2, wrapper.CurrentStepIndex())
 	assert.Equal(t, 5, wrapper.TotalSteps())
 	assert.Equal(t, []string{"step3", "step4", "step5"}, wrapper.RemainingSteps())
@@ -32,7 +30,6 @@ func TestPlanContextWrapper(t *testing.T) {
 func TestPlanContextWrapperNil(t *testing.T) {
 	wrapper := &planContextWrapper{proto: nil}
 
-	assert.Equal(t, "", wrapper.OriginalGoal())
 	assert.Equal(t, 0, wrapper.CurrentStepIndex())
 	assert.Equal(t, 0, wrapper.TotalSteps())
 	assert.Nil(t, wrapper.RemainingSteps())

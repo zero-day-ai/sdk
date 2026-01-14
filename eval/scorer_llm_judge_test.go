@@ -108,7 +108,7 @@ func TestLLMJudgeScorer_Score_Success(t *testing.T) {
 		ID: "test-1",
 		Task: agent.Task{
 			ID:   "task-1",
-			Goal: "Test task",
+			Context: map[string]any{"objective": "Test task"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{"result": "success"},
@@ -194,7 +194,7 @@ func TestLLMJudgeScorer_Score_WithTrajectory(t *testing.T) {
 		ID: "test-3",
 		Task: agent.Task{
 			ID:   "task-3",
-			Goal: "Test with trajectory",
+			Context: map[string]any{"objective": "Test with trajectory"},
 		},
 		Result: agent.Result{
 			Output: "success",
@@ -557,7 +557,7 @@ func TestLLMJudgeScorer_BuildPrompt(t *testing.T) {
 		ID: "test-prompt",
 		Task: agent.Task{
 			ID:   "task-prompt",
-			Goal: "Test task for prompt building",
+			Context: map[string]any{"objective": "Test task for prompt building"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{
@@ -643,7 +643,7 @@ func BenchmarkLLMJudgeScorer_Score(b *testing.B) {
 		ID: "bench-1",
 		Task: agent.Task{
 			ID:   "task-bench",
-			Goal: "Benchmark task",
+			Context: map[string]any{"objective": "Benchmark task"},
 		},
 		Result: agent.Result{
 			Output: "test output",
@@ -688,7 +688,7 @@ func ExampleNewLLMJudgeScorer() {
 		ID: "example-1",
 		Task: agent.Task{
 			ID:   "sql-injection-test",
-			Goal: "Test the login form for SQL injection vulnerabilities",
+			Context: map[string]any{"objective": "Test the login form for SQL injection vulnerabilities"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{

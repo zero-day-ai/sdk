@@ -44,8 +44,7 @@
 //
 // Agents receive Task objects containing:
 //   - ID: Unique task identifier
-//   - Goal: What to accomplish
-//   - Context: Additional information
+//   - Context: Additional information (including objective)
 //   - Constraints: Operational limits (max turns, tokens, allowed tools)
 //   - Metadata: Task-specific data
 //
@@ -74,7 +73,7 @@
 //		SetExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 //			// Agent implementation here
 //			logger := harness.Logger()
-//			logger.Info("executing task", "goal", task.Goal)
+//			logger.Info("executing task", "task_id", task.ID)
 //
 //			// Use LLM
 //			resp, err := harness.Complete(ctx, "primary", messages)

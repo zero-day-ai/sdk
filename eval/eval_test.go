@@ -54,7 +54,7 @@ func TestEScore(t *testing.T) {
 	sample := Sample{
 		ID: "test-sample-001",
 		Task: agent.Task{
-			Goal: "Test task",
+			Context: map[string]any{"objective": "Test task"},
 		},
 	}
 

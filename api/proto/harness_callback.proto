@@ -220,7 +220,54 @@ message ListToolsResponse {
 message HarnessToolDescriptor {
     string name = 1;
     string description = 2;
-    string schema_json = 3;  // JSON-encoded map[string]any
+    string schema_json = 3;  // JSON-encoded input schema (legacy, use input_schema for structured)
+    string output_schema_json = 4;  // JSON-encoded output schema with taxonomy
+    // Structured schemas with full taxonomy support (preferred over JSON)
+    JSONSchemaNode input_schema = 5;
+    JSONSchemaNode output_schema = 6;
+}
+
+// JSONSchemaNode represents a JSON Schema node with taxonomy support.
+// Used for structured schema transmission that preserves taxonomy mappings.
+message JSONSchemaNode {
+    string type = 1;  // "string", "number", "integer", "boolean", "array", "object"
+    string description = 2;
+    map<string, JSONSchemaNode> properties = 3;
+    repeated string required = 4;
+    JSONSchemaNode items = 5;  // For array types
+    repeated string enum_values = 6;
+    string format = 7;
+    optional double minimum = 8;
+    optional double maximum = 9;
+    optional int32 min_length = 10;
+    optional int32 max_length = 11;
+    optional int32 min_items = 12;
+    optional int32 max_items = 13;
+    optional string pattern = 14;
+    optional string default_value = 15;
+    bool nullable = 16;
+    TaxonomyMapping taxonomy = 17;  // Taxonomy mapping for knowledge graph extraction
+}
+
+// TaxonomyMapping defines how tool output maps to knowledge graph nodes.
+message TaxonomyMapping {
+    string node_type = 1;  // e.g., "host", "port", "finding"
+    string id_template = 2;  // e.g., "host:{.ip}"
+    repeated PropertyMapping properties = 3;
+    repeated RelationshipMapping relationships = 4;
+}
+
+// PropertyMapping maps a source field to a target property.
+message PropertyMapping {
+    string source = 1;  // JSONPath expression, e.g., "{.ip}"
+    string target = 2;  // Property name, e.g., "ip_address"
+}
+
+// RelationshipMapping defines relationships to other nodes.
+message RelationshipMapping {
+    string type = 1;  // e.g., "HAS_PORT", "DISCOVERED_BY"
+    string target_type = 2;  // e.g., "port", "agent"
+    string target_template = 3;  // e.g., "port:{.ip}:{.port}"
 }
 
 // ============================================================================
@@ -693,12 +740,11 @@ message GetPlanContextResponse {
 }
 
 message PlanContext {
-    string original_goal = 1;
-    int32 current_step_index = 2;
-    int32 total_steps = 3;
-    repeated string remaining_steps = 4;
-    int32 step_budget = 5;
-    int32 mission_budget_remaining = 6;
+    int32 current_step_index = 1;
+    int32 total_steps = 2;
+    repeated string remaining_steps = 3;
+    int32 step_budget = 4;
+    int32 mission_budget_remaining = 5;
 }
 
 message ReportStepHintsRequest {

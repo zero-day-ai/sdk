@@ -95,7 +95,7 @@ func TestJSONLLogger_Log(t *testing.T) {
 			ID: "test-001",
 			Task: agent.Task{
 				ID:   "task-001",
-				Goal: "Test task",
+				Context: map[string]any{"objective": "Test task"},
 			},
 			Metadata: map[string]any{
 				"difficulty": "easy",

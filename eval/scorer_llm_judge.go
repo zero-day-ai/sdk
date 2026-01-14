@@ -246,8 +246,8 @@ func (s *llmJudgeScorer) buildEvaluationPrompt(sample Sample) string {
 
 	// Task description
 	sb.WriteString("Task:\n")
-	if sample.Task.Goal != "" {
-		sb.WriteString(sample.Task.Goal)
+	if objective, ok := sample.Task.Context["objective"]; ok {
+		sb.WriteString(fmt.Sprintf("%v", objective))
 	} else {
 		sb.WriteString(fmt.Sprintf("ID: %s", sample.Task.ID))
 	}

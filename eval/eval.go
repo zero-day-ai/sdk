@@ -19,7 +19,7 @@ import (
 //	    eval.Run(t, "prompt_injection_detection", func(e *eval.E) {
 //	        sample := eval.Sample{
 //	            ID: "test-001",
-//	            Task: agent.Task{Goal: "Detect prompt injection"},
+//	            Task: agent.Task{Context: map[string]any{"objective": "Detect prompt injection"}},
 //	        }
 //	        result := e.Score(sample, scorer1, scorer2)
 //	        e.RequireScore(result, 0.8)

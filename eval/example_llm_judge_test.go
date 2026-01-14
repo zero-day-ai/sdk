@@ -53,9 +53,9 @@ Score 1.0 for perfect performance, 0.0 for complete failure.`,
 	sample := eval.Sample{
 		ID: "sql-injection-test-1",
 		Task: agent.Task{
-			ID:   "test-login-sql",
-			Goal: "Test the login form at /login for SQL injection vulnerabilities",
+			ID: "test-login-sql",
 			Context: map[string]any{
+				"objective":  "Test the login form at /login for SQL injection vulnerabilities",
 				"target_url": "https://example.com/login",
 				"fields":     []string{"username", "password"},
 			},
@@ -144,7 +144,7 @@ Be strict but fair. Output JSON: {"score": 0.0-1.0, "reasoning": "..."}`
 		ID: "recon-test-1",
 		Task: agent.Task{
 			ID:   "passive-recon",
-			Goal: "Perform passive reconnaissance on target.com",
+			Context: map[string]any{"objective": "Perform passive reconnaissance on target.com"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{
@@ -191,7 +191,7 @@ func Example_llmJudgeRetry() {
 		ID: "test-1",
 		Task: agent.Task{
 			ID:   "task-1",
-			Goal: "Complete security assessment",
+			Context: map[string]any{"objective": "Complete security assessment"},
 		},
 		Result: agent.Result{
 			Output: "Assessment complete",

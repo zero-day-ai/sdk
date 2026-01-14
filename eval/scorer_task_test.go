@@ -16,7 +16,7 @@ func TestTaskCompletionScorer_ExactMatch(t *testing.T) {
 	sample := Sample{
 		ID: "test-1",
 		Task: agent.Task{
-			Goal: "Complete the task",
+			Context: map[string]any{"objective": "Complete the task"},
 		},
 		Result: agent.Result{
 			Output: "success",
@@ -45,7 +45,7 @@ func TestTaskCompletionScorer_NoMatch(t *testing.T) {
 	sample := Sample{
 		ID: "test-2",
 		Task: agent.Task{
-			Goal: "Complete the task",
+			Context: map[string]any{"objective": "Complete the task"},
 		},
 		Result: agent.Result{
 			Output: "failure",
@@ -74,7 +74,7 @@ func TestTaskCompletionScorer_CaseInsensitive(t *testing.T) {
 	sample := Sample{
 		ID: "test-3",
 		Task: agent.Task{
-			Goal: "Complete the task",
+			Context: map[string]any{"objective": "Complete the task"},
 		},
 		Result: agent.Result{
 			Output: "success",
@@ -103,7 +103,7 @@ func TestTaskCompletionScorer_Substring(t *testing.T) {
 	sample := Sample{
 		ID: "test-4",
 		Task: agent.Task{
-			Goal: "Find security issues",
+			Context: map[string]any{"objective": "Find security issues"},
 		},
 		Result: agent.Result{
 			Output: "Found SQL injection vulnerability in login form",
@@ -134,7 +134,7 @@ func TestTaskCompletionScorer_Binary(t *testing.T) {
 	sample1 := Sample{
 		ID: "test-5a",
 		Task: agent.Task{
-			Goal: "Find security issues",
+			Context: map[string]any{"objective": "Find security issues"},
 		},
 		Result: agent.Result{
 			Output: "Found SQL injection vulnerability",
@@ -154,7 +154,7 @@ func TestTaskCompletionScorer_Binary(t *testing.T) {
 	sample2 := Sample{
 		ID: "test-5b",
 		Task: agent.Task{
-			Goal: "Find security issues",
+			Context: map[string]any{"objective": "Find security issues"},
 		},
 		Result: agent.Result{
 			Output: "No issues found",
@@ -189,7 +189,7 @@ func TestTaskCompletionScorer_LLMJudge(t *testing.T) {
 	sample := Sample{
 		ID: "test-6",
 		Task: agent.Task{
-			Goal: "Test login form for SQL injection",
+			Context: map[string]any{"objective": "Test login form for SQL injection"},
 		},
 		Result: agent.Result{
 			Output: "Found SQL injection in username field",
@@ -228,7 +228,7 @@ func TestTaskCompletionScorer_LLMJudgeWithMarkdown(t *testing.T) {
 	sample := Sample{
 		ID: "test-7",
 		Task: agent.Task{
-			Goal: "Comprehensive security test",
+			Context: map[string]any{"objective": "Comprehensive security test"},
 		},
 		Result: agent.Result{
 			Output: "Found 2 out of 3 vulnerabilities",
@@ -264,7 +264,7 @@ func TestTaskCompletionScorer_CombinedMode(t *testing.T) {
 	sample := Sample{
 		ID: "test-8",
 		Task: agent.Task{
-			Goal: "Complete the task",
+			Context: map[string]any{"objective": "Complete the task"},
 		},
 		Result: agent.Result{
 			Output: "success",
@@ -297,7 +297,7 @@ func TestTaskCompletionScorer_NoConfiguration(t *testing.T) {
 	sample := Sample{
 		ID: "test-9",
 		Task: agent.Task{
-			Goal: "Test task",
+			Context: map[string]any{"objective": "Test task"},
 		},
 		Result: agent.Result{
 			Output: "result",
@@ -333,7 +333,7 @@ func TestTaskCompletionScorer_InvalidJudgeScore(t *testing.T) {
 	sample := Sample{
 		ID: "test-10",
 		Task: agent.Task{
-			Goal: "Test task",
+			Context: map[string]any{"objective": "Test task"},
 		},
 		Result: agent.Result{
 			Output: "result",
@@ -368,7 +368,7 @@ func TestTaskCompletionScorer_MalformedJudgeResponse(t *testing.T) {
 	sample := Sample{
 		ID: "test-11",
 		Task: agent.Task{
-			Goal: "Test task",
+			Context: map[string]any{"objective": "Test task"},
 		},
 		Result: agent.Result{
 			Output: "result",
@@ -473,7 +473,7 @@ func TestBuildJudgePrompt(t *testing.T) {
 
 	sample := Sample{
 		Task: agent.Task{
-			Goal: "Find vulnerabilities",
+			Context: map[string]any{"objective": "Find vulnerabilities"},
 		},
 		Result: agent.Result{
 			Output: "Found SQL injection",
@@ -514,7 +514,7 @@ func TestTaskCompletionScorer_ComplexOutput(t *testing.T) {
 	sample := Sample{
 		ID: "test-12",
 		Task: agent.Task{
-			Goal: "Count vulnerabilities",
+			Context: map[string]any{"objective": "Count vulnerabilities"},
 		},
 		Result: agent.Result{
 			Output: map[string]any{
@@ -583,7 +583,7 @@ func TestJudgeResponseParsing(t *testing.T) {
 			})
 
 			sample := Sample{
-				Task:   agent.Task{Goal: "Test"},
+				Task:   agent.Task{Context: map[string]any{"objective": "Test"}},
 				Result: agent.Result{Output: "result"},
 			}
 
