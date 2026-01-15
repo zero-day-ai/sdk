@@ -6,6 +6,10 @@ type Task struct {
 	// ID is a unique identifier for this task.
 	ID string
 
+	// Goal is the primary objective for this task.
+	// This is a convenience field that is also stored in Context["goal"].
+	Goal string
+
 	// Context provides additional information needed to complete the task.
 	// This can include target details, previous findings, or mission context.
 	Context map[string]any
