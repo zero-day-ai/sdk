@@ -69,6 +69,13 @@ service HarnessCallbackService {
 
     // Credential Operations
     rpc GetCredential(GetCredentialRequest) returns (GetCredentialResponse);
+
+    // Taxonomy Operations
+    rpc GetTaxonomySchema(GetTaxonomySchemaRequest) returns (GetTaxonomySchemaResponse);
+    rpc GenerateNodeID(GenerateNodeIDRequest) returns (GenerateNodeIDResponse);
+    rpc ValidateFinding(ValidateFindingRequest) returns (ValidationResponse);
+    rpc ValidateGraphNode(ValidateGraphNodeRequest) returns (ValidationResponse);
+    rpc ValidateRelationship(ValidateRelationshipRequest) returns (ValidationResponse);
 }
 
 // ============================================================================
@@ -871,4 +878,135 @@ message Credential {
     string secret = 3;           // The decrypted secret value
     string username = 4;         // For BASIC auth credentials
     string metadata_json = 5;    // JSON-encoded additional metadata
+}
+
+// ============================================================================
+// Taxonomy Operations
+// ============================================================================
+
+message GetTaxonomySchemaRequest {
+    ContextInfo context = 1;
+}
+
+message GetTaxonomySchemaResponse {
+    string version = 1;
+    repeated TaxonomyNodeType node_types = 2;
+    repeated TaxonomyRelationshipType relationship_types = 3;
+    repeated TaxonomyTechnique techniques = 4;
+    repeated TaxonomyTargetType target_types = 5;
+    repeated TaxonomyTechniqueType technique_types = 6;
+    repeated TaxonomyCapability capabilities = 7;
+    HarnessError error = 8;
+}
+
+message TaxonomyNodeType {
+    string id = 1;
+    string name = 2;
+    string type = 3;
+    string category = 4;
+    string description = 5;
+    string id_template = 6;
+    repeated TaxonomyProperty properties = 7;
+}
+
+message TaxonomyRelationshipType {
+    string id = 1;
+    string name = 2;
+    string type = 3;
+    string category = 4;
+    string description = 5;
+    repeated string from_types = 6;
+    repeated string to_types = 7;
+    repeated TaxonomyProperty properties = 8;
+    bool bidirectional = 9;
+}
+
+message TaxonomyTechnique {
+    string technique_id = 1;
+    string name = 2;
+    string taxonomy = 3;  // mitre, arcanum, custom
+    string category = 4;
+    string description = 5;
+    string tactic = 6;
+    repeated string platforms = 7;
+    repeated string mitre_mapping = 8;
+}
+
+message TaxonomyTargetType {
+    string id = 1;
+    string type = 2;
+    string name = 3;
+    string category = 4;
+    string description = 5;
+    repeated string required_fields = 6;
+    repeated string optional_fields = 7;
+}
+
+message TaxonomyTechniqueType {
+    string id = 1;
+    string type = 2;
+    string name = 3;
+    string category = 4;
+    string description = 5;
+    repeated string mitre_ids = 6;
+    string default_severity = 7;
+}
+
+message TaxonomyCapability {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    repeated string technique_types = 4;
+}
+
+message TaxonomyProperty {
+    string name = 1;
+    string type = 2;  // string, int, float64, bool, []string, map[string]any
+    bool required = 3;
+    string description = 4;
+    repeated string enum_values = 5;
+    string default_value = 6;  // JSON-encoded
+}
+
+message GenerateNodeIDRequest {
+    ContextInfo context = 1;
+    string node_type = 2;
+    string properties_json = 3;  // JSON-encoded map[string]any
+}
+
+message GenerateNodeIDResponse {
+    string node_id = 1;
+    HarnessError error = 2;
+}
+
+message ValidateFindingRequest {
+    ContextInfo context = 1;
+    string finding_json = 2;  // JSON-encoded finding.Finding
+}
+
+message ValidateGraphNodeRequest {
+    ContextInfo context = 1;
+    string node_type = 2;
+    string properties_json = 3;  // JSON-encoded map[string]any
+}
+
+message ValidateRelationshipRequest {
+    ContextInfo context = 1;
+    string relationship_type = 2;
+    string from_node_type = 3;
+    string to_node_type = 4;
+    string properties_json = 5;  // JSON-encoded map[string]any
+}
+
+message ValidationResponse {
+    bool valid = 1;
+    repeated ValidationError errors = 2;
+    repeated string warnings = 3;
+    HarnessError error = 4;
+}
+
+message ValidationError {
+    string field = 1;
+    string message = 2;
+    string code = 3;  // e.g., "MISSING_REQUIRED", "INVALID_ENUM", "UNKNOWN_TYPE"
 }

@@ -42,6 +42,10 @@ type CallbackHarness struct {
 	planContext    planning.PlanningContext
 	missionExecCtx types.MissionExecutionContext
 
+	// Taxonomy support
+	taxonomy         *TaxonomyAdapter
+	taxonomyInitOnce sync.Once
+
 	// Caching for list operations
 	cacheMu      sync.RWMutex
 	toolsCache   []tool.Descriptor
@@ -50,6 +54,8 @@ type CallbackHarness struct {
 }
 
 // NewCallbackHarness creates a new callback-based harness.
+// It automatically fetches the taxonomy from the orchestrator at startup.
+// If taxonomy fetch fails, the harness will still function but without taxonomy support.
 func NewCallbackHarness(
 	client *CallbackClient,
 	logger *slog.Logger,
@@ -57,7 +63,7 @@ func NewCallbackHarness(
 	mission types.MissionContext,
 	target types.TargetInfo,
 ) *CallbackHarness {
-	return &CallbackHarness{
+	h := &CallbackHarness{
 		client:       client,
 		memory:       NewCallbackMemoryStore(client, tracer),
 		tokenTracker: NewCallbackTokenTracker(),
@@ -67,6 +73,48 @@ func NewCallbackHarness(
 		target:       target,
 		planContext:  nil, // Set via SetPlanContext if planning is enabled
 	}
+
+	// Fetch taxonomy at startup (non-blocking, with graceful degradation)
+	h.initTaxonomy(context.Background())
+
+	return h
+}
+
+// initTaxonomy fetches the taxonomy from the orchestrator and sets it globally.
+// This is called automatically at startup. If fetch fails, the harness will
+// continue to work but without full taxonomy support.
+func (h *CallbackHarness) initTaxonomy(ctx context.Context) {
+	h.taxonomyInitOnce.Do(func() {
+		// Create timeout context for taxonomy fetch
+		fetchCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		req := &proto.GetTaxonomySchemaRequest{}
+		resp, err := h.client.GetTaxonomySchema(fetchCtx, req)
+		if err != nil {
+			h.logger.Warn("failed to fetch taxonomy from orchestrator - continuing without taxonomy support",
+				"error", err)
+			return
+		}
+
+		if resp.Error != nil {
+			h.logger.Warn("orchestrator returned error fetching taxonomy - continuing without taxonomy support",
+				"error", resp.Error.Message)
+			return
+		}
+
+		// Create adapter from proto response
+		h.taxonomy = NewTaxonomyAdapter(resp)
+
+		// Set global taxonomy in SDK
+		graphrag.SetTaxonomy(h.taxonomy)
+
+		h.logger.Info("taxonomy initialized successfully",
+			"version", h.taxonomy.Version(),
+			"node_types", len(h.taxonomy.NodeTypes()),
+			"relationship_types", len(h.taxonomy.RelationshipTypes()),
+			"techniques", len(h.taxonomy.TechniqueIDs("")))
+	})
 }
 
 // SetPlanContext sets the planning context for this harness.
@@ -1586,4 +1634,153 @@ func protoToTaxonomy(p *proto.TaxonomyMapping) *schema.TaxonomyMapping {
 	}
 
 	return t
+}
+
+// ============================================================================
+// Taxonomy Operations
+// ============================================================================
+
+// Taxonomy returns the taxonomy adapter for this harness.
+// Returns nil if taxonomy was not successfully initialized.
+func (h *CallbackHarness) Taxonomy() *TaxonomyAdapter {
+	return h.taxonomy
+}
+
+// HasTaxonomy returns true if taxonomy is available for this harness.
+func (h *CallbackHarness) HasTaxonomy() bool {
+	return h.taxonomy != nil
+}
+
+// GenerateNodeID generates a deterministic node ID using taxonomy templates.
+// Calls the orchestrator's GenerateNodeID RPC method.
+func (h *CallbackHarness) GenerateNodeID(ctx context.Context, nodeType string, properties map[string]any) (string, error) {
+	propsJSON, err := json.Marshal(properties)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal properties: %w", err)
+	}
+
+	req := &proto.GenerateNodeIDRequest{
+		NodeType:       nodeType,
+		PropertiesJson: string(propsJSON),
+	}
+
+	resp, err := h.client.GenerateNodeID(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("GenerateNodeID callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return "", fmt.Errorf("GenerateNodeID error: %s", resp.Error.Message)
+	}
+
+	return resp.NodeId, nil
+}
+
+// ValidationResult represents the result of a taxonomy validation.
+type ValidationResult struct {
+	Valid    bool
+	Errors   []ValidationError
+	Warnings []string
+}
+
+// ValidationError represents a single validation error.
+type ValidationError struct {
+	Field   string
+	Message string
+	Code    string
+}
+
+// ValidateFinding validates a finding against the taxonomy schema.
+func (h *CallbackHarness) ValidateFinding(ctx context.Context, f *finding.Finding) (*ValidationResult, error) {
+	findingJSON, err := json.Marshal(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal finding: %w", err)
+	}
+
+	req := &proto.ValidateFindingRequest{
+		FindingJson: string(findingJSON),
+	}
+
+	resp, err := h.client.ValidateFinding(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateFinding callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return nil, fmt.Errorf("ValidateFinding error: %s", resp.Error.Message)
+	}
+
+	return h.convertValidationResponse(resp), nil
+}
+
+// ValidateGraphNode validates a graph node against the taxonomy schema.
+func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string, properties map[string]any) (*ValidationResult, error) {
+	propsJSON, err := json.Marshal(properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal properties: %w", err)
+	}
+
+	req := &proto.ValidateGraphNodeRequest{
+		NodeType:       nodeType,
+		PropertiesJson: string(propsJSON),
+	}
+
+	resp, err := h.client.ValidateGraphNode(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateGraphNode callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return nil, fmt.Errorf("ValidateGraphNode error: %s", resp.Error.Message)
+	}
+
+	return h.convertValidationResponse(resp), nil
+}
+
+// ValidateRelationship validates a relationship against the taxonomy schema.
+func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType string, fromNodeType string, toNodeType string, properties map[string]any) (*ValidationResult, error) {
+	var propsJSON string
+	if properties != nil {
+		data, err := json.Marshal(properties)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal properties: %w", err)
+		}
+		propsJSON = string(data)
+	}
+
+	req := &proto.ValidateRelationshipRequest{
+		RelationshipType: relType,
+		FromNodeType:     fromNodeType,
+		ToNodeType:       toNodeType,
+		PropertiesJson:   propsJSON,
+	}
+
+	resp, err := h.client.ValidateRelationship(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateRelationship callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		return nil, fmt.Errorf("ValidateRelationship error: %s", resp.Error.Message)
+	}
+
+	return h.convertValidationResponse(resp), nil
+}
+
+// convertValidationResponse converts a proto ValidationResponse to ValidationResult.
+func (h *CallbackHarness) convertValidationResponse(resp *proto.ValidationResponse) *ValidationResult {
+	result := &ValidationResult{
+		Valid:    resp.Valid,
+		Warnings: resp.Warnings,
+	}
+
+	for _, e := range resp.Errors {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   e.Field,
+			Message: e.Message,
+			Code:    e.Code,
+		})
+	}
+
+	return result
 }

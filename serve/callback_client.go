@@ -842,3 +842,82 @@ func (c *CallbackClient) GetCredential(ctx context.Context, req *proto.GetCreden
 	}
 	return resp, nil
 }
+
+// ============================================================================
+// Taxonomy Operations
+// ============================================================================
+
+// GetTaxonomySchema retrieves the full taxonomy schema from the orchestrator.
+func (c *CallbackClient) GetTaxonomySchema(ctx context.Context, req *proto.GetTaxonomySchemaRequest) (*proto.GetTaxonomySchemaResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("GetTaxonomySchema: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.GetTaxonomySchema(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("GetTaxonomySchema: %w", err)
+	}
+	return resp, nil
+}
+
+// GenerateNodeID generates a deterministic node ID using taxonomy templates.
+func (c *CallbackClient) GenerateNodeID(ctx context.Context, req *proto.GenerateNodeIDRequest) (*proto.GenerateNodeIDResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("GenerateNodeID: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.GenerateNodeID(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("GenerateNodeID: %w", err)
+	}
+	return resp, nil
+}
+
+// ValidateFinding validates a finding against the taxonomy schema.
+func (c *CallbackClient) ValidateFinding(ctx context.Context, req *proto.ValidateFindingRequest) (*proto.ValidationResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("ValidateFinding: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ValidateFinding(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateFinding: %w", err)
+	}
+	return resp, nil
+}
+
+// ValidateGraphNode validates a graph node against the taxonomy schema.
+func (c *CallbackClient) ValidateGraphNode(ctx context.Context, req *proto.ValidateGraphNodeRequest) (*proto.ValidationResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("ValidateGraphNode: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ValidateGraphNode(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateGraphNode: %w", err)
+	}
+	return resp, nil
+}
+
+// ValidateRelationship validates a relationship against the taxonomy schema.
+func (c *CallbackClient) ValidateRelationship(ctx context.Context, req *proto.ValidateRelationshipRequest) (*proto.ValidationResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("ValidateRelationship: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ValidateRelationship(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ValidateRelationship: %w", err)
+	}
+	return resp, nil
+}
