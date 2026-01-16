@@ -59,6 +59,12 @@ type Error struct {
 
 	// Cause is the underlying error that caused this error
 	Cause error
+
+	// Class categorizes the error by its nature for semantic understanding
+	Class ErrorClass `json:"class,omitempty"`
+
+	// Hints provides recovery suggestions for this error
+	Hints []RecoveryHint `json:"hints,omitempty"`
 }
 
 // New creates a new structured tool error.
@@ -102,6 +108,36 @@ func (e *Error) WithCause(err error) *Error {
 //	    WithDetails(map[string]any{"timeout": "30s", "target": "192.168.1.1"})
 func (e *Error) WithDetails(details map[string]any) *Error {
 	e.Details = details
+	return e
+}
+
+// WithClass sets the error classification for semantic understanding.
+// This method returns the same error instance for method chaining.
+//
+// Example:
+//
+//	err := toolerr.New("nmap", "scan", toolerr.ErrCodeBinaryNotFound, "nmap not found").
+//	    WithClass(toolerr.ErrorClassInfrastructure)
+func (e *Error) WithClass(class ErrorClass) *Error {
+	e.Class = class
+	return e
+}
+
+// WithHints adds recovery suggestions to this error.
+// This method appends hints and returns the same error instance for method chaining.
+//
+// Example:
+//
+//	err := toolerr.New("nmap", "scan", toolerr.ErrCodeBinaryNotFound, "nmap not found").
+//	    WithHints(toolerr.RecoveryHint{
+//	        Strategy:    toolerr.StrategyUseAlternative,
+//	        Alternative: "masscan",
+//	        Reason:      "masscan can perform similar port scanning",
+//	        Confidence:  0.8,
+//	        Priority:    1,
+//	    })
+func (e *Error) WithHints(hints ...RecoveryHint) *Error {
+	e.Hints = append(e.Hints, hints...)
 	return e
 }
 
