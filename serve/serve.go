@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -69,12 +70,48 @@ type Config struct {
 
 // DefaultConfig returns default serve configuration.
 // These defaults are suitable for local development and testing.
+//
+// Port resolution order:
+//  1. --port CLI flag (if present)
+//  2. GIBSON_PORT environment variable
+//  3. Default: 50051
 func DefaultConfig() *Config {
+	port := 50051
+
+	// Check for --port CLI flag first
+	if cliPort := getPortFromCLI(); cliPort > 0 {
+		port = cliPort
+	} else if envPort := os.Getenv("GIBSON_PORT"); envPort != "" {
+		// Check GIBSON_PORT env var
+		if p, err := strconv.Atoi(envPort); err == nil && p > 0 {
+			port = p
+		}
+	}
+
 	return &Config{
-		Port:            50051,
+		Port:            port,
 		HealthEndpoint:  "/health",
 		GracefulTimeout: 30 * time.Second,
 	}
+}
+
+// getPortFromCLI parses --port flag from command line arguments.
+// Returns 0 if not found or invalid.
+func getPortFromCLI() int {
+	for i, arg := range os.Args[1:] {
+		if arg == "--port" && i+1 < len(os.Args[1:]) {
+			if p, err := strconv.Atoi(os.Args[i+2]); err == nil && p > 0 {
+				return p
+			}
+		}
+		// Handle --port=8080 format
+		if len(arg) > 7 && arg[:7] == "--port=" {
+			if p, err := strconv.Atoi(arg[7:]); err == nil && p > 0 {
+				return p
+			}
+		}
+	}
+	return 0
 }
 
 // Server wraps a gRPC server with lifecycle management.
