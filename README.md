@@ -89,7 +89,7 @@ The Gibson SDK follows a layered architecture where agents orchestrate security 
 │  │ (OpenAI,   │  │  Registry  │  │  Registry  │  │ ┌────────────────┐ │    │
 │  │ Anthropic, │  │            │  │            │  │ │Working (RAM)   │ │    │
 │  │ Ollama)    │  │ ┌────────┐ │  │ ┌────────┐ │  │ ├────────────────┤ │    │
-│  └────────────┘  │ │HTTP    │ │  │ │GraphRAG│ │  │ │Mission (SQLite)│ │    │
+│  └────────────┘  │ │HTTP    │ │  │ │GraphRAG│ │  │ │Mission (DB)    │ │    │
 │                  │ │Browser │ │  │ │MITRE   │ │  │ ├────────────────┤ │    │
 │                  │ │Scanner │ │  │ │Custom  │ │  │ │Long-term (Vec) │ │    │
 │                  │ └────────┘ │  │ └────────┘ │  │ └────────────────┘ │    │
@@ -166,7 +166,7 @@ The Gibson SDK follows a layered architecture where agents orchestrate security 
 │  ┌─────────────────────────────────────────────────────────────────┐    │
 │  │                    MISSION MEMORY (Persistent)                   │    │
 │  │                                                                  │    │
-│  │  • SQLite-backed storage with FTS5 search                       │    │
+│  │  • Persistent key-value storage with full-text search           │    │
 │  │  • Persists for duration of mission                             │    │
 │  │  • Searchable and queryable                                     │    │
 │  │  • Use for: Conversation history, discovered patterns, state    │    │
