@@ -404,9 +404,9 @@ func TestAllHintsHaveReasons(t *testing.T) {
 	}
 }
 
-// TestAlternativesExist verifies alternative tools actually exist in gibson-oss-tools
+// TestAlternativesExist verifies alternative tools actually exist in tools
 func TestAlternativesExist(t *testing.T) {
-	// Known tools that exist in gibson-oss-tools
+	// Known tools that exist in tools
 	knownTools := map[string]bool{
 		"nmap":      true,
 		"masscan":   true,
