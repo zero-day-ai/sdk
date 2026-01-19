@@ -63,7 +63,13 @@ type Result struct {
 
 	// Error contains error information if the task failed.
 	// This should be nil for successful tasks.
-	Error error
+	// This field is not serialized to JSON - use ErrorInfo instead for serialization.
+	Error error `json:"-"`
+
+	// ErrorInfo contains structured, JSON-serializable error information.
+	// This field is populated automatically when Fail() is called.
+	// It preserves error details across process boundaries and serialization.
+	ErrorInfo *ResultError `json:"error,omitempty"`
 }
 
 // ResultStatus indicates the outcome of task execution.
@@ -205,21 +211,23 @@ func NewSuccessResult(output any) Result {
 // NewFailedResult creates a failed result with the given error.
 func NewFailedResult(err error) Result {
 	return Result{
-		Status:   StatusFailed,
-		Error:    err,
-		Findings: []string{},
-		Metadata: make(map[string]any),
+		Status:    StatusFailed,
+		Error:     err,
+		ErrorInfo: FromError(err),
+		Findings:  []string{},
+		Metadata:  make(map[string]any),
 	}
 }
 
 // NewPartialResult creates a partial result with the given output and error.
 func NewPartialResult(output any, err error) Result {
 	return Result{
-		Status:   StatusPartial,
-		Output:   output,
-		Error:    err,
-		Findings: []string{},
-		Metadata: make(map[string]any),
+		Status:    StatusPartial,
+		Output:    output,
+		Error:     err,
+		ErrorInfo: FromError(err),
+		Findings:  []string{},
+		Metadata:  make(map[string]any),
 	}
 }
 
@@ -264,4 +272,21 @@ func (r *Result) SetMetadata(key string, value any) {
 		r.Metadata = make(map[string]any)
 	}
 	r.Metadata[key] = value
+}
+
+// Fail marks the result as failed and sets both the Error and ErrorInfo fields.
+// The Error field is set to the provided error for backwards compatibility.
+// The ErrorInfo field is set to a serializable ResultError for transmission.
+//
+// Example:
+//
+//	result := agent.Result{}
+//	if err := performTask(); err != nil {
+//	    result.Fail(err)
+//	    return result
+//	}
+func (r *Result) Fail(err error) {
+	r.Status = StatusFailed
+	r.Error = err
+	r.ErrorInfo = FromError(err)
 }

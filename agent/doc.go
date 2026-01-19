@@ -169,7 +169,34 @@
 //
 // # Error Handling
 //
-// Agents should handle errors appropriately:
+// Agents should use ResultError for structured, JSON-serializable errors:
+//
+//	// Create a structured error
+//	err := agent.NewResultError("TIMEOUT", "LLM request timed out").
+//		WithComponent("my-agent").
+//		WithRetryable(true).
+//		WithDetails(map[string]any{"slot": "main", "timeout_ms": 30000})
+//
+//	// Wrap existing errors
+//	toolErr := agent.Wrap(err, "EXECUTION_FAILED", "Task failed").
+//		WithComponent("my-agent")
+//
+//	// Convert standard errors
+//	resultErr := agent.FromError(standardErr)
+//
+//	// Return in results
+//	return agent.Result{Status: agent.StatusFailed, Error: err}, err
+//
+// ResultError provides:
+//   - Code: Standard error code from taxonomy
+//   - Message: Human-readable description
+//   - Details: Additional context (JSON-serializable)
+//   - Cause: Wrapped error chain
+//   - Retryable: Whether operation can be retried
+//   - Component: Source component identifier
+//   - Stack: Optional stack trace for debugging
+//
+// Standard result statuses:
 //   - Return Result with StatusFailed and error for unrecoverable errors
 //   - Return Result with StatusPartial for partially completed tasks
 //   - Return Result with StatusTimeout when hitting time limits
