@@ -2,7 +2,6 @@ package types
 
 import "github.com/zero-day-ai/sdk/input"
 
-
 // TargetInfo contains detailed information about a target system.
 // It provides all necessary context for agents to interact with and test the target.
 type TargetInfo struct {

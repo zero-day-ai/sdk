@@ -222,17 +222,17 @@ func TestWithHints(t *testing.T) {
 // TestWithHintsAppends verifies that WithHints appends rather than replaces
 func TestWithHintsAppends(t *testing.T) {
 	hint1 := RecoveryHint{
-		Strategy:    StrategyRetry,
-		Reason:      "first hint",
-		Confidence:  0.5,
-		Priority:    1,
+		Strategy:   StrategyRetry,
+		Reason:     "first hint",
+		Confidence: 0.5,
+		Priority:   1,
 	}
 
 	hint2 := RecoveryHint{
-		Strategy:    StrategySkip,
-		Reason:      "second hint",
-		Confidence:  0.3,
-		Priority:    2,
+		Strategy:   StrategySkip,
+		Reason:     "second hint",
+		Confidence: 0.3,
+		Priority:   2,
 	}
 
 	err := New("test", "operation", ErrCodeTimeout, "test message")

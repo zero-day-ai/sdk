@@ -263,10 +263,10 @@ func Combine(checks ...types.HealthStatus) types.HealthStatus {
 		return types.NewUnhealthyStatus(
 			fmt.Sprintf("%d check(s) failed", len(unhealthyChecks)),
 			map[string]any{
-				"total":      len(checks),
-				"unhealthy":  len(unhealthyChecks),
-				"degraded":   len(degradedChecks),
-				"healthy":    healthyCount,
+				"total":         len(checks),
+				"unhealthy":     len(unhealthyChecks),
+				"degraded":      len(degradedChecks),
+				"healthy":       healthyCount,
 				"failed_checks": unhealthyChecks,
 			},
 		)

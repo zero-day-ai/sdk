@@ -57,7 +57,7 @@ func ExampleNewAgent() {
 		sdk.WithExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 			// Agent implementation
 			return agent.NewSuccessResult(map[string]any{
-				"tests_run":     10,
+				"tests_run":       10,
 				"vulnerabilities": 2,
 			}), nil
 		}),

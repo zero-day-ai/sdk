@@ -208,8 +208,8 @@ func TestTargetSchema_ValidateConnection(t *testing.T) {
 				}, "url"),
 			},
 			connection: map[string]any{
-				"url":        "https://example.com",
-				"extra_key":  "extra_value",
+				"url":         "https://example.com",
+				"extra_key":   "extra_value",
 				"another_key": 123,
 			},
 			wantErr: false,

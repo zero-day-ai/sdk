@@ -63,10 +63,10 @@ func TestToolCall_ParseArguments(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		call      ToolCall
-		wantArgs  Args
-		wantErr   bool
+		name     string
+		call     ToolCall
+		wantArgs Args
+		wantErr  bool
 	}{
 		{
 			name: "valid arguments",

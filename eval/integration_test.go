@@ -399,7 +399,7 @@ func TestIntegration_ScorerAccuracy(t *testing.T) {
 	perfectSample := Sample{
 		ID: "perfect-execution",
 		Task: agent.Task{
-			ID:   "test-001",
+			ID:      "test-001",
 			Context: map[string]any{"objective": "Test perfect execution"},
 		},
 		ExpectedTools: []ExpectedToolCall{
@@ -434,8 +434,8 @@ func TestIntegration_ScorerAccuracy(t *testing.T) {
 					Duration:  time.Millisecond * 500,
 				},
 				{
-					Type:   "finding",
-					Name:   "submit",
+					Type: "finding",
+					Name: "submit",
 					Output: finding.NewFindingWithID(
 						"finding-001",
 						"mission-001",
@@ -518,7 +518,7 @@ func TestIntegration_JSONLFormat(t *testing.T) {
 	sample := Sample{
 		ID: "jsonl-test",
 		Task: agent.Task{
-			ID:   "test-001",
+			ID:      "test-001",
 			Context: map[string]any{"objective": "Test JSONL format"},
 		},
 		Tags: []string{"test"},

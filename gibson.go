@@ -41,14 +41,14 @@ func NewFramework(opts ...FrameworkOption) (Framework, error) {
 
 	// Create the framework instance
 	f := &defaultFramework{
-		logger:         cfg.logger,
-		tracer:         cfg.tracer,
-		configPath:     cfg.configPath,
-		agents:         newAgentRegistry(cfg.logger),
-		tools:          newToolRegistry(cfg.logger),
-		plugins:        newPluginRegistry(cfg.logger),
-		missions:       make(map[string]*Mission),
-		findingsStore:  make(map[string][]findingRecord),
+		logger:        cfg.logger,
+		tracer:        cfg.tracer,
+		configPath:    cfg.configPath,
+		agents:        newAgentRegistry(cfg.logger),
+		tools:         newToolRegistry(cfg.logger),
+		plugins:       newPluginRegistry(cfg.logger),
+		missions:      make(map[string]*Mission),
+		findingsStore: make(map[string][]findingRecord),
 	}
 
 	return f, nil

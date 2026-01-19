@@ -60,10 +60,10 @@ func TestRelationshipWithProperties(t *testing.T) {
 
 func TestRelationshipValidate(t *testing.T) {
 	tests := []struct {
-		name        string
+		name         string
 		relationship *Relationship
-		expectError bool
-		errorMsg    string
+		expectError  bool
+		errorMsg     string
 	}{
 		{
 			name:         "valid relationship",

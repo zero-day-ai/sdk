@@ -188,8 +188,8 @@ func TestIntegration_ThresholdAlerts(t *testing.T) {
 	// Configure low thresholds to test alert generation
 	opts := FeedbackOptions{
 		Scorers:           []StreamingScorer{poorScorer},
-		WarningThreshold:  0.5,  // Scores below this trigger warning
-		CriticalThreshold: 0.2,  // Scores below this trigger critical alert
+		WarningThreshold:  0.5, // Scores below this trigger warning
+		CriticalThreshold: 0.2, // Scores below this trigger critical alert
 		Frequency: FeedbackFrequency{
 			EveryNSteps: 1, // Evaluate every step
 		},
@@ -407,7 +407,7 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	sample := Sample{
 		ID: "feedback-workflow-test",
 		Task: agent.Task{
-			ID:   "test-001",
+			ID:      "test-001",
 			Context: map[string]any{"objective": "Perform reconnaissance on target system"},
 		},
 		ExpectedTools: []ExpectedToolCall{

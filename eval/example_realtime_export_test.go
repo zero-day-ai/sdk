@@ -86,10 +86,10 @@ func TestRealTimeExportIntegration(t *testing.T) {
 			confidence float64
 			status     eval.ScoreStatus
 		}{
-			{0.3, 0.4, eval.ScoreStatusPending},   // Low confidence, won't export
-			{0.5, 0.6, eval.ScoreStatusPartial},   // Medium confidence, will export
-			{0.7, 0.8, eval.ScoreStatusPartial},   // High confidence, will export
-			{0.9, 1.0, eval.ScoreStatusComplete},  // Final score, will export
+			{0.3, 0.4, eval.ScoreStatusPending},  // Low confidence, won't export
+			{0.5, 0.6, eval.ScoreStatusPartial},  // Medium confidence, will export
+			{0.7, 0.8, eval.ScoreStatusPartial},  // High confidence, will export
+			{0.9, 1.0, eval.ScoreStatusComplete}, // Final score, will export
 		}
 
 		for _, stage := range stages {

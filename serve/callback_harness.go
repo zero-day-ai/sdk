@@ -1613,24 +1613,54 @@ func protoToTaxonomy(p *proto.TaxonomyMapping) *schema.TaxonomyMapping {
 	}
 
 	t := &schema.TaxonomyMapping{
-		NodeType:   p.NodeType,
-		IDTemplate: p.IdTemplate,
+		NodeType:              p.NodeType,
+		IdentifyingProperties: p.IdentifyingProperties,
 	}
 
 	// Convert property mappings
 	for _, prop := range p.Properties {
 		t.Properties = append(t.Properties, schema.PropertyMapping{
-			Source: prop.Source,
-			Target: prop.Target,
+			Source:    prop.Source,
+			Target:    prop.Target,
+			Default:   prop.DefaultValue,
+			Transform: prop.Transform,
 		})
 	}
 
 	// Convert relationship mappings
 	for _, rel := range p.Relationships {
-		t.Relationships = append(t.Relationships, schema.RelationshipMapping{
-			Type:       rel.Type,
-			ToTemplate: rel.TargetTemplate,
-		})
+		relMapping := schema.RelationshipMapping{
+			Type:      rel.Type,
+			Condition: rel.Condition,
+		}
+
+		// Convert From NodeReference
+		if rel.From != nil {
+			relMapping.From = schema.NodeReference{
+				Type:       rel.From.Type,
+				Properties: rel.From.Properties,
+			}
+		}
+
+		// Convert To NodeReference
+		if rel.To != nil {
+			relMapping.To = schema.NodeReference{
+				Type:       rel.To.Type,
+				Properties: rel.To.Properties,
+			}
+		}
+
+		// Convert relationship properties
+		for _, prop := range rel.RelProperties {
+			relMapping.Properties = append(relMapping.Properties, schema.PropertyMapping{
+				Source:    prop.Source,
+				Target:    prop.Target,
+				Default:   prop.DefaultValue,
+				Transform: prop.Transform,
+			})
+		}
+
+		t.Relationships = append(t.Relationships, relMapping)
 	}
 
 	return t

@@ -151,7 +151,7 @@ func TestStreamExecute_BasicFlow(t *testing.T) {
 
 	// Send StartExecutionRequest
 	taskJSON, _ := json.Marshal(agent.Task{
-		ID:   "task-1",
+		ID:      "task-1",
 		Context: map[string]any{"objective": "Test task execution"},
 	})
 
@@ -929,11 +929,11 @@ func TestStreamExecute_EventOrdering(t *testing.T) {
 		},
 		executeStreamingFunc: func(ctx context.Context, harness agent.StreamingHarness, task agent.Task) (agent.Result, error) {
 			// Emit events in specific order
-			harness.EmitOutput("step1", false)                                      // 2
-			harness.EmitStatus("running", "working")                                  // 3
-			harness.EmitToolCall("tool1", map[string]any{}, "call-1")               // 4
-			harness.EmitToolResult(map[string]any{}, nil, "call-1")                 // 5
-			harness.EmitOutput("step2", false)                                      // 6
+			harness.EmitOutput("step1", false)                        // 2
+			harness.EmitStatus("running", "working")                  // 3
+			harness.EmitToolCall("tool1", map[string]any{}, "call-1") // 4
+			harness.EmitToolResult(map[string]any{}, nil, "call-1")   // 5
+			harness.EmitOutput("step2", false)                        // 6
 			return agent.NewSuccessResult("completed"), nil
 		},
 	}

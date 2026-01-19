@@ -227,8 +227,8 @@ func TestPluginServiceServer_ListMethods(t *testing.T) {
 				}),
 			},
 			{
-				Name:        "method2",
-				Description: "Second method",
+				Name:         "method2",
+				Description:  "Second method",
 				InputSchema:  schema.Object(map[string]schema.JSON{}),
 				OutputSchema: schema.Object(map[string]schema.JSON{}),
 			},

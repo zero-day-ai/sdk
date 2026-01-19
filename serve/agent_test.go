@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/llm"
 	"github.com/zero-day-ai/sdk/types"
 	"google.golang.org/grpc"
@@ -175,7 +175,7 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 		{
 			name: "successful execution",
 			task: agent.Task{
-				ID:   "test-task-1",
+				ID:      "test-task-1",
 				Context: map[string]any{"objective": "Test goal"},
 			},
 			executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
@@ -198,7 +198,7 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 		{
 			name: "execution with error",
 			task: agent.Task{
-				ID:   "test-task-2",
+				ID:      "test-task-2",
 				Context: map[string]any{"objective": "Test goal"},
 			},
 			executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {

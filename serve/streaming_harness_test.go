@@ -1301,7 +1301,7 @@ func TestConcurrentEmitsAndDelegation(t *testing.T) {
 
 	// Verify all messages were sent (output + tool call + tool result + status) * numGoroutines
 	msgs := stream.getSentMessages()
-	expectedMsgs := numGoroutines*4 // 1 output + 1 tool call + 1 tool result + 1 status
+	expectedMsgs := numGoroutines * 4 // 1 output + 1 tool call + 1 tool result + 1 status
 	if len(msgs) != expectedMsgs {
 		t.Errorf("sent %d messages, want %d", len(msgs), expectedMsgs)
 	}

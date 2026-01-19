@@ -131,7 +131,7 @@ func Example_streamingTrajectoryScorer_subsetMatch() {
 	// Steps appear out of order but all required steps are present
 	trajectory := eval.Trajectory{
 		Steps: []eval.TrajectoryStep{
-			{Type: "finding", Name: "", StartTime: time.Now()},   // Last expected
+			{Type: "finding", Name: "", StartTime: time.Now()},    // Last expected
 			{Type: "tool", Name: "nuclei", StartTime: time.Now()}, // Second expected
 			{Type: "tool", Name: "nmap", StartTime: time.Now()},   // First expected
 		},

@@ -12,19 +12,19 @@ import (
 // This provides a flexible way to define agent behavior without implementing
 // the full Agent interface from scratch.
 type Config struct {
-	name                  string
-	version               string
-	description           string
-	capabilities          []string
-	targetSchemas         []types.TargetSchema
-	targetTypes           []string
-	techniqueTypes        []string
-	llmSlots              []llm.SlotDefinition
-	executeFunc           ExecuteFunc
-	streamingExecuteFunc  StreamingExecuteFunc
-	initFunc              InitFunc
-	shutdownFunc          ShutdownFunc
-	healthFunc            HealthFunc
+	name                 string
+	version              string
+	description          string
+	capabilities         []string
+	targetSchemas        []types.TargetSchema
+	targetTypes          []string
+	techniqueTypes       []string
+	llmSlots             []llm.SlotDefinition
+	executeFunc          ExecuteFunc
+	streamingExecuteFunc StreamingExecuteFunc
+	initFunc             InitFunc
+	shutdownFunc         ShutdownFunc
+	healthFunc           HealthFunc
 }
 
 // ExecuteFunc is the function signature for agent task execution.

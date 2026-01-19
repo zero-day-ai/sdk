@@ -36,7 +36,7 @@ type streamingHarness struct {
 
 	// mode tracks the current execution mode (autonomous or interactive)
 	// Protected by modeMu for thread-safe access
-	mode proto.AgentMode
+	mode   proto.AgentMode
 	modeMu sync.RWMutex
 
 	// sequence is an atomic counter for event sequence numbers

@@ -177,12 +177,12 @@ func TestStreamingToolCorrectnessScorer_OrderedPrefixMatch(t *testing.T) {
 
 func TestStreamingToolCorrectnessScorer_UnorderedMatch(t *testing.T) {
 	tests := []struct {
-		name               string
-		expected           []ExpectedToolCall
-		actual             []TrajectoryStep
-		expectedScore      float64
-		expectedAction     RecommendedAction
-		wantFeedbackRegex  string
+		name              string
+		expected          []ExpectedToolCall
+		actual            []TrajectoryStep
+		expectedScore     float64
+		expectedAction    RecommendedAction
+		wantFeedbackRegex string
 	}{
 		{
 			name: "tools in any order",

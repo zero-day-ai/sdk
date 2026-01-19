@@ -276,9 +276,9 @@ func TestStreamingTrajectoryScorer_OrderedSubset(t *testing.T) {
 			name: "in order with extras",
 			steps: []TrajectoryStep{
 				{Type: "tool", Name: "nmap"},
-				{Type: "tool", Name: "hydra"},   // extra
+				{Type: "tool", Name: "hydra"}, // extra
 				{Type: "tool", Name: "nuclei"},
-				{Type: "tool", Name: "sqlmap"},  // extra
+				{Type: "tool", Name: "sqlmap"}, // extra
 				{Type: "finding", Name: ""},
 			},
 			expectedScore:     1.0 - 2*0.05, // All matched, 2 extras

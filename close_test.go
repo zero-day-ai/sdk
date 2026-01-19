@@ -95,10 +95,10 @@ func TestCloseWithLog_MultipleResources(t *testing.T) {
 	var logBuf bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
 
-	closer1 := &mockCloser{}                                        // success
-	closer2 := &mockCloser{closeErr: errors.New("error 1")}        // error
-	closer3 := &mockCloser{}                                        // success
-	closer4 := &mockCloser{closeErr: errors.New("error 2")}        // error
+	closer1 := &mockCloser{}                                // success
+	closer2 := &mockCloser{closeErr: errors.New("error 1")} // error
+	closer3 := &mockCloser{}                                // success
+	closer4 := &mockCloser{closeErr: errors.New("error 2")} // error
 
 	func() {
 		defer CloseWithLog(closer4, logger, "resource 4")

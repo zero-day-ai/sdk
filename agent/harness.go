@@ -487,4 +487,3 @@ type Descriptor struct {
 	// TechniqueTypes lists the attack techniques the agent employs.
 	TechniqueTypes []string
 }
-

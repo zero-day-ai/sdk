@@ -143,7 +143,7 @@ Be strict but fair. Output JSON: {"score": 0.0-1.0, "reasoning": "..."}`
 	sample := eval.Sample{
 		ID: "recon-test-1",
 		Task: agent.Task{
-			ID:   "passive-recon",
+			ID:      "passive-recon",
 			Context: map[string]any{"objective": "Perform passive reconnaissance on target.com"},
 		},
 		Result: agent.Result{
@@ -190,7 +190,7 @@ func Example_llmJudgeRetry() {
 	sample := eval.Sample{
 		ID: "test-1",
 		Task: agent.Task{
-			ID:   "task-1",
+			ID:      "task-1",
 			Context: map[string]any{"objective": "Complete security assessment"},
 		},
 		Result: agent.Result{

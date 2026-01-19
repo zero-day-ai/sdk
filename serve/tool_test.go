@@ -180,7 +180,7 @@ func TestToolServiceServer_Execute(t *testing.T) {
 			},
 		},
 		{
-			name: "empty input",
+			name:  "empty input",
 			input: map[string]any{},
 			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
 				return map[string]any{"result": "ok"}, nil
@@ -264,7 +264,7 @@ func TestToolServiceServer_Execute_WithTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := client.Execute(context.Background(), &proto.ToolExecuteRequest{
-		InputJson:  string(inputJSON),
+		InputJson: string(inputJSON),
 		TimeoutMs: 5000, // 5 second timeout
 	})
 

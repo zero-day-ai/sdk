@@ -12,9 +12,9 @@ func Example() {
 	// Simulate JSON unmarshaled into map[string]any
 	config := map[string]any{
 		"host":     "example.com",
-		"port":     8080,           // int from JSON
-		"timeout":  "30s",          // string duration
-		"retries":  3.0,            // float64 from JSON
+		"port":     8080,  // int from JSON
+		"timeout":  "30s", // string duration
+		"retries":  3.0,   // float64 from JSON
 		"enabled":  true,
 		"tags":     []string{"web", "api"},
 		"settings": map[string]any{"debug": true},
@@ -51,12 +51,12 @@ func Example() {
 func ExampleGetTimeout() {
 	// Different ways to specify timeout
 	configs := []map[string]any{
-		{"timeout": 30},                    // int seconds
-		{"timeout": "5m"},                  // string duration
-		{"timeout": 45 * time.Second},      // time.Duration
-		{"timeout": "1h30m"},               // complex duration
-		{"timeout": "not-a-duration"},      // invalid - uses default
-		{},                                 // missing - uses default
+		{"timeout": 30},               // int seconds
+		{"timeout": "5m"},             // string duration
+		{"timeout": 45 * time.Second}, // time.Duration
+		{"timeout": "1h30m"},          // complex duration
+		{"timeout": "not-a-duration"}, // invalid - uses default
+		{},                            // missing - uses default
 	}
 
 	for _, config := range configs {
@@ -77,11 +77,11 @@ func ExampleGetTimeout() {
 func ExampleGetStringSlice() {
 	// Different ways to provide string slices
 	configs := []map[string]any{
-		{"items": []string{"a", "b", "c"}},              // direct []string
-		{"items": []interface{}{"x", "y", "z"}},         // []interface{} from JSON
-		{"items": []interface{}{"str", 123, true}},      // mixed types - converted to strings
-		{"items": "single"},                             // single string - wrapped in slice
-		{"items": []interface{}{"a", nil, "b"}},         // nil elements filtered out
+		{"items": []string{"a", "b", "c"}},         // direct []string
+		{"items": []interface{}{"x", "y", "z"}},    // []interface{} from JSON
+		{"items": []interface{}{"str", 123, true}}, // mixed types - converted to strings
+		{"items": "single"},                        // single string - wrapped in slice
+		{"items": []interface{}{"a", nil, "b"}},    // nil elements filtered out
 	}
 
 	for _, config := range configs {

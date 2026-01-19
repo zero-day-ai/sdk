@@ -328,10 +328,10 @@ func TestMissionInfoJSON(t *testing.T) {
 // TestMissionStatus tests the MissionStatus type and its methods
 func TestMissionStatus(t *testing.T) {
 	tests := []struct {
-		name       string
-		status     MissionStatus
-		wantValid  bool
-		wantTerm   bool
+		name      string
+		status    MissionStatus
+		wantValid bool
+		wantTerm  bool
 	}{
 		{"pending", MissionStatusPending, true, false},
 		{"running", MissionStatusRunning, true, false},

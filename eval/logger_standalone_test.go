@@ -1,3 +1,4 @@
+//go:build standalone
 // +build standalone
 
 package eval
@@ -29,7 +30,7 @@ func TestLoggerStandalone(t *testing.T) {
 	sample := Sample{
 		ID: "test-001",
 		Task: agent.Task{
-			ID:   "task-001",
+			ID:      "task-001",
 			Context: map[string]any{"objective": "Test task"},
 		},
 		Tags: []string{"test"},

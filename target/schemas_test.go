@@ -40,7 +40,7 @@ func TestHTTPAPISchema(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "missing required url",
+			name: "missing required url",
 			connection: map[string]any{
 				"method": "GET",
 			},
@@ -112,7 +112,7 @@ func TestLLMChatSchema(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "missing required url",
+			name: "missing required url",
 			connection: map[string]any{
 				"model": "gpt-4",
 			},
@@ -151,7 +151,7 @@ func TestLLMAPISchema(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "missing url",
+			name: "missing url",
 			connection: map[string]any{
 				"model": "gpt-4",
 			},
@@ -199,7 +199,7 @@ func TestKubernetesSchema(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "missing required cluster",
+			name: "missing required cluster",
 			connection: map[string]any{
 				"namespace": "default",
 			},

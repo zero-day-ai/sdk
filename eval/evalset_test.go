@@ -225,14 +225,14 @@ func TestValidate_MissingID(t *testing.T) {
 			{
 				ID: "sample-1",
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				// Missing ID
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal"},
 				},
 			},
@@ -274,21 +274,21 @@ func TestValidate_DuplicateIDs(t *testing.T) {
 			{
 				ID: "duplicate-id",
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				ID: "unique-id",
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal"},
 				},
 			},
 			{
 				ID: "duplicate-id", // Duplicate
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal"},
 				},
 			},
@@ -309,14 +309,14 @@ func TestValidate_Valid(t *testing.T) {
 			{
 				ID: "sample-1",
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal 1"},
 				},
 			},
 			{
 				ID: "sample-2",
 				Task: agent.Task{
-				ID: "task-id",
+					ID:      "task-id",
 					Context: map[string]any{"objective": "test goal 2"},
 				},
 			},

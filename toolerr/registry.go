@@ -10,7 +10,8 @@ import (
 // recovery suggestions that help orchestrators and LLMs make informed decisions.
 //
 // The registry uses a nested map structure:
-//   tool -> errorCode -> []RecoveryHint
+//
+//	tool -> errorCode -> []RecoveryHint
 //
 // This allows efficient O(1) lookups and supports multiple hints per error code,
 // ordered by priority for sequential retry attempts.

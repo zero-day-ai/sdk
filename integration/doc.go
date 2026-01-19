@@ -4,7 +4,7 @@
 // correctly. Unlike unit tests that focus on individual components, these integration
 // tests validate complete workflows and interactions between packages.
 //
-// Test Coverage
+// # Test Coverage
 //
 // The integration tests cover the following areas:
 //
@@ -45,7 +45,7 @@
 //     - Concurrent registry access and thread safety
 //     - Package import verification
 //
-// Running the Tests
+// # Running the Tests
 //
 // To run all integration tests:
 //
@@ -64,16 +64,16 @@
 //
 //	go test -v -run TestAgentCreation ./integration/
 //
-// Test Organization
+// # Test Organization
 //
 // Each test file focuses on a specific component:
 //
-//  - agent_test.go: Tests agent creation, execution, lifecycle, and capabilities
-//  - tool_test.go: Tests tool creation, execution, and schema validation
-//  - plugin_test.go: Tests plugin creation, methods, and lifecycle
-//  - integration_test.go: Tests framework operations and cross-component workflows
+//   - agent_test.go: Tests agent creation, execution, lifecycle, and capabilities
+//   - tool_test.go: Tests tool creation, execution, and schema validation
+//   - plugin_test.go: Tests plugin creation, methods, and lifecycle
+//   - integration_test.go: Tests framework operations and cross-component workflows
 //
-// Best Practices
+// # Best Practices
 //
 // When adding new integration tests:
 //
@@ -86,16 +86,16 @@
 //  7. Use subtests (t.Run) for logical grouping
 //  8. Include realistic scenarios that mirror actual usage
 //
-// Mock Components
+// # Mock Components
 //
 // The integration tests include mock implementations for testing:
 //
-//  - mockHarness: A minimal implementation of agent.Harness for testing agents
+//   - mockHarness: A minimal implementation of agent.Harness for testing agents
 //
 // These mocks allow testing components in isolation while verifying they conform
 // to the correct interfaces.
 //
-// Dependencies
+// # Dependencies
 //
 // These tests use the testify package for assertions:
 //

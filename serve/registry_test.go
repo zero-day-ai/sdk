@@ -378,8 +378,8 @@ func TestDeregistrationOnShutdown(t *testing.T) {
 // TestMetadataExtractionCorrectness verifies that all metadata is correctly extracted
 func TestMetadataExtractionCorrectness(t *testing.T) {
 	tests := []struct {
-		name          string
-		componentKind string
+		name           string
+		componentKind  string
 		expectedFields []string
 	}{
 		{

@@ -30,18 +30,18 @@ func registerNmapHints() {
 	// Timeout - suggest parameter adjustments
 	Register("nmap", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"timing": 2, "scan_type": "connect"},
-			Reason:      "slower timing template (T2) and TCP connect scan reduce timeout risk on congested networks",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"timing": 2, "scan_type": "connect"},
+			Reason:     "slower timing template (T2) and TCP connect scan reduce timeout risk on congested networks",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"ports": "22,80,443,8080"},
-			Reason:      "scanning only common ports significantly reduces scan time and timeout likelihood",
-			Confidence:  0.65,
-			Priority:    2,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"ports": "22,80,443,8080"},
+			Reason:     "scanning only common ports significantly reduces scan time and timeout likelihood",
+			Confidence: 0.65,
+			Priority:   2,
 		},
 		RecoveryHint{
 			Strategy:    StrategyUseAlternative,
@@ -55,21 +55,21 @@ func registerNmapHints() {
 	// Permission denied - suggest non-privileged scan types
 	Register("nmap", ErrCodePermissionDenied,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"scan_type": "connect"},
-			Reason:      "TCP connect scan (-sT) does not require root/administrator privileges",
-			Confidence:  0.9,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"scan_type": "connect"},
+			Reason:     "TCP connect scan (-sT) does not require root/administrator privileges",
+			Confidence: 0.9,
+			Priority:   1,
 		},
 	)
 
 	// Network error - suggest retry with backoff
 	Register("nmap", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 }
@@ -90,11 +90,11 @@ func registerMasscanHints() {
 	// Timeout - suggest rate limiting and alternative
 	Register("masscan", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"rate": 100},
-			Reason:      "reducing scan rate to 100 packets/sec prevents network congestion and timeouts",
-			Confidence:  0.75,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"rate": 100},
+			Reason:     "reducing scan rate to 100 packets/sec prevents network congestion and timeouts",
+			Confidence: 0.75,
+			Priority:   1,
 		},
 		RecoveryHint{
 			Strategy:    StrategyUseAlternative,
@@ -119,10 +119,10 @@ func registerMasscanHints() {
 	// Network error - suggest retry with backoff
 	Register("masscan", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 }
@@ -143,38 +143,38 @@ func registerNucleiHints() {
 	// Timeout - suggest rate limiting
 	Register("nuclei", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"rate_limit": 50},
-			Reason:      "reducing rate limit to 50 requests/second prevents overwhelming target and reduces timeouts",
-			Confidence:  0.75,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"rate_limit": 50},
+			Reason:     "reducing rate limit to 50 requests/second prevents overwhelming target and reduces timeouts",
+			Confidence: 0.75,
+			Priority:   1,
 		},
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"severity": []string{"critical", "high"}},
-			Reason:      "limiting to high-severity templates reduces scan time and timeout risk",
-			Confidence:  0.65,
-			Priority:    2,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"severity": []string{"critical", "high"}},
+			Reason:     "limiting to high-severity templates reduces scan time and timeout risk",
+			Confidence: 0.65,
+			Priority:   2,
 		},
 	)
 
 	// Network error - suggest retry with backoff
 	Register("nuclei", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 
 	// Dependency missing - nuclei templates may need updating
 	Register("nuclei", ErrCodeDependencyMissing,
 		RecoveryHint{
-			Strategy:    StrategySkip,
-			Reason:      "nuclei templates may need to be downloaded or updated separately",
-			Confidence:  0.6,
-			Priority:    1,
+			Strategy:   StrategySkip,
+			Reason:     "nuclei templates may need to be downloaded or updated separately",
+			Confidence: 0.6,
+			Priority:   1,
 		},
 	)
 }
@@ -195,28 +195,28 @@ func registerHttpxHints() {
 	// Timeout - suggest parameter adjustments
 	Register("httpx", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"timeout": "10s"},
-			Reason:      "increasing timeout to 10 seconds allows slow-responding servers to reply",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"timeout": "10s"},
+			Reason:     "increasing timeout to 10 seconds allows slow-responding servers to reply",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"follow_redirects": false},
-			Reason:      "disabling redirect following reduces complexity and timeout risk",
-			Confidence:  0.6,
-			Priority:    2,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"follow_redirects": false},
+			Reason:     "disabling redirect following reduces complexity and timeout risk",
+			Confidence: 0.6,
+			Priority:   2,
 		},
 	)
 
 	// Network error - suggest retry with backoff
 	Register("httpx", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 }
@@ -237,11 +237,11 @@ func registerSubfinderHints() {
 	// Timeout - suggest limiting sources
 	Register("subfinder", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"all": false},
-			Reason:      "disabling all sources and using only fast sources reduces timeout risk",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"all": false},
+			Reason:     "disabling all sources and using only fast sources reduces timeout risk",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 		RecoveryHint{
 			Strategy:    StrategyUseAlternative,
@@ -255,10 +255,10 @@ func registerSubfinderHints() {
 	// Network error - suggest retry with backoff
 	Register("subfinder", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 }
@@ -279,18 +279,18 @@ func registerAmassHints() {
 	// Timeout - suggest passive mode
 	Register("amass", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"mode": "passive"},
-			Reason:      "passive enumeration mode is faster and less likely to timeout",
-			Confidence:  0.75,
-			Priority:    1,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"mode": "passive"},
+			Reason:     "passive enumeration mode is faster and less likely to timeout",
+			Confidence: 0.75,
+			Priority:   1,
 		},
 		RecoveryHint{
-			Strategy:    StrategyModifyParams,
-			Params:      map[string]any{"max_depth": 1},
-			Reason:      "limiting DNS recursion depth significantly reduces scan time",
-			Confidence:  0.7,
-			Priority:    2,
+			Strategy:   StrategyModifyParams,
+			Params:     map[string]any{"max_depth": 1},
+			Reason:     "limiting DNS recursion depth significantly reduces scan time",
+			Confidence: 0.7,
+			Priority:   2,
 		},
 		RecoveryHint{
 			Strategy:    StrategyUseAlternative,
@@ -304,10 +304,10 @@ func registerAmassHints() {
 	// Network error - suggest retry with backoff
 	Register("amass", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network errors are often transient and resolve after a brief delay",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network errors are often transient and resolve after a brief delay",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 }
@@ -320,30 +320,30 @@ func registerGenericHints() {
 	// Generic timeout handling
 	Register("*", ErrCodeTimeout,
 		RecoveryHint{
-			Strategy:    StrategyRetry,
-			Reason:      "timeouts may be transient; a single retry often succeeds",
-			Confidence:  0.6,
-			Priority:    1,
+			Strategy:   StrategyRetry,
+			Reason:     "timeouts may be transient; a single retry often succeeds",
+			Confidence: 0.6,
+			Priority:   1,
 		},
 	)
 
 	// Generic network error handling
 	Register("*", ErrCodeNetworkError,
 		RecoveryHint{
-			Strategy:    StrategyRetryWithBackoff,
-			Reason:      "network issues are often temporary and resolve within seconds",
-			Confidence:  0.7,
-			Priority:    1,
+			Strategy:   StrategyRetryWithBackoff,
+			Reason:     "network issues are often temporary and resolve within seconds",
+			Confidence: 0.7,
+			Priority:   1,
 		},
 	)
 
 	// Generic execution failure
 	Register("*", ErrCodeExecutionFailed,
 		RecoveryHint{
-			Strategy:    StrategyRetry,
-			Reason:      "execution failures may be transient resource issues",
-			Confidence:  0.5,
-			Priority:    1,
+			Strategy:   StrategyRetry,
+			Reason:     "execution failures may be transient resource issues",
+			Confidence: 0.5,
+			Priority:   1,
 		},
 	)
 }

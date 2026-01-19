@@ -25,7 +25,7 @@ func main() {
 	sample := eval.Sample{
 		ID: "example-001",
 		Task: agent.Task{
-			ID:   "task-001",
+			ID:      "task-001",
 			Context: map[string]any{"objective": "Demonstrate logger functionality"},
 		},
 		Tags: []string{"example", "demo"},

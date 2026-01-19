@@ -407,8 +407,8 @@ func TestGetNumericValue(t *testing.T) {
 
 func TestSuggestionsForQuality(t *testing.T) {
 	tests := []struct {
-		name             string
-		quality          ResultQuality
+		name              string
+		quality           ResultQuality
 		expectSuggestions bool
 	}{
 		{"Full quality - no suggestions", QualityFull, false},
@@ -431,10 +431,10 @@ func TestSuggestionsForQuality(t *testing.T) {
 
 func TestShouldDowngradeQuality(t *testing.T) {
 	tests := []struct {
-		name     string
-		current  ResultQuality
+		name      string
+		current   ResultQuality
 		candidate ResultQuality
-		expected bool
+		expected  bool
 	}{
 		{"Full to Partial", QualityFull, QualityPartial, true},
 		{"Full to Empty", QualityFull, QualityEmpty, true},

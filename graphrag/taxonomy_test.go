@@ -8,9 +8,9 @@ import (
 
 // mockTaxonomyReader implements TaxonomyReader for testing
 type mockTaxonomyReader struct {
-	version           string
-	canonicalNodes    map[string]bool
-	canonicalRels     map[string]bool
+	version        string
+	canonicalNodes map[string]bool
+	canonicalRels  map[string]bool
 }
 
 func newMockTaxonomyReader() *mockTaxonomyReader {
@@ -23,9 +23,9 @@ func newMockTaxonomyReader() *mockTaxonomyReader {
 			"finding":   true,
 		},
 		canonicalRels: map[string]bool{
-			"HAS_SUBDOMAIN":  true,
-			"RESOLVES_TO":    true,
-			"AFFECTS":        true,
+			"HAS_SUBDOMAIN": true,
+			"RESOLVES_TO":   true,
+			"AFFECTS":       true,
 		},
 	}
 }

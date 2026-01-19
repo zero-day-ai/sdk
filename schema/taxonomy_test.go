@@ -9,17 +9,20 @@ import (
 // TestTaxonomyMappingJSONRoundTrip tests JSON serialization and deserialization of TaxonomyMapping
 func TestTaxonomyMappingJSONRoundTrip(t *testing.T) {
 	original := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.hostname}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"hostname": "$.hostname",
+			"ip":       "$.ip_address",
+		},
 		Properties: []PropertyMapping{
 			{
-				Source: "hostname",
-				Target: "name",
+				Source: "os",
+				Target: "operating_system",
 			},
 			{
-				Source:  "ip_address",
-				Target:  "ip",
-				Default: "0.0.0.0",
+				Source:  "status",
+				Target:  "status",
+				Default: "active",
 			},
 			{
 				Source:    "domain",
@@ -29,15 +32,19 @@ func TestTaxonomyMappingJSONRoundTrip(t *testing.T) {
 		},
 		Relationships: []RelationshipMapping{
 			{
-				Type:         "HAS_VULNERABILITY",
-				FromTemplate: "asset:{{.hostname}}",
-				ToTemplate:   "vuln:{{.cve_id}}",
+				Type: "HAS_VULNERABILITY",
+				From: SelfNode(),
+				To: Node("vulnerability", map[string]string{
+					"cve_id": "$.cve_id",
+				}),
 			},
 			{
-				Type:         "AFFECTS",
-				FromTemplate: "vuln:{{.cve_id}}",
-				ToTemplate:   "asset:{{.hostname}}",
-				Condition:    "{{.severity}} == 'critical'",
+				Type: "AFFECTS",
+				From: Node("vulnerability", map[string]string{
+					"cve_id": "$.vuln.cve_id",
+				}),
+				To:        SelfNode(),
+				Condition: "{{.severity}} == 'critical'",
 				Properties: []PropertyMapping{
 					{
 						Source: "discovered_at",
@@ -64,8 +71,8 @@ func TestTaxonomyMappingJSONRoundTrip(t *testing.T) {
 	if result.NodeType != original.NodeType {
 		t.Errorf("NodeType mismatch: got %q, want %q", result.NodeType, original.NodeType)
 	}
-	if result.IDTemplate != original.IDTemplate {
-		t.Errorf("IDTemplate mismatch: got %q, want %q", result.IDTemplate, original.IDTemplate)
+	if !reflect.DeepEqual(result.IdentifyingProperties, original.IdentifyingProperties) {
+		t.Errorf("IdentifyingProperties mismatch: got %+v, want %+v", result.IdentifyingProperties, original.IdentifyingProperties)
 	}
 	if len(result.Properties) != len(original.Properties) {
 		t.Errorf("Properties length mismatch: got %d, want %d", len(result.Properties), len(original.Properties))
@@ -158,38 +165,98 @@ func TestPropertyMappingJSON(t *testing.T) {
 	}
 }
 
-// TestRelationshipMappingJSON tests JSON serialization of RelationshipMapping
-func TestRelationshipMappingJSON(t *testing.T) {
+// TestNodeReferenceJSON tests JSON serialization of NodeReference
+func TestNodeReferenceJSON(t *testing.T) {
 	tests := []struct {
 		name     string
-		mapping  RelationshipMapping
+		nodeRef  NodeReference
 		wantJSON string
 	}{
 		{
-			name: "simple relationship",
+			name:     "self node",
+			nodeRef:  SelfNode(),
+			wantJSON: `{"type":"self"}`,
+		},
+		{
+			name: "node with properties",
+			nodeRef: Node("host", map[string]string{
+				"hostname": "$.target.host",
+				"ip":       "$.target.ip",
+			}),
+			wantJSON: `{"type":"host","properties":{"hostname":"$.target.host","ip":"$.target.ip"}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.nodeRef)
+			if err != nil {
+				t.Fatalf("failed to marshal NodeReference: %v", err)
+			}
+
+			// Note: map key order is not guaranteed in JSON, so we unmarshal both and compare
+			var gotMap, wantMap map[string]any
+			if err := json.Unmarshal(data, &gotMap); err != nil {
+				t.Fatalf("failed to unmarshal result: %v", err)
+			}
+			if err := json.Unmarshal([]byte(tt.wantJSON), &wantMap); err != nil {
+				t.Fatalf("failed to unmarshal expected: %v", err)
+			}
+
+			if !reflect.DeepEqual(gotMap, wantMap) {
+				t.Errorf("JSON mismatch\ngot:  %s\nwant: %s", string(data), tt.wantJSON)
+			}
+
+			// Round-trip test
+			var result NodeReference
+			if err := json.Unmarshal(data, &result); err != nil {
+				t.Fatalf("failed to unmarshal NodeReference: %v", err)
+			}
+
+			if !reflect.DeepEqual(result, tt.nodeRef) {
+				t.Errorf("NodeReference not equal after round-trip\ngot:  %+v\nwant: %+v", result, tt.nodeRef)
+			}
+		})
+	}
+}
+
+// TestRelationshipMappingJSON tests JSON serialization of RelationshipMapping
+func TestRelationshipMappingJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		mapping RelationshipMapping
+	}{
+		{
+			name: "simple relationship from self to other",
 			mapping: RelationshipMapping{
-				Type:         "HAS_VULNERABILITY",
-				FromTemplate: "asset:{{.hostname}}",
-				ToTemplate:   "vuln:{{.cve_id}}",
+				Type: "HAS_VULNERABILITY",
+				From: SelfNode(),
+				To: Node("vulnerability", map[string]string{
+					"cve_id": "$.cve_id",
+				}),
 			},
-			wantJSON: `{"type":"HAS_VULNERABILITY","from_template":"asset:{{.hostname}}","to_template":"vuln:{{.cve_id}}"}`,
 		},
 		{
 			name: "relationship with condition",
 			mapping: RelationshipMapping{
-				Type:         "AFFECTS",
-				FromTemplate: "vuln:{{.cve_id}}",
-				ToTemplate:   "asset:{{.hostname}}",
-				Condition:    "{{.severity}} == 'critical'",
+				Type: "AFFECTS",
+				From: Node("vulnerability", map[string]string{
+					"cve_id": "$.vuln.cve_id",
+				}),
+				To:        SelfNode(),
+				Condition: "{{.severity}} == 'critical'",
 			},
-			wantJSON: `{"type":"AFFECTS","from_template":"vuln:{{.cve_id}}","to_template":"asset:{{.hostname}}","condition":"{{.severity}} == 'critical'"}`,
 		},
 		{
 			name: "relationship with properties",
 			mapping: RelationshipMapping{
-				Type:         "CONNECTED_TO",
-				FromTemplate: "server:{{.source}}",
-				ToTemplate:   "server:{{.target}}",
+				Type: "CONNECTED_TO",
+				From: Node("server", map[string]string{
+					"hostname": "$.source.host",
+				}),
+				To: Node("server", map[string]string{
+					"hostname": "$.target.host",
+				}),
 				Properties: []PropertyMapping{
 					{
 						Source: "bandwidth",
@@ -202,7 +269,6 @@ func TestRelationshipMappingJSON(t *testing.T) {
 					},
 				},
 			},
-			wantJSON: `{"type":"CONNECTED_TO","from_template":"server:{{.source}}","to_template":"server:{{.target}}","properties":[{"source":"bandwidth","target":"bandwidth"},{"source":"latency","target":"latency","default":0}]}`,
 		},
 	}
 
@@ -211,10 +277,6 @@ func TestRelationshipMappingJSON(t *testing.T) {
 			data, err := json.Marshal(tt.mapping)
 			if err != nil {
 				t.Fatalf("failed to marshal RelationshipMapping: %v", err)
-			}
-
-			if string(data) != tt.wantJSON {
-				t.Errorf("JSON mismatch\ngot:  %s\nwant: %s", string(data), tt.wantJSON)
 			}
 
 			// Round-trip test
@@ -292,19 +354,50 @@ func TestPropMapHelpers(t *testing.T) {
 	})
 }
 
+// TestNodeHelpers tests the node reference helper functions
+func TestNodeHelpers(t *testing.T) {
+	t.Run("SelfNode", func(t *testing.T) {
+		node := SelfNode()
+
+		if node.Type != "self" {
+			t.Errorf("Type mismatch: got %q, want %q", node.Type, "self")
+		}
+		if node.Properties != nil {
+			t.Errorf("Properties should be nil, got %v", node.Properties)
+		}
+	})
+
+	t.Run("Node", func(t *testing.T) {
+		props := map[string]string{
+			"hostname": "$.target.host",
+			"port":     "$.target.port",
+		}
+		node := Node("service", props)
+
+		if node.Type != "service" {
+			t.Errorf("Type mismatch: got %q, want %q", node.Type, "service")
+		}
+		if !reflect.DeepEqual(node.Properties, props) {
+			t.Errorf("Properties mismatch: got %+v, want %+v", node.Properties, props)
+		}
+	})
+}
+
 // TestRelHelpers tests the relationship mapping helper functions
 func TestRelHelpers(t *testing.T) {
 	t.Run("Rel", func(t *testing.T) {
-		rel := Rel("HAS_VULNERABILITY", "asset:{{.hostname}}", "vuln:{{.cve_id}}")
+		from := SelfNode()
+		to := Node("vulnerability", map[string]string{"cve_id": "$.cve_id"})
+		rel := Rel("HAS_VULNERABILITY", from, to)
 
 		if rel.Type != "HAS_VULNERABILITY" {
 			t.Errorf("Type mismatch: got %q, want %q", rel.Type, "HAS_VULNERABILITY")
 		}
-		if rel.FromTemplate != "asset:{{.hostname}}" {
-			t.Errorf("FromTemplate mismatch: got %q, want %q", rel.FromTemplate, "asset:{{.hostname}}")
+		if !reflect.DeepEqual(rel.From, from) {
+			t.Errorf("From mismatch: got %+v, want %+v", rel.From, from)
 		}
-		if rel.ToTemplate != "vuln:{{.cve_id}}" {
-			t.Errorf("ToTemplate mismatch: got %q, want %q", rel.ToTemplate, "vuln:{{.cve_id}}")
+		if !reflect.DeepEqual(rel.To, to) {
+			t.Errorf("To mismatch: got %+v, want %+v", rel.To, to)
 		}
 		if rel.Condition != "" {
 			t.Errorf("Condition should be empty, got %q", rel.Condition)
@@ -315,21 +408,23 @@ func TestRelHelpers(t *testing.T) {
 	})
 
 	t.Run("RelWithCondition", func(t *testing.T) {
+		from := Node("vulnerability", map[string]string{"cve_id": "$.cve_id"})
+		to := SelfNode()
 		rel := RelWithCondition(
 			"AFFECTS",
-			"vuln:{{.cve_id}}",
-			"asset:{{.hostname}}",
+			from,
+			to,
 			"{{.severity}} == 'critical'",
 		)
 
 		if rel.Type != "AFFECTS" {
 			t.Errorf("Type mismatch: got %q, want %q", rel.Type, "AFFECTS")
 		}
-		if rel.FromTemplate != "vuln:{{.cve_id}}" {
-			t.Errorf("FromTemplate mismatch: got %q, want %q", rel.FromTemplate, "vuln:{{.cve_id}}")
+		if !reflect.DeepEqual(rel.From, from) {
+			t.Errorf("From mismatch: got %+v, want %+v", rel.From, from)
 		}
-		if rel.ToTemplate != "asset:{{.hostname}}" {
-			t.Errorf("ToTemplate mismatch: got %q, want %q", rel.ToTemplate, "asset:{{.hostname}}")
+		if !reflect.DeepEqual(rel.To, to) {
+			t.Errorf("To mismatch: got %+v, want %+v", rel.To, to)
 		}
 		if rel.Condition != "{{.severity}} == 'critical'" {
 			t.Errorf("Condition mismatch: got %q, want %q", rel.Condition, "{{.severity}} == 'critical'")
@@ -340,25 +435,27 @@ func TestRelHelpers(t *testing.T) {
 	})
 
 	t.Run("RelWithProps", func(t *testing.T) {
+		from := Node("server", map[string]string{"hostname": "$.source"})
+		to := Node("server", map[string]string{"hostname": "$.target"})
 		props := []PropertyMapping{
 			PropMap("discovered_at", "timestamp"),
 			PropMapWithDefault("severity", "severity", "unknown"),
 		}
 		rel := RelWithProps(
 			"CONNECTED_TO",
-			"server:{{.source}}",
-			"server:{{.target}}",
+			from,
+			to,
 			props...,
 		)
 
 		if rel.Type != "CONNECTED_TO" {
 			t.Errorf("Type mismatch: got %q, want %q", rel.Type, "CONNECTED_TO")
 		}
-		if rel.FromTemplate != "server:{{.source}}" {
-			t.Errorf("FromTemplate mismatch: got %q, want %q", rel.FromTemplate, "server:{{.source}}")
+		if !reflect.DeepEqual(rel.From, from) {
+			t.Errorf("From mismatch: got %+v, want %+v", rel.From, from)
 		}
-		if rel.ToTemplate != "server:{{.target}}" {
-			t.Errorf("ToTemplate mismatch: got %q, want %q", rel.ToTemplate, "server:{{.target}}")
+		if !reflect.DeepEqual(rel.To, to) {
+			t.Errorf("To mismatch: got %+v, want %+v", rel.To, to)
 		}
 		if rel.Condition != "" {
 			t.Errorf("Condition should be empty, got %q", rel.Condition)
@@ -374,7 +471,9 @@ func TestRelHelpers(t *testing.T) {
 	})
 
 	t.Run("RelWithProps empty", func(t *testing.T) {
-		rel := RelWithProps("LINKS_TO", "a:{{.id}}", "b:{{.id}}")
+		from := Node("a", map[string]string{"id": "$.id"})
+		to := Node("b", map[string]string{"id": "$.id"})
+		rel := RelWithProps("LINKS_TO", from, to)
 
 		if len(rel.Properties) != 0 {
 			t.Errorf("Properties should be empty, got %v", rel.Properties)
@@ -390,10 +489,12 @@ func TestWithTaxonomyImmutable(t *testing.T) {
 	}
 
 	taxonomy := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.hostname}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"hostname": "$.hostname",
+		},
 		Properties: []PropertyMapping{
-			PropMap("hostname", "name"),
+			PropMap("os", "operating_system"),
 		},
 	}
 
@@ -414,8 +515,8 @@ func TestWithTaxonomyImmutable(t *testing.T) {
 	if modified.Taxonomy.NodeType != "Asset" {
 		t.Errorf("NodeType mismatch: got %q, want %q", modified.Taxonomy.NodeType, "Asset")
 	}
-	if modified.Taxonomy.IDTemplate != "asset:{{.hostname}}" {
-		t.Errorf("IDTemplate mismatch: got %q, want %q", modified.Taxonomy.IDTemplate, "asset:{{.hostname}}")
+	if !reflect.DeepEqual(modified.Taxonomy.IdentifyingProperties, taxonomy.IdentifyingProperties) {
+		t.Errorf("IdentifyingProperties mismatch: got %+v, want %+v", modified.Taxonomy.IdentifyingProperties, taxonomy.IdentifyingProperties)
 	}
 
 	// Verify other schema fields are copied
@@ -425,11 +526,13 @@ func TestWithTaxonomyImmutable(t *testing.T) {
 }
 
 // TestWithTaxonomyShallowCopy tests that WithTaxonomy creates a shallow copy
-// Note: This is expected behavior - slices are shared between copies
+// Note: This is expected behavior - slices and maps are shared between copies
 func TestWithTaxonomyShallowCopy(t *testing.T) {
 	taxonomy := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.hostname}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"hostname": "$.hostname",
+		},
 		Properties: []PropertyMapping{
 			PropMap("hostname", "name"),
 		},
@@ -445,21 +548,27 @@ func TestWithTaxonomyShallowCopy(t *testing.T) {
 		t.Errorf("NodeType should be 'Asset', got %q (was affected by modification)", schema.Taxonomy.NodeType)
 	}
 
-	// Note: Slice fields are shared (shallow copy), so modifications to slice elements
-	// would affect both. This is expected Go behavior for struct copies with slice fields.
+	// Note: Map and slice fields are shared (shallow copy), so modifications to their contents
+	// would affect both. This is expected Go behavior for struct copies with reference fields.
 }
 
 // TestWithTaxonomyJSONSerialization tests that taxonomy is correctly serialized
 func TestWithTaxonomyJSONSerialization(t *testing.T) {
 	taxonomy := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.hostname}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"hostname": "$.hostname",
+		},
 		Properties: []PropertyMapping{
-			PropMap("hostname", "name"),
-			PropMapWithDefault("ip", "ip", "0.0.0.0"),
+			PropMap("os", "operating_system"),
+			PropMapWithDefault("status", "status", "active"),
 		},
 		Relationships: []RelationshipMapping{
-			Rel("HAS_VULNERABILITY", "asset:{{.hostname}}", "vuln:{{.cve_id}}"),
+			Rel(
+				"HAS_VULNERABILITY",
+				SelfNode(),
+				Node("vulnerability", map[string]string{"cve_id": "$.cve_id"}),
+			),
 		},
 	}
 
@@ -489,8 +598,8 @@ func TestWithTaxonomyJSONSerialization(t *testing.T) {
 	if result.Taxonomy.NodeType != taxonomy.NodeType {
 		t.Errorf("NodeType mismatch: got %q, want %q", result.Taxonomy.NodeType, taxonomy.NodeType)
 	}
-	if result.Taxonomy.IDTemplate != taxonomy.IDTemplate {
-		t.Errorf("IDTemplate mismatch: got %q, want %q", result.Taxonomy.IDTemplate, taxonomy.IDTemplate)
+	if !reflect.DeepEqual(result.Taxonomy.IdentifyingProperties, taxonomy.IdentifyingProperties) {
+		t.Errorf("IdentifyingProperties mismatch: got %+v, want %+v", result.Taxonomy.IdentifyingProperties, taxonomy.IdentifyingProperties)
 	}
 	if len(result.Taxonomy.Properties) != len(taxonomy.Properties) {
 		t.Errorf("Properties length mismatch: got %d, want %d", len(result.Taxonomy.Properties), len(taxonomy.Properties))
@@ -510,13 +619,17 @@ func TestWithTaxonomyMultipleCalls(t *testing.T) {
 	schema := String()
 
 	taxonomy1 := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.id}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"id": "$.id",
+		},
 	}
 
 	taxonomy2 := TaxonomyMapping{
-		NodeType:   "Vulnerability",
-		IDTemplate: "vuln:{{.cve_id}}",
+		NodeType: "Vulnerability",
+		IdentifyingProperties: map[string]string{
+			"cve_id": "$.cve_id",
+		},
 	}
 
 	// First call
@@ -546,8 +659,10 @@ func TestWithTaxonomyMultipleCalls(t *testing.T) {
 func TestTaxonomyMappingEmptyFields(t *testing.T) {
 	// Minimal taxonomy
 	taxonomy := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.id}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"id": "$.id",
+		},
 	}
 
 	data, err := json.Marshal(taxonomy)
@@ -571,11 +686,14 @@ func TestTaxonomyMappingEmptyFields(t *testing.T) {
 // TestComplexTaxonomyMapping tests a complex real-world taxonomy mapping
 func TestComplexTaxonomyMapping(t *testing.T) {
 	taxonomy := TaxonomyMapping{
-		NodeType:   "Asset",
-		IDTemplate: "asset:{{.hostname}}:{{.ip}}",
+		NodeType: "Asset",
+		IdentifyingProperties: map[string]string{
+			"hostname": "$.hostname",
+			"ip":       "$.ip",
+		},
 		Properties: []PropertyMapping{
-			PropMap("hostname", "name"),
-			PropMapWithDefault("ip", "ip_address", "0.0.0.0"),
+			PropMap("name", "display_name"),
+			PropMapWithDefault("status", "status", "active"),
 			PropMapWithTransform("domain", "domain", "lowercase"),
 			{
 				Source:    "os",
@@ -585,17 +703,21 @@ func TestComplexTaxonomyMapping(t *testing.T) {
 			},
 		},
 		Relationships: []RelationshipMapping{
-			Rel("HAS_VULNERABILITY", "asset:{{.hostname}}", "vuln:{{.cve_id}}"),
+			Rel(
+				"HAS_VULNERABILITY",
+				SelfNode(),
+				Node("vulnerability", map[string]string{"cve_id": "$.cve_id"}),
+			),
 			RelWithCondition(
 				"CRITICAL_VULN",
-				"vuln:{{.cve_id}}",
-				"asset:{{.hostname}}",
+				Node("vulnerability", map[string]string{"cve_id": "$.vuln.cve_id"}),
+				SelfNode(),
 				"{{.cvss_score}} >= 9.0",
 			),
 			RelWithProps(
 				"CONNECTS_TO",
-				"asset:{{.source_hostname}}",
-				"asset:{{.target_hostname}}",
+				Node("asset", map[string]string{"hostname": "$.source_hostname"}),
+				Node("asset", map[string]string{"hostname": "$.target_hostname"}),
 				PropMap("port", "dst_port"),
 				PropMapWithDefault("protocol", "protocol", "tcp"),
 				PropMap("timestamp", "last_seen"),

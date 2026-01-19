@@ -509,11 +509,11 @@ func TestLocalModeCleanupOnError(t *testing.T) {
 
 // mockRegistry is a mock implementation of the Registry interface for testing
 type mockRegistry struct {
-	registered   []interface{}
-	deregistered []interface{}
-	registerErr  error
+	registered    []interface{}
+	deregistered  []interface{}
+	registerErr   error
 	deregisterErr error
-	closed       bool
+	closed        bool
 }
 
 func newMockRegistry() *mockRegistry {

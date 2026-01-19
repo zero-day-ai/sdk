@@ -11,20 +11,20 @@ import (
 // JSON represents a JSON Schema definition.
 // It provides a structured way to define and validate JSON data structures.
 type JSON struct {
-	Type        string            `json:"type,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Properties  map[string]JSON   `json:"properties,omitempty"`
-	Required    []string          `json:"required,omitempty"`
-	Items       *JSON             `json:"items,omitempty"`
-	Enum        []any             `json:"enum,omitempty"`
-	Default     any               `json:"default,omitempty"`
-	Minimum     *float64          `json:"minimum,omitempty"`
-	Maximum     *float64          `json:"maximum,omitempty"`
-	MinLength   *int              `json:"minLength,omitempty"`
-	MaxLength   *int              `json:"maxLength,omitempty"`
-	Pattern     string            `json:"pattern,omitempty"`
-	Format      string            `json:"format,omitempty"`
-	Ref         string            `json:"$ref,omitempty"`
+	Type        string          `json:"type,omitempty"`
+	Description string          `json:"description,omitempty"`
+	Properties  map[string]JSON `json:"properties,omitempty"`
+	Required    []string        `json:"required,omitempty"`
+	Items       *JSON           `json:"items,omitempty"`
+	Enum        []any           `json:"enum,omitempty"`
+	Default     any             `json:"default,omitempty"`
+	Minimum     *float64        `json:"minimum,omitempty"`
+	Maximum     *float64        `json:"maximum,omitempty"`
+	MinLength   *int            `json:"minLength,omitempty"`
+	MaxLength   *int            `json:"maxLength,omitempty"`
+	Pattern     string          `json:"pattern,omitempty"`
+	Format      string          `json:"format,omitempty"`
+	Ref         string          `json:"$ref,omitempty"`
 
 	// Taxonomy defines how this schema node maps to a graph node in the taxonomy.
 	// When set, the taxonomy engine will create nodes and relationships based on this mapping.

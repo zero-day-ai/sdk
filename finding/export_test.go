@@ -163,17 +163,17 @@ func TestFilter_Matches(t *testing.T) {
 	baseTime := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
 
 	baseFinding := Finding{
-		ID:         "find-1",
-		MissionID:  "mission-1",
-		AgentName:  "agent-1",
-		Title:      "Test Finding",
-		Category:   CategoryJailbreak,
-		Severity:   SeverityHigh,
-		Status:     StatusOpen,
-		Tags:       []string{"tag1", "tag2"},
-		RiskScore:  7.5,
-		CreatedAt:  baseTime,
-		UpdatedAt:  baseTime,
+		ID:        "find-1",
+		MissionID: "mission-1",
+		AgentName: "agent-1",
+		Title:     "Test Finding",
+		Category:  CategoryJailbreak,
+		Severity:  SeverityHigh,
+		Status:    StatusOpen,
+		Tags:      []string{"tag1", "tag2"},
+		RiskScore: 7.5,
+		CreatedAt: baseTime,
+		UpdatedAt: baseTime,
 	}
 
 	tests := []struct {

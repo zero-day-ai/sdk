@@ -27,13 +27,14 @@ type streamingToolCorrectnessScorer struct {
 //   - Cannot detect wrong choices as easily (tool might be called later)
 //
 // Example (ordered mode):
-//   Expected: [nmap, http-client, sqlmap, exploit]
-//   Called: [nmap, http-client]
-//   Result: Score=0.5, Confidence=0.5, Action=continue
 //
-//   Expected: [nmap, http-client, sqlmap]
-//   Called: [nmap, sqlmap]  // Wrong order!
-//   Result: Score=0.33, Confidence=0.67, Action=adjust
+//	Expected: [nmap, http-client, sqlmap, exploit]
+//	Called: [nmap, http-client]
+//	Result: Score=0.5, Confidence=0.5, Action=continue
+//
+//	Expected: [nmap, http-client, sqlmap]
+//	Called: [nmap, sqlmap]  // Wrong order!
+//	Result: Score=0.33, Confidence=0.67, Action=adjust
 //
 // Confidence increases as more of the expected sequence is evaluated.
 func NewStreamingToolCorrectnessScorer(opts ToolCorrectnessOptions) StreamingScorer {

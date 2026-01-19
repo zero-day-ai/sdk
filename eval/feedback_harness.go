@@ -110,11 +110,11 @@ func NewFeedbackHarness(inner agent.Harness, opts FeedbackOptions) *FeedbackHarn
 	evalCtx, evalCancel := context.WithCancel(context.Background())
 
 	fh := &FeedbackHarness{
-		recording:   NewRecordingHarness(inner),
-		opts:        opts,
-		evalCtx:     evalCtx,
-		evalCancel:  evalCancel,
-		evalQueue:   make(chan evalRequest, 10), // Buffer up to 10 eval requests
+		recording:    NewRecordingHarness(inner),
+		opts:         opts,
+		evalCtx:      evalCtx,
+		evalCancel:   evalCancel,
+		evalQueue:    make(chan evalRequest, 10), // Buffer up to 10 eval requests
 		lastEvalTime: time.Now(),
 	}
 

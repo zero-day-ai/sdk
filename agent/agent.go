@@ -65,4 +65,3 @@ type Agent interface {
 	// This is used for monitoring and diagnostics.
 	Health(ctx context.Context) types.HealthStatus
 }
-

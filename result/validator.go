@@ -23,7 +23,7 @@ const (
 type ValidatedResult struct {
 	Output      map[string]any `json:"output"`
 	Quality     ResultQuality  `json:"quality"`
-	Confidence  float64        `json:"confidence"`    // 0.0-1.0
+	Confidence  float64        `json:"confidence"` // 0.0-1.0
 	Warnings    []string       `json:"warnings,omitempty"`
 	Suggestions []string       `json:"suggestions,omitempty"`
 }

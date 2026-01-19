@@ -125,7 +125,8 @@ func NewClient(cfg Config) (*Client, error) {
 // environment variable.
 //
 // The environment variable should contain a comma-separated list of etcd endpoints:
-//   GIBSON_REGISTRY_ENDPOINTS=localhost:2379,localhost:2380,localhost:2381
+//
+//	GIBSON_REGISTRY_ENDPOINTS=localhost:2379,localhost:2380,localhost:2381
 //
 // If the environment variable is not set, this function returns (nil, nil) to
 // allow components to work gracefully without registry integration. This is NOT

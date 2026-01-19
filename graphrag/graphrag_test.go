@@ -203,8 +203,8 @@ func TestQuery_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "valid query with custom weights",
-			query: NewQuery("test").WithWeights(0.5, 0.5),
+			name:    "valid query with custom weights",
+			query:   NewQuery("test").WithWeights(0.5, 0.5),
 			wantErr: false,
 		},
 		{

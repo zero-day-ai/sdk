@@ -73,7 +73,7 @@ func (f *Feedback) FormatForLLM() string {
 	b.WriteString("=== EVALUATION FEEDBACK ===\n\n")
 
 	// Overall score and action
-	b.WriteString(fmt.Sprintf("Overall Score: %.2f (confidence: %.2f)\n", 
+	b.WriteString(fmt.Sprintf("Overall Score: %.2f (confidence: %.2f)\n",
 		f.Overall.Score, f.Overall.Confidence))
 	b.WriteString(fmt.Sprintf("Recommended Action: %s\n\n", f.Overall.Action))
 

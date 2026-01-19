@@ -1,17 +1,18 @@
 package schema
 
 // TaxonomyMapping defines how to map data into a graph node with relationships.
-// It specifies the node type, ID generation, property mappings, and relationships
-// to create when processing data according to a taxonomy.
+// It specifies the node type, property mappings (including identifying properties),
+// and relationships to create when processing data according to a taxonomy.
 type TaxonomyMapping struct {
 	// NodeType is the type of node to create in the graph (e.g., "Asset", "Vulnerability")
 	NodeType string `json:"node_type"`
 
-	// IDTemplate is a template string for generating node IDs
-	// Example: "asset:{{.hostname}}" or "vuln:{{.cve_id}}"
-	IDTemplate string `json:"id_template"`
+	// IdentifyingProperties maps property names to JSONPath expressions.
+	// These properties uniquely identify the node and are used for deterministic ID generation.
+	// Example: {"hostname": "$.host", "ip": "$.ip_address"}
+	IdentifyingProperties map[string]string `json:"identifying_properties"`
 
-	// Properties maps source data fields to node properties
+	// Properties maps source data fields to node properties (non-identifying)
 	Properties []PropertyMapping `json:"properties,omitempty"`
 
 	// Relationships defines edges to create to/from this node
@@ -34,19 +35,34 @@ type PropertyMapping struct {
 	Transform string `json:"transform,omitempty"`
 }
 
+// NodeReference identifies a node by type and property mappings.
+// It can reference either the current node being mapped ("self") or another node
+// by specifying its type and the properties that identify it.
+type NodeReference struct {
+	// Type is the node type (e.g., "host", "port", "service").
+	// Use "self" to reference the node currently being mapped.
+	Type string `json:"type" yaml:"type"`
+
+	// Properties maps identifying property names to JSONPath expressions.
+	// This field is required when Type != "self" and specifies how to locate
+	// the target node by extracting values from the source data.
+	// Example: {"hostname": "$.target.host", "port": "$.target.port"}
+	Properties map[string]string `json:"properties,omitempty" yaml:"properties,omitempty"`
+}
+
 // RelationshipMapping defines a relationship to create between nodes.
 // It supports conditional relationships and property mappings on the edge itself.
 type RelationshipMapping struct {
 	// Type is the relationship type (e.g., "HAS_VULNERABILITY", "AFFECTS")
 	Type string `json:"type"`
 
-	// FromTemplate is a template for the source node ID
-	// Example: "asset:{{.hostname}}"
-	FromTemplate string `json:"from_template"`
+	// From identifies the source node of the relationship.
+	// Use Type="self" to reference the current node being mapped.
+	From NodeReference `json:"from"`
 
-	// ToTemplate is a template for the target node ID
-	// Example: "vuln:{{.cve_id}}"
-	ToTemplate string `json:"to_template"`
+	// To identifies the target node of the relationship.
+	// Specify the node type and identifying properties to locate it.
+	To NodeReference `json:"to"`
 
 	// Condition is an optional condition for creating this relationship
 	// Example: "{{.severity}} == 'critical'"
@@ -84,31 +100,46 @@ func PropMapWithTransform(source, target, transform string) PropertyMapping {
 	}
 }
 
-// Rel creates a simple relationship mapping.
-func Rel(relType, from, to string) RelationshipMapping {
+// SelfNode creates a NodeReference for the current node being mapped.
+func SelfNode() NodeReference {
+	return NodeReference{
+		Type: "self",
+	}
+}
+
+// Node creates a NodeReference with the specified type and identifying properties.
+func Node(nodeType string, properties map[string]string) NodeReference {
+	return NodeReference{
+		Type:       nodeType,
+		Properties: properties,
+	}
+}
+
+// Rel creates a simple relationship mapping between two node references.
+func Rel(relType string, from, to NodeReference) RelationshipMapping {
 	return RelationshipMapping{
-		Type:         relType,
-		FromTemplate: from,
-		ToTemplate:   to,
+		Type: relType,
+		From: from,
+		To:   to,
 	}
 }
 
 // RelWithCondition creates a relationship mapping with a condition.
-func RelWithCondition(relType, from, to, condition string) RelationshipMapping {
+func RelWithCondition(relType string, from, to NodeReference, condition string) RelationshipMapping {
 	return RelationshipMapping{
-		Type:         relType,
-		FromTemplate: from,
-		ToTemplate:   to,
-		Condition:    condition,
+		Type:      relType,
+		From:      from,
+		To:        to,
+		Condition: condition,
 	}
 }
 
 // RelWithProps creates a relationship mapping with property mappings on the edge.
-func RelWithProps(relType, from, to string, props ...PropertyMapping) RelationshipMapping {
+func RelWithProps(relType string, from, to NodeReference, props ...PropertyMapping) RelationshipMapping {
 	return RelationshipMapping{
-		Type:         relType,
-		FromTemplate: from,
-		ToTemplate:   to,
-		Properties:   props,
+		Type:       relType,
+		From:       from,
+		To:         to,
+		Properties: props,
 	}
 }

@@ -111,7 +111,7 @@ func CreateParentContext(ctx context.Context, traceID, parentSpanID string) cont
 		TraceID:    tid,
 		SpanID:     sid,
 		TraceFlags: trace.FlagsSampled, // Mark as sampled
-		Remote:     true,                // This is a remote parent
+		Remote:     true,               // This is a remote parent
 	})
 
 	// Inject parent context

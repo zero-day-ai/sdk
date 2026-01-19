@@ -2,12 +2,12 @@
 //
 // This package includes two main modes of operation:
 //
-// 1. gRPC Server Mode: Use Tool() or Agent() to start a gRPC server that handles
-//    requests via the SDK protocol. This is the recommended mode for production deployments.
+//  1. gRPC Server Mode: Use Tool() or Agent() to start a gRPC server that handles
+//     requests via the SDK protocol. This is the recommended mode for production deployments.
 //
-// 2. Subprocess Mode: Use RunSubprocess() and OutputSchema() for tools that will be
-//    executed as subprocesses. This mode is useful for simple execution models where
-//    the parent process wants to spawn tool processes and communicate via stdin/stdout.
+//  2. Subprocess Mode: Use RunSubprocess() and OutputSchema() for tools that will be
+//     executed as subprocesses. This mode is useful for simple execution models where
+//     the parent process wants to spawn tool processes and communicate via stdin/stdout.
 //
 // Subprocess Mode Usage:
 //
