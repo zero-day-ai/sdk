@@ -25,21 +25,6 @@ type JSON struct {
 	Pattern     string          `json:"pattern,omitempty"`
 	Format      string          `json:"format,omitempty"`
 	Ref         string          `json:"$ref,omitempty"`
-
-	// Taxonomy defines how this schema node maps to a graph node in the taxonomy.
-	// When set, the taxonomy engine will create nodes and relationships based on this mapping.
-	Taxonomy *TaxonomyMapping `json:"taxonomy,omitempty"`
-}
-
-// WithTaxonomy returns a copy of the JSON schema with the given taxonomy mapping attached.
-// This method is immutable - it does not modify the receiver.
-func (j JSON) WithTaxonomy(t TaxonomyMapping) JSON {
-	// Create a shallow copy
-	result := j
-	// Set the taxonomy pointer to a copy of the input
-	taxonomyCopy := t
-	result.Taxonomy = &taxonomyCopy
-	return result
 }
 
 // Any creates a JSON schema that accepts any type.

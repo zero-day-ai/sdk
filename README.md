@@ -22,6 +22,7 @@ The Gibson SDK is the official Software Development Kit for building AI security
   - [GraphRAG](#graphrag)
 - [Creating Agents](#creating-agents)
 - [Creating Tools](#creating-tools)
+- [Tool Taxonomy for GraphRAG](#tool-taxonomy-for-graphrag)
 - [Creating Plugins](#creating-plugins)
 - [Serving Components](#serving-components)
   - [Deployment Modes](#deployment-modes)
@@ -1047,6 +1048,187 @@ cfg := tool.NewConfig().
         return types.NewHealthyStatus("database operational")
     })
 ```
+
+## Tool Taxonomy for GraphRAG
+
+Tools can embed taxonomy mappings in their output schemas to enable automatic knowledge graph population. When a tool with embedded taxonomy is called via the Gibson harness, the output is automatically parsed and nodes/relationships are created in Neo4j.
+
+### Why Embed Taxonomy?
+
+- **Automatic extraction**: No agent code needed to populate the graph
+- **Consistent schemas**: All tools follow the same patterns
+- **Relationship tracking**: Parent-child relationships are automatically created
+- **Provenance**: Tool executions are linked to agent runs and missions
+
+### Basic Taxonomy Mapping
+
+Add taxonomy to your output schema using `WithTaxonomy()`:
+
+```go
+import "github.com/zero-day-ai/sdk/schema"
+
+func OutputSchema() schema.JSON {
+    hostSchema := schema.Object(map[string]schema.JSON{
+        "ip":       schema.String(),
+        "hostname": schema.String(),
+        "state":    schema.String(),
+    }).WithTaxonomy(schema.TaxonomyMapping{
+        NodeType: "host",
+        IdentifyingProperties: map[string]string{
+            "ip": "ip",  // Maps "ip" property to the "ip" field in output
+        },
+        Properties: []schema.PropertyMapping{
+            schema.PropMap("ip", "ip"),
+            schema.PropMap("hostname", "hostname"),
+            schema.PropMap("state", "state"),
+        },
+        Relationships: []schema.RelationshipMapping{
+            schema.Rel("DISCOVERED",
+                schema.Node("agent_run", map[string]string{
+                    "agent_run_id": "_context.agent_run_id",
+                }),
+                schema.SelfNode(),
+            ),
+        },
+    })
+
+    return schema.Object(map[string]schema.JSON{
+        "hosts": schema.Array(hostSchema),
+    })
+}
+```
+
+### Nested Structures with `_parent` References
+
+For nested data (ports inside hosts, services inside ports), use `_parent` to reference ancestor objects:
+
+```go
+// Port schema - nested inside host
+portSchema := schema.Object(map[string]schema.JSON{
+    "port":     schema.Int(),
+    "protocol": schema.String(),
+    "state":    schema.String(),
+}).WithTaxonomy(schema.TaxonomyMapping{
+    NodeType: "port",
+    IdentifyingProperties: map[string]string{
+        "host_id":  "_parent.ip",     // References parent host's IP
+        "number":   "port",
+        "protocol": "protocol",
+    },
+    Properties: []schema.PropertyMapping{
+        schema.PropMap("port", "number"),
+        schema.PropMap("protocol", "protocol"),
+        schema.PropMap("state", "state"),
+    },
+    Relationships: []schema.RelationshipMapping{
+        schema.Rel("HAS_PORT",
+            schema.Node("host", map[string]string{
+                "ip": "_parent.ip",  // Link to parent host
+            }),
+            schema.SelfNode(),
+        ),
+    },
+})
+
+// Service schema - nested inside port (grandchild of host)
+serviceSchema := schema.Object(map[string]schema.JSON{
+    "name":    schema.String(),
+    "version": schema.String(),
+}).WithTaxonomy(schema.TaxonomyMapping{
+    NodeType: "service",
+    IdentifyingProperties: map[string]string{
+        "host_id":  "_parent._parent.ip",  // Grandparent (host) IP
+        "port":     "_parent.port",         // Parent (port) number
+        "protocol": "_parent.protocol",     // Parent (port) protocol
+        "name":     "name",
+    },
+    // ...
+})
+
+// Complete output schema with nesting
+hostSchema := schema.Object(map[string]schema.JSON{
+    "ip":    schema.String(),
+    "ports": schema.Array(portSchema),  // Nested array
+}).WithTaxonomy(/* host taxonomy */)
+```
+
+### `_parent` Reference Patterns
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `_parent.field` | Access immediate parent's field | `_parent.ip` → parent host's IP |
+| `_parent._parent.field` | Access grandparent's field | `_parent._parent.ip` → grandparent's IP |
+| `_context.field` | Access execution context | `_context.agent_run_id` |
+| `field` | Access current object's field | `port` → current port number |
+
+### Helper Functions
+
+The `schema` package provides helpers for common patterns:
+
+```go
+// Property mapping
+schema.PropMap("source", "target")
+
+// Node reference for relationships
+schema.Node("host", map[string]string{"ip": "_parent.ip"})
+
+// Self-reference (current node being created)
+schema.SelfNode()
+
+// Relationship definition
+schema.Rel("HAS_PORT",
+    schema.Node("host", map[string]string{"ip": "_parent.ip"}),
+    schema.SelfNode(),
+)
+```
+
+### Implementing `--schema` Flag
+
+Tools must output their schema as JSON when called with `--schema`:
+
+```go
+func main() {
+    if len(os.Args) > 1 && os.Args[1] == "--schema" {
+        outputSchemaJSON()
+        os.Exit(0)
+    }
+    // Normal tool execution...
+}
+
+func outputSchemaJSON() {
+    schema := struct {
+        Name         string      `json:"name"`
+        Description  string      `json:"description"`
+        InputSchema  schema.JSON `json:"input_schema"`
+        OutputSchema schema.JSON `json:"output_schema"`
+    }{
+        Name:         "my-tool",
+        Description:  "My tool description",
+        InputSchema:  InputSchema(),
+        OutputSchema: OutputSchema(),
+    }
+    json.NewEncoder(os.Stdout).Encode(schema)
+}
+```
+
+### Testing Your Taxonomy
+
+```bash
+# Verify schema output
+./my-tool --schema | jq .
+
+# Check taxonomy mappings exist
+./my-tool --schema | jq '.. | .taxonomy? // empty'
+
+# Verify nested structure
+./my-tool --schema | jq '.output_schema.properties.hosts.items.taxonomy'
+```
+
+### Full Example: Network Scanner
+
+See `opensource/tools/discovery/nmap/schema.go` for a complete example with hosts, ports, and services.
+
+For comprehensive taxonomy documentation including Neo4j integration and all node/relationship types, see `docs/TAXONOMY.md` in the Gibson repository.
 
 ## Creating Plugins
 
