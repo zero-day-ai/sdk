@@ -90,6 +90,29 @@ func NewQueryFromEmbedding(embedding []float64) *Query {
 	}
 }
 
+// NewStructuredQuery creates a new Query for pure structured (non-semantic) queries.
+// This is used when you want to query the graph by node types, mission ID, or other
+// structured filters WITHOUT semantic/vector search.
+//
+// Default values:
+//   - TopK: 100 (return many results since we're not ranking by semantic similarity)
+//   - MaxHops: 0 (no graph traversal by default)
+//   - MinScore: 0.0 (no similarity threshold)
+//   - VectorWeight: 0.0 (no semantic component)
+//   - GraphWeight: 1.0 (pure graph structure)
+//
+// Use this when you want to retrieve nodes by type/attributes without semantic search.
+// Example: Query all hosts and ports discovered in a mission without a text query.
+func NewStructuredQuery() *Query {
+	return &Query{
+		TopK:         100,
+		MaxHops:      0,
+		MinScore:     0.0,
+		VectorWeight: 0.0,
+		GraphWeight:  1.0,
+	}
+}
+
 // WithTopK sets the number of results to return.
 // Returns the Query for method chaining.
 func (q *Query) WithTopK(k int) *Query {
@@ -164,11 +187,11 @@ func (q *Query) WithIncludeRunMetadata(include bool) *Query {
 // Validate ensures the Query is properly configured.
 // Returns an error if:
 //   - Both Text and Embedding are provided
-//   - Neither Text nor Embedding is provided
+//   - Neither Text nor Embedding is provided (UNLESS NodeTypes are specified for structured queries)
 //   - Text is empty when provided
 //   - Embedding is empty when provided
 //   - TopK is less than or equal to 0
-//   - MaxHops is less than or equal to 0
+//   - MaxHops is less than 0
 //   - MinScore is not between 0 and 1
 //   - VectorWeight is negative
 //   - GraphWeight is negative
@@ -182,8 +205,9 @@ func (q *Query) Validate() error {
 		return errors.New("query must have either Text or Embedding, not both")
 	}
 
-	if !hasText && !hasEmbedding {
-		return errors.New("query must have either Text or Embedding")
+	// Allow structured queries without Text/Embedding if NodeTypes are specified
+	if !hasText && !hasEmbedding && len(q.NodeTypes) == 0 {
+		return errors.New("query must have either Text, Embedding, or NodeTypes")
 	}
 
 	// Validate TopK
@@ -191,9 +215,9 @@ func (q *Query) Validate() error {
 		return fmt.Errorf("TopK must be greater than 0, got %d", q.TopK)
 	}
 
-	// Validate MaxHops
-	if q.MaxHops <= 0 {
-		return fmt.Errorf("MaxHops must be greater than 0, got %d", q.MaxHops)
+	// Validate MaxHops (0 is valid for structured queries without traversal)
+	if q.MaxHops < 0 {
+		return fmt.Errorf("MaxHops must be non-negative, got %d", q.MaxHops)
 	}
 
 	// Validate MinScore

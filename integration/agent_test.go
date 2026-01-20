@@ -474,6 +474,14 @@ func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) (
 	return nil, errors.New("not implemented")
 }
 
+func (m *mockHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (m *mockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	return nil, errors.New("not implemented")
 }
@@ -491,6 +499,14 @@ func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) 
 }
 
 func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (m *mockHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (m *mockHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "", errors.New("not implemented")
 }
 

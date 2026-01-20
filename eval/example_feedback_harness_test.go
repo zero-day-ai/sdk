@@ -231,6 +231,14 @@ func (e *exampleHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query
 	return nil, nil
 }
 
+func (e *exampleHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
+func (e *exampleHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 func (e *exampleHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	return nil, nil
 }
@@ -248,6 +256,14 @@ func (e *exampleHarness) GetRelatedFindings(ctx context.Context, findingID strin
 }
 
 func (e *exampleHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "node-id", nil
+}
+
+func (e *exampleHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "node-id", nil
+}
+
+func (e *exampleHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "node-id", nil
 }
 

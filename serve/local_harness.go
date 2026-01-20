@@ -213,6 +213,18 @@ func (h *LocalHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) 
 	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
 }
 
+// QuerySemantic returns an error indicating GraphRAG is not available.
+func (h *LocalHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	h.logger.Warn("QuerySemantic not available in standalone mode")
+	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
+// QueryStructured returns an error indicating GraphRAG is not available.
+func (h *LocalHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	h.logger.Warn("QueryStructured not available in standalone mode")
+	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
 // FindSimilarAttacks returns an error indicating GraphRAG is not available.
 func (h *LocalHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	h.logger.Warn("FindSimilarAttacks not available in standalone mode")
@@ -244,6 +256,18 @@ func (h *LocalHarness) GetRelatedFindings(ctx context.Context, findingID string)
 // StoreGraphNode returns an error indicating GraphRAG is not available.
 func (h *LocalHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	h.logger.Warn("StoreGraphNode not available in standalone mode")
+	return "", fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
+// StoreSemantic returns an error indicating GraphRAG is not available.
+func (h *LocalHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	h.logger.Warn("StoreSemantic not available in standalone mode")
+	return "", fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
+// StoreStructured returns an error indicating GraphRAG is not available.
+func (h *LocalHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	h.logger.Warn("StoreStructured not available in standalone mode")
 	return "", fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
 }
 

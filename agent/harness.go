@@ -279,7 +279,20 @@ type Harness interface {
 
 	// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
 	// Returns nodes matching the query criteria, ranked by combined relevance score.
+	// This method uses auto-routing to select semantic or structured query based on the Query fields.
 	QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
+
+	// QuerySemantic performs a semantic query using vector embeddings.
+	// Use this when you want to search by meaning/content similarity.
+	// The query MUST have Text or Embedding set.
+	// Forces semantic search even if NodeTypes are specified.
+	QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
+
+	// QueryStructured performs a structured query without semantic search.
+	// Use this when you want to filter by node types, properties, or mission scope.
+	// The query should have NodeTypes or other structural filters set.
+	// Forces structured query even if Text/Embedding are present.
+	QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
 
 	// FindSimilarAttacks searches for attack patterns semantically similar to the given content.
 	// Returns up to topK attack patterns ordered by similarity score.
@@ -306,7 +319,21 @@ type Harness interface {
 	// The node will be enriched with mission context and timestamps.
 	// If Content is provided, embeddings will be automatically generated.
 	// Returns the assigned node ID.
+	//
+	// DEPRECATED: Use StoreSemantic() or StoreStructured() for explicit intent.
 	StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error)
+
+	// StoreSemantic stores a node WITH semantic embeddings for semantic search.
+	// Use this when the node contains text content that should be semantically searchable.
+	// The Content field is required and will be embedded automatically.
+	// Returns the assigned node ID.
+	StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error)
+
+	// StoreStructured stores a node WITHOUT semantic embeddings.
+	// Use this for pure metadata/structured data that doesn't need semantic search.
+	// The Content field is optional and won't be embedded even if provided.
+	// Returns the assigned node ID.
+	StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error)
 
 	// CreateGraphRelationship creates a relationship between two existing nodes.
 	// Both nodes must exist; returns an error if either node is not found.

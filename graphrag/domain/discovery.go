@@ -155,28 +155,28 @@ type DiscoveryResult struct {
 	AgentArtifacts []*AgentArtifact `json:"agent_artifacts,omitempty"`
 
 	// MCP contains discovered Model Context Protocol resources (9 types).
-	MCPServers      []*MCPServer      `json:"mcp_servers,omitempty"`
-	MCPTools        []*MCPTool        `json:"mcp_tools,omitempty"`
-	MCPResources    []*MCPResource    `json:"mcp_resources,omitempty"`
-	MCPPrompts      []*MCPPrompt      `json:"mcp_prompts,omitempty"`
-	MCPClients      []*MCPClient      `json:"mcp_clients,omitempty"`
-	MCPTransports   []*MCPTransport   `json:"mcp_transports,omitempty"`
-	MCPCapabilities []*MCPCapability  `json:"mcp_capabilities,omitempty"`
-	MCPSamplings    []*MCPSampling    `json:"mcp_samplings,omitempty"`
-	MCPRoots        []*MCPRoots       `json:"mcp_roots,omitempty"`
+	MCPServers      []*MCPServer     `json:"mcp_servers,omitempty"`
+	MCPTools        []*MCPTool       `json:"mcp_tools,omitempty"`
+	MCPResources    []*MCPResource   `json:"mcp_resources,omitempty"`
+	MCPPrompts      []*MCPPrompt     `json:"mcp_prompts,omitempty"`
+	MCPClients      []*MCPClient     `json:"mcp_clients,omitempty"`
+	MCPTransports   []*MCPTransport  `json:"mcp_transports,omitempty"`
+	MCPCapabilities []*MCPCapability `json:"mcp_capabilities,omitempty"`
+	MCPSamplings    []*MCPSampling   `json:"mcp_samplings,omitempty"`
+	MCPRoots        []*MCPRoots      `json:"mcp_roots,omitempty"`
 
 	// RAG contains discovered RAG and knowledge base resources (11 types).
-	VectorStores       []*VectorStore       `json:"vector_stores,omitempty"`
-	VectorIndexes      []*VectorIndex       `json:"vector_indexes,omitempty"`
-	Documents          []*Document          `json:"documents,omitempty"`
-	DocumentChunks     []*DocumentChunk     `json:"document_chunks,omitempty"`
-	KnowledgeBases     []*KnowledgeBase     `json:"knowledge_bases,omitempty"`
-	Retrievers         []*Retriever         `json:"retrievers,omitempty"`
-	RAGPipelines       []*RAGPipeline       `json:"rag_pipelines,omitempty"`
-	Embeddings         []*Embedding         `json:"embeddings,omitempty"`
-	Rerankers          []*Reranker          `json:"rerankers,omitempty"`
-	ChunkingStrategies []*ChunkingStrategy  `json:"chunking_strategies,omitempty"`
-	RetrievalResults   []*RetrievalResult   `json:"retrieval_results,omitempty"`
+	VectorStores       []*VectorStore      `json:"vector_stores,omitempty"`
+	VectorIndexes      []*VectorIndex      `json:"vector_indexes,omitempty"`
+	Documents          []*Document         `json:"documents,omitempty"`
+	DocumentChunks     []*DocumentChunk    `json:"document_chunks,omitempty"`
+	KnowledgeBases     []*KnowledgeBase    `json:"knowledge_bases,omitempty"`
+	Retrievers         []*Retriever        `json:"retrievers,omitempty"`
+	RAGPipelines       []*RAGPipeline      `json:"rag_pipelines,omitempty"`
+	Embeddings         []*Embedding        `json:"embeddings,omitempty"`
+	Rerankers          []*Reranker         `json:"rerankers,omitempty"`
+	ChunkingStrategies []*ChunkingStrategy `json:"chunking_strategies,omitempty"`
+	RetrievalResults   []*RetrievalResult  `json:"retrieval_results,omitempty"`
 
 	// Data contains discovered data storage and processing resources (16 types).
 	Databases        []*Database        `json:"databases,omitempty"`
@@ -197,10 +197,10 @@ type DiscoveryResult struct {
 	DataPipelines    []*DataPipeline    `json:"data_pipelines,omitempty"`
 
 	// Container contains discovered container resources (4 types).
-	Containers          []*Container          `json:"containers,omitempty"`
-	ContainerImages     []*ContainerImage     `json:"container_images,omitempty"`
-	ContainerRegistries []*ContainerRegistry  `json:"container_registries,omitempty"`
-	Dockerfiles         []*Dockerfile         `json:"dockerfiles,omitempty"`
+	Containers          []*Container         `json:"containers,omitempty"`
+	ContainerImages     []*ContainerImage    `json:"container_images,omitempty"`
+	ContainerRegistries []*ContainerRegistry `json:"container_registries,omitempty"`
+	Dockerfiles         []*Dockerfile        `json:"dockerfiles,omitempty"`
 
 	// Kubernetes contains discovered Kubernetes resources (22 types).
 	K8sClusters            []*K8sCluster            `json:"k8s_clusters,omitempty"`

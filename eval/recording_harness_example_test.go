@@ -128,6 +128,12 @@ func (m *minimalMockHarness) TokenUsage() llm.TokenTracker  { return nil }
 func (m *minimalMockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return nil, nil
 }
+func (m *minimalMockHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+func (m *minimalMockHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
 func (m *minimalMockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	return nil, nil
 }
@@ -141,6 +147,12 @@ func (m *minimalMockHarness) GetRelatedFindings(ctx context.Context, findingID s
 	return nil, nil
 }
 func (m *minimalMockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", nil
+}
+func (m *minimalMockHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", nil
+}
+func (m *minimalMockHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "", nil
 }
 func (m *minimalMockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {

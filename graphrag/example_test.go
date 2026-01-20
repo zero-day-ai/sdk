@@ -345,7 +345,7 @@ func Example_errorHandling() {
 	}
 
 	// Output:
-	// Query validation failed: query must have either Text or Embedding
+	// Query validation failed: query must have either Text, Embedding, or NodeTypes
 	// Node validation failed: node type is required
 }
 

@@ -222,7 +222,7 @@ func TestQuery_Validate(t *testing.T) {
 			errMsg:  "query must have either Text or Embedding, not both",
 		},
 		{
-			name: "neither text nor embedding",
+			name: "neither text nor embedding nor node types",
 			query: &Query{
 				TopK:         10,
 				MaxHops:      3,
@@ -231,7 +231,7 @@ func TestQuery_Validate(t *testing.T) {
 				GraphWeight:  0.4,
 			},
 			wantErr: true,
-			errMsg:  "query must have either Text or Embedding",
+			errMsg:  "query must have either Text, Embedding, or NodeTypes",
 		},
 		{
 			name:    "zero TopK",
@@ -246,16 +246,15 @@ func TestQuery_Validate(t *testing.T) {
 			errMsg:  "TopK must be greater than 0",
 		},
 		{
-			name:    "zero MaxHops",
+			name:    "zero MaxHops is valid",
 			query:   NewQuery("test").WithMaxHops(0),
-			wantErr: true,
-			errMsg:  "MaxHops must be greater than 0",
+			wantErr: false,
 		},
 		{
 			name:    "negative MaxHops",
 			query:   NewQuery("test").WithMaxHops(-2),
 			wantErr: true,
-			errMsg:  "MaxHops must be greater than 0",
+			errMsg:  "MaxHops must be non-negative",
 		},
 		{
 			name:    "MinScore below 0",

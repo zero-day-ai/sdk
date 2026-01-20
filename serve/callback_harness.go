@@ -867,6 +867,7 @@ func (h *CallbackHarness) GetFindings(ctx context.Context, filter finding.Filter
 // ============================================================================
 
 // QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
+// Uses auto-routing to select semantic or structured query based on the Query fields.
 func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	// Start span for GraphRAG query
 	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.query",
@@ -923,6 +924,20 @@ func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Quer
 	)
 
 	return results, nil
+}
+
+// QuerySemantic performs a semantic query using vector embeddings.
+// Forces semantic search even if NodeTypes are specified.
+func (h *CallbackHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	// Delegate to QueryGraphRAG - the Gibson side handles the routing
+	return h.QueryGraphRAG(ctx, query)
+}
+
+// QueryStructured performs a structured query without semantic search.
+// Forces structured query even if Text/Embedding are present.
+func (h *CallbackHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	// Delegate to QueryGraphRAG - the Gibson side handles the routing
+	return h.QueryGraphRAG(ctx, query)
 }
 
 // FindSimilarAttacks searches for attack patterns semantically similar to the given content.
@@ -1068,6 +1083,7 @@ func (h *CallbackHarness) GetRelatedFindings(ctx context.Context, findingID stri
 // ============================================================================
 
 // StoreGraphNode stores an arbitrary node in the knowledge graph.
+// DEPRECATED: Use StoreSemantic() or StoreStructured() for explicit intent.
 func (h *CallbackHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	protoReq := &proto.StoreGraphNodeRequest{
 		Node: h.graphNodeToProto(node),
@@ -1083,6 +1099,20 @@ func (h *CallbackHarness) StoreGraphNode(ctx context.Context, node graphrag.Grap
 	}
 
 	return resp.NodeId, nil
+}
+
+// StoreSemantic stores a node WITH semantic embeddings for semantic search.
+// The Content field is required and will be embedded automatically.
+func (h *CallbackHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	// Delegate to StoreGraphNode - the Gibson side handles the embedding
+	return h.StoreGraphNode(ctx, node)
+}
+
+// StoreStructured stores a node WITHOUT semantic embeddings.
+// The Content field is optional and won't be embedded even if provided.
+func (h *CallbackHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	// Delegate to StoreGraphNode - the Gibson side handles skipping embedding
+	return h.StoreGraphNode(ctx, node)
 }
 
 // CreateGraphRelationship creates a relationship between two existing nodes.

@@ -210,6 +210,14 @@ func (m *mockStreamHarness) QueryGraphRAG(ctx context.Context, query graphrag.Qu
 	return nil, nil
 }
 
+func (m *mockStreamHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
+func (m *mockStreamHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+	return nil, nil
+}
+
 func (m *mockStreamHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
 	return nil, nil
 }
@@ -227,6 +235,14 @@ func (m *mockStreamHarness) GetRelatedFindings(ctx context.Context, findingID st
 }
 
 func (m *mockStreamHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", nil
+}
+
+func (m *mockStreamHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
+	return "", nil
+}
+
+func (m *mockStreamHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "", nil
 }
 
