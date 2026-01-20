@@ -9,7 +9,8 @@ This package provides strongly-typed domain objects for the Gibson GraphRAG know
 The `domain` package enables agents and tools to create knowledge graph nodes with:
 
 - **Type safety**: Compile-time checking for node types and properties
-- **Simplicity**: No manual taxonomy mapping or JSON serialization
+- **JSON serialization**: All types have proper `json` tags for clean serialization/deserialization
+- **Simplicity**: No manual taxonomy mapping or property construction
 - **Extensibility**: CustomEntity for agent-specific types (e.g., "k8s:pod", "aws:security_group")
 - **Hierarchical relationships**: Automatic parent-child relationship creation
 
@@ -38,6 +39,51 @@ host := &domain.Host{
 }
 // Parent relationships are automatic via ParentRef()
 ```
+
+### JSON Serialization
+
+All domain types have proper JSON tags for consistent serialization. This enables:
+- Clean JSON output from tools with lowercase snake_case keys
+- Automatic deserialization by Gibson's callback service
+- Interoperability with external systems
+
+```go
+// Domain types serialize to clean JSON:
+host := &domain.Host{IP: "192.168.1.1", Hostname: "web-server"}
+// Serializes to: {"ip": "192.168.1.1", "hostname": "web-server"}
+
+port := &domain.Port{HostID: "192.168.1.1", Number: 80, Protocol: "tcp"}
+// Serializes to: {"host_id": "192.168.1.1", "number": 80, "protocol": "tcp"}
+```
+
+## Tool Output Format
+
+**IMPORTANT**: Tools must return a `DiscoveryResult` under the `discovery_result` key in their output:
+
+```go
+func executeTool(ctx context.Context, input map[string]any) (map[string]any, error) {
+    result := domain.NewDiscoveryResult()
+
+    // Populate discovery result...
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP:    "192.168.1.1",
+        State: "up",
+    })
+
+    // Return with discovery_result key - Gibson extracts this automatically
+    return map[string]any{
+        "discovery_result": result,
+        "metadata": map[string]any{
+            "scan_time": "5s",
+        },
+    }, nil
+}
+```
+
+Gibson's callback service automatically:
+1. Extracts the `discovery_result` key from tool output
+2. Deserializes it into a `domain.DiscoveryResult` struct
+3. Loads all nodes and relationships into the Neo4j knowledge graph
 
 ## GraphNode Interface
 
@@ -73,54 +119,6 @@ type GraphNode interface {
 
 **Implement GraphNode** only when creating custom agent-specific types. For most cases, use `CustomEntity` instead of implementing the interface directly.
 
-### Example Interface Implementation
-
-```go
-// Custom type for a Kubernetes Pod
-type KubernetesPod struct {
-    Namespace string
-    Name      string
-    Status    string
-    Image     string
-    NodeName  string
-}
-
-func (k *KubernetesPod) NodeType() string {
-    return "k8s:pod"
-}
-
-func (k *KubernetesPod) IdentifyingProperties() map[string]any {
-    return map[string]any{
-        "namespace": k.Namespace,
-        "name":      k.Name,
-    }
-}
-
-func (k *KubernetesPod) Properties() map[string]any {
-    return map[string]any{
-        "namespace": k.Namespace,
-        "name":      k.Name,
-        "status":    k.Status,
-        "image":     k.Image,
-        "node_name": k.NodeName,
-    }
-}
-
-func (k *KubernetesPod) ParentRef() *NodeRef {
-    // Pods could reference a k8s:node parent
-    return &NodeRef{
-        NodeType: "k8s:node",
-        Properties: map[string]any{
-            "name": k.NodeName,
-        },
-    }
-}
-
-func (k *KubernetesPod) RelationshipType() string {
-    return "RUNS_ON"
-}
-```
-
 ## Canonical Domain Types
 
 ### Assets: Network Infrastructure
@@ -132,6 +130,8 @@ Root-level node representing a network host (IP address).
 
 **Parent:** None (root node)
 
+**JSON Fields:** `ip`, `hostname`, `state`, `os`
+
 ```go
 host := &domain.Host{
     IP:       "192.168.1.10",
@@ -139,6 +139,7 @@ host := &domain.Host{
     State:    "up",
     OS:       "Linux Ubuntu 22.04",
 }
+// JSON: {"ip":"192.168.1.10","hostname":"web-server.example.com","state":"up","os":"Linux Ubuntu 22.04"}
 ```
 
 #### Port
@@ -148,6 +149,8 @@ Network port on a host.
 
 **Parent:** Host (via `HAS_PORT` relationship)
 
+**JSON Fields:** `host_id`, `number`, `protocol`, `state`
+
 ```go
 port := &domain.Port{
     HostID:   "192.168.1.10",
@@ -155,6 +158,7 @@ port := &domain.Port{
     Protocol: "tcp",
     State:    "open",
 }
+// JSON: {"host_id":"192.168.1.10","number":443,"protocol":"tcp","state":"open"}
 ```
 
 #### Service
@@ -164,6 +168,8 @@ Service running on a port.
 
 **Parent:** Port (via `RUNS_SERVICE` relationship)
 
+**JSON Fields:** `port_id`, `name`, `version`, `banner`
+
 ```go
 service := &domain.Service{
     PortID:  "192.168.1.10:443:tcp",  // Format: {host_id}:{number}:{protocol}
@@ -171,6 +177,7 @@ service := &domain.Service{
     Version: "nginx/1.18.0",
     Banner:  "nginx/1.18.0 (Ubuntu)",
 }
+// JSON: {"port_id":"192.168.1.10:443:tcp","name":"https","version":"nginx/1.18.0","banner":"nginx/1.18.0 (Ubuntu)"}
 ```
 
 #### Endpoint
@@ -179,6 +186,8 @@ HTTP/HTTPS endpoint on a service.
 **Identifying Properties:** `service_id`, `url`, `method`
 
 **Parent:** Service (via `HAS_ENDPOINT` relationship)
+
+**JSON Fields:** `service_id`, `url`, `method`, `status_code`, `headers`, `response_time`, `content_type`, `content_length`
 
 ```go
 endpoint := &domain.Endpoint{
@@ -200,25 +209,35 @@ Root domain name.
 
 **Parent:** None (root node)
 
+**JSON Fields:** `name`, `registrar`, `created_at`, `expires_at`, `nameservers`, `status`
+
 ```go
-domain := &domain.Domain{
-    Name:         "example.com",
-    Registrar:    "Cloudflare",
-    RegisteredAt: "2010-01-15",
+d := &domain.Domain{
+    Name:      "example.com",
+    Registrar: "Cloudflare",
+    CreatedAt: "2010-01-15",
+    ExpiresAt: "2025-01-15",
+    Status:    "active",
 }
 ```
 
 #### Subdomain
 Subdomain under a root domain.
 
-**Identifying Properties:** `name`
+**Identifying Properties:** `parent_domain`, `name`
 
 **Parent:** Domain (via `HAS_SUBDOMAIN` relationship)
 
+**JSON Fields:** `parent_domain`, `name`, `record_type`, `record_value`, `ttl`, `status`
+
 ```go
 subdomain := &domain.Subdomain{
-    Name:       "api.example.com",
-    DomainName: "example.com",
+    ParentDomain: "example.com",
+    Name:         "api.example.com",
+    RecordType:   "A",
+    RecordValue:  "192.168.1.10",
+    TTL:          300,
+    Status:       "active",
 }
 ```
 
@@ -231,11 +250,15 @@ Technology, framework, or software detected.
 
 **Parent:** None (root node)
 
+**JSON Fields:** `name`, `version`, `category`, `vendor`, `cpe`, `license`, `eol`
+
 ```go
 tech := &domain.Technology{
     Name:     "nginx",
     Version:  "1.18.0",
     Category: "web-server",
+    Vendor:   "Nginx Inc.",
+    CPE:      "cpe:2.3:a:nginx:nginx:1.18.0:*:*:*:*:*:*:*",
 }
 ```
 
@@ -296,45 +319,113 @@ api := &domain.API{
 }
 ```
 
-### Execution: Agent and Tool Tracking
+## DiscoveryResult Container
 
-#### AgentRun
-Single execution run of an agent within a mission.
+The `DiscoveryResult` struct is the standard container for tool and agent output. It contains over 150 typed slices covering all domain categories.
 
-**Identifying Properties:** `id`, `mission_id`, `agent_name`, `run_number`
+### Core Categories
 
-**Parent:** None (root node in domain hierarchy, but linked to missions via PART_OF_MISSION)
+| Category | Types | Examples |
+|----------|-------|----------|
+| Network Infrastructure | 10 | Host, Port, Service, Endpoint |
+| DNS | 3 | Domain, Subdomain, DNSRecord |
+| Technology | 2 | Technology, Certificate |
+| Cloud | 20 | CloudAsset, CloudVPC, CloudInstance |
+| Kubernetes | 22 | K8sPod, K8sDeployment, K8sService |
+| Identity/Access | 16 | User, Role, Credential, APIKey |
+| AI/LLM | 16 | LLM, Prompt, Guardrail |
+| MCP | 9 | MCPServer, MCPTool, MCPResource |
+| RAG | 11 | VectorStore, Document, Retriever |
+| Data | 16 | Database, Table, Queue |
+| Web/API | 16 | APIEndpoint, Parameter, Form |
+| Attack | 2 | Tactic, Technique |
+
+### Using DiscoveryResult in Tools
 
 ```go
-agentRun := &domain.AgentRun{
-    ID:        "run-123",
-    MissionID: "mission-456",
-    AgentName: "network-recon",
-    RunNumber: 1,
-    StartTime: "2024-01-20T10:00:00Z",
-    Status:    "running",
+import (
+    "github.com/zero-day-ai/sdk/graphrag/domain"
+)
+
+func executePortScan(ctx context.Context, input map[string]any) (map[string]any, error) {
+    target := input["target"].(string)
+    result := domain.NewDiscoveryResult()
+
+    // Add discovered host
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP:       target,
+        Hostname: "web-server",
+        State:    "up",
+    })
+
+    // Add discovered ports
+    result.Ports = append(result.Ports, &domain.Port{
+        HostID:   target,
+        Number:   80,
+        Protocol: "tcp",
+        State:    "open",
+    })
+
+    result.Ports = append(result.Ports, &domain.Port{
+        HostID:   target,
+        Number:   443,
+        Protocol: "tcp",
+        State:    "open",
+    })
+
+    // Add services
+    result.Services = append(result.Services, &domain.Service{
+        PortID:  target + ":80:tcp",
+        Name:    "http",
+        Version: "nginx/1.18.0",
+    })
+
+    // Return with discovery_result key
+    return map[string]any{
+        "discovery_result": result,
+    }, nil
 }
 ```
 
-#### ToolExecution
-Single execution of a tool within an agent run.
+### AllNodes() Method
 
-**Identifying Properties:** `id`, `agent_run_id`, `tool_name`, `sequence`
-
-**Parent:** AgentRun (via `EXECUTED` relationship)
+The `AllNodes()` method returns all discovered nodes as a flattened slice in dependency order:
 
 ```go
-toolExec := &domain.ToolExecution{
-    ID:          "exec-789",
-    AgentRunID:  "run-123",
-    ToolName:    "nmap",
-    Sequence:    1,
-    StartTime:   "2024-01-20T10:05:00Z",
-    EndTime:     "2024-01-20T10:10:00Z",
-    Status:      "success",
-    Duration:    300.5,
+result := &domain.DiscoveryResult{
+    Hosts: []*domain.Host{...},
+    Ports: []*domain.Port{...},
+    Services: []*domain.Service{...},
 }
+
+// Get all nodes in dependency order
+nodes := result.AllNodes()
+// Returns: [Host, Port, Port, Service, Service]
+//          ^---- parents first, children after
 ```
+
+### Node Ordering (Dependency Order)
+
+`AllNodes()` returns nodes in this order to ensure parents exist before children:
+
+1. **Cloud foundation**: Accounts, regions, VPCs, subnets, security groups
+2. **Network infrastructure**: Networks, zones, firewalls, routers
+3. **K8s foundation**: Clusters, namespaces
+4. **Compute resources**: Hosts, cloud instances, containers
+5. **K8s workloads**: Pods, deployments, services
+6. **Network details**: Interfaces, DNS, load balancers, ports
+7. **Services and domains**: Services, domains, subdomains, technologies
+8. **Web/API resources**: APIs, endpoints, parameters, forms
+9. **AI/LLM infrastructure**: Models, deployments, embeddings
+10. **AI agents and workflows**: Agents, chains, crews
+11. **MCP servers and resources**
+12. **RAG systems**: Vector stores, documents, pipelines
+13. **Data resources**: Databases, tables, queues
+14. **Identity and access**: Users, groups, roles, credentials
+15. **Security findings and attack techniques**
+16. **Custom nodes** (order preserved as added)
+
+This ordering ensures the GraphRAG system can create nodes and relationships in a single pass without forward references.
 
 ## CustomEntity for Extensibility
 
@@ -412,56 +503,8 @@ func discoverKubernetesPods() *domain.DiscoveryResult {
 
     result.Custom = append(result.Custom, pod)
 
-    // Create a service entity (also custom)
-    service := domain.NewCustomEntity("k8s", "service").
-        WithIDProps(map[string]any{
-            "namespace": "default",
-            "name":      "web-service",
-        }).
-        WithAllProps(map[string]any{
-            "namespace":   "default",
-            "name":        "web-service",
-            "type":        "LoadBalancer",
-            "cluster_ip":  "10.96.0.1",
-            "external_ip": "203.0.113.5",
-            "ports":       []int{80, 443},
-        })
-
-    result.Custom = append(result.Custom, service)
-
     return result
 }
-```
-
-### Example: AWS Security Group
-
-```go
-// Create an AWS security group with parent VPC
-securityGroup := domain.NewCustomEntity("aws", "security_group").
-    WithIDProps(map[string]any{
-        "id": "sg-0123456789abcdef0",
-    }).
-    WithAllProps(map[string]any{
-        "id":          "sg-0123456789abcdef0",
-        "name":        "web-server-sg",
-        "description": "Security group for web servers",
-        "vpc_id":      "vpc-abc123",
-        "rules": map[string]any{
-            "ingress": []map[string]any{
-                {"port": 80, "protocol": "tcp", "cidr": "0.0.0.0/0"},
-                {"port": 443, "protocol": "tcp", "cidr": "0.0.0.0/0"},
-            },
-        },
-    }).
-    WithParent(&domain.NodeRef{
-        NodeType: "aws:vpc",
-        Properties: map[string]any{
-            "id": "vpc-abc123",
-        },
-    }, "BELONGS_TO")
-
-result := domain.NewDiscoveryResult()
-result.Custom = append(result.Custom, securityGroup)
 ```
 
 ### How Custom Types Coexist with Canonical Types
@@ -502,313 +545,7 @@ result.Custom = append(result.Custom, domain.NewCustomEntity("k8s", "node").
 // - k8s:node "k8s-node-01" (custom)
 ```
 
-## DiscoveryResult Container
-
-The `DiscoveryResult` struct is the standard container for tool and agent output.
-
-### Structure
-
-```go
-type DiscoveryResult struct {
-    Hosts         []*Host
-    Ports         []*Port
-    Services      []*Service
-    Endpoints     []*Endpoint
-    Domains       []*Domain
-    Subdomains    []*Subdomain
-    Technologies  []*Technology
-    Certificates  []*Certificate
-    CloudAssets   []*CloudAsset
-    APIs          []*API
-    Custom        []GraphNode  // For CustomEntity and custom implementations
-}
-```
-
-### Using DiscoveryResult in Tools
-
-```go
-import (
-    "github.com/zero-day-ai/sdk/graphrag/domain"
-)
-
-func executePortScan(target string) (*domain.DiscoveryResult, error) {
-    result := domain.NewDiscoveryResult()
-
-    // Run nmap scan...
-
-    // Add discovered host
-    result.Hosts = append(result.Hosts, &domain.Host{
-        IP:       "192.168.1.10",
-        Hostname: "web-server",
-        State:    "up",
-    })
-
-    // Add discovered ports
-    result.Ports = append(result.Ports, &domain.Port{
-        HostID:   "192.168.1.10",
-        Number:   80,
-        Protocol: "tcp",
-        State:    "open",
-    })
-
-    result.Ports = append(result.Ports, &domain.Port{
-        HostID:   "192.168.1.10",
-        Number:   443,
-        Protocol: "tcp",
-        State:    "open",
-    })
-
-    // Add services
-    result.Services = append(result.Services, &domain.Service{
-        PortID:  "192.168.1.10:80:tcp",
-        Name:    "http",
-        Version: "nginx/1.18.0",
-    })
-
-    result.Services = append(result.Services, &domain.Service{
-        PortID:  "192.168.1.10:443:tcp",
-        Name:    "https",
-        Version: "nginx/1.18.0",
-    })
-
-    return result, nil
-}
-```
-
-### AllNodes() Method
-
-The `AllNodes()` method returns all discovered nodes as a flattened slice in dependency order:
-
-```go
-result := &domain.DiscoveryResult{
-    Hosts: []*domain.Host{...},
-    Ports: []*domain.Port{...},
-    Services: []*domain.Service{...},
-}
-
-// Get all nodes in dependency order
-nodes := result.AllNodes()
-// Returns: [Host, Port, Port, Service, Service]
-//          ^---- parents first, children after
-```
-
-### Node Ordering (Dependency Order)
-
-`AllNodes()` returns nodes in this order to ensure parents exist before children:
-
-1. **Root nodes** (no parent dependencies):
-   - Hosts
-   - Domains
-   - Technologies
-   - Certificates
-   - CloudAssets
-   - APIs
-
-2. **First-level dependent nodes**:
-   - Ports (depend on Hosts)
-   - Subdomains (depend on Domains)
-
-3. **Second-level dependent nodes**:
-   - Services (depend on Ports)
-
-4. **Leaf nodes**:
-   - Endpoints (depend on Services)
-
-5. **Custom nodes** (order preserved as added)
-
-This ordering ensures the GraphRAG system can create nodes and relationships in a single pass without forward references.
-
-## Migration Guide
-
-### Before: Old Taxonomy Mapping Approach
-
-```go
-// Old approach: Manual JSON construction with taxonomy mapping
-func createHost(ip, hostname string) map[string]any {
-    return map[string]any{
-        "type": "host",  // Manually look up taxonomy type
-        "properties": map[string]any{
-            "ip":       ip,
-            "hostname": hostname,
-        },
-    }
-}
-
-func createPort(hostID string, number int, protocol string) map[string]any {
-    return map[string]any{
-        "type": "port",
-        "properties": map[string]any{
-            "host_id":  hostID,
-            "number":   number,
-            "protocol": protocol,
-        },
-        // Manually construct parent relationship
-        "parent": map[string]any{
-            "type": "host",
-            "properties": map[string]any{"ip": hostID},
-        },
-        "relationship_type": "HAS_PORT",
-    }
-}
-
-// Manual relationship creation, error-prone
-nodes := []map[string]any{
-    createHost("192.168.1.1", "web-server"),
-    createPort("192.168.1.1", 80, "tcp"),
-}
-```
-
-### After: New Domain Type Approach
-
-```go
-import "github.com/zero-day-ai/sdk/graphrag/domain"
-
-// New approach: Type-safe domain objects
-result := domain.NewDiscoveryResult()
-
-// Strongly-typed host creation
-result.Hosts = append(result.Hosts, &domain.Host{
-    IP:       "192.168.1.1",
-    Hostname: "web-server",
-    State:    "up",
-})
-
-// Strongly-typed port creation with automatic parent relationship
-result.Ports = append(result.Ports, &domain.Port{
-    HostID:   "192.168.1.1",  // Automatic parent lookup
-    Number:   80,
-    Protocol: "tcp",
-    State:    "open",
-})
-
-// Relationships are automatic via ParentRef() and RelationshipType()
-// No manual JSON construction needed
-```
-
-### Step-by-Step Migration for Existing Tools
-
-#### Step 1: Replace Manual JSON with DiscoveryResult
-
-**Before:**
-```go
-func executeTool(input map[string]any) (map[string]any, error) {
-    nodes := []map[string]any{}
-
-    // ... scan logic ...
-
-    nodes = append(nodes, map[string]any{
-        "type": "host",
-        "properties": map[string]any{
-            "ip": "192.168.1.1",
-        },
-    })
-
-    return map[string]any{"nodes": nodes}, nil
-}
-```
-
-**After:**
-```go
-import "github.com/zero-day-ai/sdk/graphrag/domain"
-
-func executeTool(input map[string]any) (*domain.DiscoveryResult, error) {
-    result := domain.NewDiscoveryResult()
-
-    // ... scan logic ...
-
-    result.Hosts = append(result.Hosts, &domain.Host{
-        IP:    "192.168.1.1",
-        State: "up",
-    })
-
-    return result, nil
-}
-```
-
-#### Step 2: Replace Type Strings with Domain Types
-
-**Before:**
-```go
-// Hard-coded type strings, no validation
-nodeType := "host"
-if someCondition {
-    nodeType = "service"
-}
-```
-
-**After:**
-```go
-// Type-safe domain types
-if someCondition {
-    result.Hosts = append(result.Hosts, host)
-} else {
-    result.Services = append(result.Services, service)
-}
-```
-
-#### Step 3: Replace Manual Relationships with ParentRef
-
-**Before:**
-```go
-port := map[string]any{
-    "type": "port",
-    "properties": map[string]any{
-        "host_id": hostID,
-        "number":  80,
-    },
-    "parent": map[string]any{
-        "type": "host",
-        "properties": map[string]any{"ip": hostID},
-    },
-    "relationship_type": "HAS_PORT",
-}
-```
-
-**After:**
-```go
-// ParentRef() is automatic - just set HostID
-port := &domain.Port{
-    HostID:   hostID,  // Parent relationship is automatic
-    Number:   80,
-    Protocol: "tcp",
-}
-result.Ports = append(result.Ports, port)
-```
-
-#### Step 4: Migrate Custom Types to CustomEntity
-
-**Before:**
-```go
-// Custom type with manual JSON
-customNode := map[string]any{
-    "type": "k8s:pod",
-    "properties": map[string]any{
-        "namespace": "default",
-        "name":      "web-server",
-    },
-}
-```
-
-**After:**
-```go
-// CustomEntity with fluent builder
-pod := domain.NewCustomEntity("k8s", "pod").
-    WithIDProps(map[string]any{
-        "namespace": "default",
-        "name":      "web-server",
-    }).
-    WithAllProps(map[string]any{
-        "namespace": "default",
-        "name":      "web-server",
-        "status":    "Running",
-    })
-
-result.Custom = append(result.Custom, pod)
-```
-
-## Complete Examples
-
-### Example 1: Tool that Discovers Hosts and Ports
+## Complete Example: Port Scanner Tool
 
 ```go
 package main
@@ -817,7 +554,6 @@ import (
     "context"
     "github.com/zero-day-ai/sdk"
     "github.com/zero-day-ai/sdk/graphrag/domain"
-    "github.com/zero-day-ai/sdk/tool"
 )
 
 func main() {
@@ -878,120 +614,12 @@ func executePortScan(ctx context.Context, input map[string]any) (map[string]any,
         Version: "8.0.35",
     })
 
-    // Return the discovery result
-    // The GraphRAG system will automatically create nodes and relationships
+    // IMPORTANT: Return discovery_result key for Gibson to process
     return map[string]any{
-        "discovery": result,
-    }, nil
-}
-```
-
-### Example 2: Agent with Custom Type
-
-```go
-package main
-
-import (
-    "context"
-    "github.com/zero-day-ai/sdk"
-    "github.com/zero-day-ai/sdk/agent"
-    "github.com/zero-day-ai/sdk/graphrag/domain"
-)
-
-func main() {
-    k8sAgent, err := sdk.NewAgent(
-        sdk.WithName("k8s-scanner"),
-        sdk.WithVersion("1.0.0"),
-        sdk.WithDescription("Scans Kubernetes clusters for security issues"),
-        sdk.WithExecuteFunc(executeK8sScan),
-    )
-    if err != nil {
-        panic(err)
-    }
-    _ = k8sAgent
-}
-
-func executeK8sScan(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
-    result := domain.NewDiscoveryResult()
-
-    // Discover Kubernetes nodes (worker machines)
-    nodeNames := []string{"worker-01", "worker-02", "worker-03"}
-    for _, nodeName := range nodeNames {
-        node := domain.NewCustomEntity("k8s", "node").
-            WithIDProps(map[string]any{
-                "name": nodeName,
-            }).
-            WithAllProps(map[string]any{
-                "name":     nodeName,
-                "status":   "Ready",
-                "version":  "v1.28.0",
-                "capacity": map[string]any{"cpu": "8", "memory": "32Gi"},
-            })
-
-        result.Custom = append(result.Custom, node)
-    }
-
-    // Discover pods running on nodes
-    pods := []struct {
-        namespace string
-        name      string
-        nodeName  string
-        image     string
-    }{
-        {"default", "web-server-abc123", "worker-01", "nginx:1.21"},
-        {"default", "api-server-def456", "worker-02", "golang:1.21"},
-        {"kube-system", "coredns-ghi789", "worker-03", "coredns:1.10"},
-    }
-
-    for _, podInfo := range pods {
-        pod := domain.NewCustomEntity("k8s", "pod").
-            WithIDProps(map[string]any{
-                "namespace": podInfo.namespace,
-                "name":      podInfo.name,
-            }).
-            WithAllProps(map[string]any{
-                "namespace": podInfo.namespace,
-                "name":      podInfo.name,
-                "status":    "Running",
-                "image":     podInfo.image,
-                "phase":     "Running",
-            }).
-            WithParent(&domain.NodeRef{
-                NodeType: "k8s:node",
-                Properties: map[string]any{
-                    "name": podInfo.nodeName,
-                },
-            }, "RUNS_ON")
-
-        result.Custom = append(result.Custom, pod)
-    }
-
-    // Discover Kubernetes services
-    service := domain.NewCustomEntity("k8s", "service").
-        WithIDProps(map[string]any{
-            "namespace": "default",
-            "name":      "web-service",
-        }).
-        WithAllProps(map[string]any{
-            "namespace":   "default",
-            "name":        "web-service",
-            "type":        "LoadBalancer",
-            "cluster_ip":  "10.96.0.1",
-            "external_ip": "203.0.113.5",
-            "ports":       []int{80, 443},
-        })
-
-    result.Custom = append(result.Custom, service)
-
-    // Store discoveries in GraphRAG
-    // (In real implementation, this would be done via harness)
-
-    return agent.Result{
-        Status: agent.StatusSuccess,
-        Output: map[string]any{
-            "nodes_discovered": result.NodeCount(),
-            "pods":             len(pods),
-            "nodes":            len(nodeNames),
+        "discovery_result": result,
+        "metadata": map[string]any{
+            "scan_duration": "2.5s",
+            "ports_scanned": 1000,
         },
     }, nil
 }

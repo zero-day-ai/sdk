@@ -21,23 +21,23 @@ import "github.com/zero-day-ai/sdk/graphrag"
 type Subdomain struct {
 	// ParentDomain is the name of the parent domain (e.g., "example.com").
 	// This is an identifying property.
-	ParentDomain string
+	ParentDomain string `json:"parent_domain"`
 
 	// Name is the full subdomain name (e.g., "api.example.com").
 	// This is an identifying property.
-	Name string
+	Name string `json:"name"`
 
 	// RecordType is the DNS record type (A, AAAA, CNAME, etc.) (optional).
-	RecordType string
+	RecordType string `json:"record_type,omitempty"`
 
 	// RecordValue is the DNS record value (IP address, CNAME target, etc.) (optional).
-	RecordValue string
+	RecordValue string `json:"record_value,omitempty"`
 
 	// TTL is the DNS time-to-live value (optional).
-	TTL int
+	TTL int `json:"ttl,omitempty"`
 
 	// Status is the subdomain status (e.g., "active", "inactive") (optional).
-	Status string
+	Status string `json:"status,omitempty"`
 }
 
 // NodeType returns the canonical node type for subdomains.

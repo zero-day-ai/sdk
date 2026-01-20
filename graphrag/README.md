@@ -1,76 +1,165 @@
-# GraphRAG Package - Deterministic ID System
+# GraphRAG Package
 
-This package provides a deterministic, content-addressable ID generation system for GraphRAG knowledge graph nodes and relationships. The system guarantees that the same logical entity always receives the same ID, enabling idempotent graph operations and reliable relationship references.
+This package provides the GraphRAG (Graph Retrieval-Augmented Generation) system for the Gibson security testing framework. It includes strongly-typed domain objects, deterministic ID generation, and a registry for node type definitions.
+
+**Version:** 0.20.0
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Why Deterministic IDs?](#why-deterministic-ids)
+- [Domain Types (Recommended)](#domain-types-recommended)
 - [Quick Start](#quick-start)
 - [Node Type Registry](#node-type-registry)
 - [ID Generator](#id-generator)
-- [Taxonomy Mapping Format](#taxonomy-mapping-format)
-- [Migration Guide](#migration-guide)
+- [Custom Types](#custom-types)
+- [Migration from Taxonomy Mappings](#migration-from-taxonomy-mappings)
 - [Examples](#examples)
 - [Testing](#testing)
 
 ## Overview
 
-The deterministic ID system consists of three core components:
+The GraphRAG package provides:
 
-1. **NodeTypeRegistry** - Defines identifying properties for each node type
-2. **ID Generator** - Creates content-addressable IDs from node type and properties
-3. **Taxonomy Mappings** - Declarative mappings from tool output to graph entities
+1. **Domain Types** (`domain/`) - Strongly-typed Go structs for graph entities (Host, Port, Service, etc.)
+2. **NodeTypeRegistry** - Defines identifying properties for each node type
+3. **ID Generator** - Creates deterministic, content-addressable IDs
+4. **CustomEntity** - Base type for agent-specific custom node types
+
+### Architecture (v0.20.0)
+
+```
+SDK GraphRAG Package
+├── domain/           # Strongly-typed domain objects (NEW)
+│   ├── interfaces.go # GraphNode interface
+│   ├── host.go       # Host domain type
+│   ├── port.go       # Port domain type
+│   ├── service.go    # Service domain type
+│   ├── custom.go     # CustomEntity for extensibility
+│   └── discovery.go  # DiscoveryResult container
+├── id/               # Deterministic ID generation
+│   └── generator.go
+├── registry.go       # NodeTypeRegistry
+└── taxonomy_generated.go  # Node/relationship type constants
+```
 
 ### System Guarantees
 
+- **Type-Safe**: Domain types provide compile-time checking
 - **Deterministic**: Same inputs always produce the same ID
 - **Collision-Resistant**: Different inputs produce different IDs (SHA-256 based)
-- **Human-Readable**: IDs include node type prefix (e.g., `host:a1b2c3d4`)
-- **Stable**: IDs remain consistent across agent runs and missions
+- **Automatic Relationships**: Parent references create relationships automatically
 - **Fail-Fast**: Missing properties cause explicit errors, never silent failures
+
+## Domain Types (Recommended)
+
+The recommended way to work with GraphRAG is through strongly-typed domain objects. These provide compile-time safety and automatic relationship creation.
+
+### GraphNode Interface
+
+All domain types implement the `GraphNode` interface:
+
+```go
+type GraphNode interface {
+    // NodeType returns the canonical node type (e.g., "host", "port")
+    NodeType() string
+
+    // IdentifyingProperties returns properties that uniquely identify this node
+    IdentifyingProperties() map[string]any
+
+    // Properties returns all properties to set on the node
+    Properties() map[string]any
+
+    // ParentRef returns reference to parent node for relationship creation
+    ParentRef() *NodeRef
+
+    // RelationshipType returns the relationship type to parent
+    RelationshipType() string
+}
+```
+
+### Using Domain Types
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag/domain"
+
+// Create a DiscoveryResult to hold discoveries
+result := domain.NewDiscoveryResult()
+
+// Add hosts (root nodes - no parent)
+result.Hosts = append(result.Hosts, &domain.Host{
+    IP:       "192.168.1.10",
+    Hostname: "web-server.example.com",
+    State:    "up",
+})
+
+// Add ports (child of Host - parent relationship automatic)
+result.Ports = append(result.Ports, &domain.Port{
+    HostID:   "192.168.1.10",
+    Number:   443,
+    Protocol: "tcp",
+    State:    "open",
+})
+
+// Add services (child of Port)
+result.Services = append(result.Services, &domain.Service{
+    PortID:  "192.168.1.10:443:tcp",
+    Name:    "https",
+    Version: "nginx/1.18.0",
+})
+
+// Get all nodes in dependency order (parents before children)
+nodes := result.AllNodes()
+```
+
+### Available Domain Types
+
+| Type | Parent | Identifying Properties |
+|------|--------|----------------------|
+| `Host` | None | `ip` |
+| `Port` | Host | `host_id`, `number`, `protocol` |
+| `Service` | Port | `port_id`, `name` |
+| `Endpoint` | Service | `service_id`, `url`, `method` |
+| `Domain` | None | `name` |
+| `Subdomain` | Domain | `name`, `domain_name` |
+| `Technology` | None | `name`, `version` |
+| `Certificate` | None | `serial_number` |
+| `CloudAsset` | None | `provider`, `region`, `resource_id` |
+| `API` | None | `base_url` |
+| `AgentRun` | None | `id`, `mission_id`, `agent_name`, `run_number` |
+| `ToolExecution` | AgentRun | `id`, `agent_run_id`, `tool_name`, `sequence` |
+
+### Why Domain Types?
+
+**Before (Old Taxonomy Mapping):**
+```go
+// Manual JSON construction, no type safety, error-prone
+node := map[string]any{
+    "type": "host",
+    "properties": map[string]any{
+        "ip": "192.168.1.1",
+    },
+}
+// Relationships created manually, IDs could misalign
+```
+
+**After (Domain Types):**
+```go
+// Strongly-typed, compiler-verified, automatic relationships
+host := &domain.Host{
+    IP:       "192.168.1.1",
+    Hostname: "web-server",
+}
+// ParentRef() and RelationshipType() handle relationships automatically
+```
 
 ## Why Deterministic IDs?
 
-### The Problem with Templates
+IDs are generated from identifying properties using SHA-256 hashing. This ensures:
 
-Previously, IDs were generated using string templates:
-
-```yaml
-# OLD FORMAT (DEPRECATED)
-id_template: "host:{{.ip}}"
-relationships:
-  - type: HAS_PORT
-    from_template: "host:{{.ip}}"           # Fragile string manipulation
-    to_template: "port:{{.ip}}:{{.port}}"   # Easy to misalign
-```
-
-This approach had critical flaws:
-
-- **Silent Failures**: Typos in templates created invalid IDs silently
-- **Relationship Misalignment**: From/to templates could reference non-existent nodes
-- **No Validation**: Missing properties were only discovered at storage time
-- **Inconsistent Formatting**: Different agents could format the same ID differently
-
-### The Solution: Content-Addressable IDs
-
-The new system uses **identifying properties** defined in the registry:
-
-```go
-// A "host" node is uniquely identified by its "ip" property
-registry.GetIdentifyingProperties("host") // Returns: ["ip"]
-
-// Generate ID from properties
-generator.Generate("host", map[string]any{"ip": "192.168.1.1"})
-// Returns: "host:a1b2c3d4e5f6" (deterministic hash)
-```
-
-This guarantees:
-
-- Properties define IDs, not string templates
-- Missing properties cause immediate errors
-- Same properties always produce same ID
-- Relationships can only reference valid nodes
+- **Idempotent Operations**: Same entity always gets same ID
+- **MERGE-Safe**: Neo4j MERGE operations work correctly
+- **Stable References**: Relationships reference correct nodes
+- **Debug-Friendly**: IDs include type prefix (`host:a1b2c3d4`)
 
 ## Quick Start
 
@@ -341,458 +430,367 @@ if errors.Is(err, graphrag.ErrMissingIdentifyingProperties) {
 }
 ```
 
-## Taxonomy Mapping Format
+## Custom Types
 
-Taxonomy mappings define how tool output maps to graph entities. The new format uses **identifying properties** and **node references** instead of string templates.
+Use `CustomEntity` for agent-specific types not covered by canonical domain types:
 
-### New Format (Current)
+```go
+import "github.com/zero-day-ai/sdk/graphrag/domain"
 
-```yaml
-taxonomy:
-  node_type: port
+// Create a Kubernetes pod (custom type)
+pod := domain.NewCustomEntity("k8s", "pod").
+    WithIDProps(map[string]any{
+        "namespace": "default",
+        "name":      "web-server-abc123",
+    }).
+    WithAllProps(map[string]any{
+        "namespace": "default",
+        "name":      "web-server-abc123",
+        "status":    "Running",
+        "image":     "nginx:1.21",
+    }).
+    WithParent(&domain.NodeRef{
+        NodeType: "k8s:node",
+        Properties: map[string]any{
+            "name": "worker-node-01",
+        },
+    }, "RUNS_ON")
 
-  # Identifying properties: map property names to JSONPath expressions
-  identifying_properties:
-    host_id: "$.host_ip"       # Will be used to generate parent host ID
-    number: "$.port"
-    protocol: "$.protocol"
-
-  # Additional properties (not used for ID generation)
-  properties:
-    - source: "$.state"
-      target: "state"
-    - source: "$.service"
-      target: "service_name"
-
-  # Relationships use node references, not templates
-  relationships:
-    - type: HAS_PORT
-      from:
-        type: host              # Reference parent host
-        properties:
-          ip: "$.host_ip"       # Properties to generate host ID
-      to:
-        type: self              # Reference current port node
+result.Custom = append(result.Custom, pod)
 ```
 
-### Old Format (Deprecated)
+### Namespace Conventions
 
-```yaml
-# DO NOT USE - This format is deprecated and will be removed
-taxonomy:
-  node_type: port
-  id_template: "port:{{.host_ip}}:{{.port}}"  # REMOVED
+| Namespace | Purpose | Examples |
+|-----------|---------|----------|
+| `k8s:` | Kubernetes resources | `k8s:pod`, `k8s:service`, `k8s:deployment` |
+| `aws:` | AWS-specific resources | `aws:security_group`, `aws:iam_role` |
+| `azure:` | Azure-specific resources | `azure:resource_group` |
+| `gcp:` | GCP-specific resources | `gcp:compute_instance` |
+| `vuln:` | Vulnerability types | `vuln:cve`, `vuln:exploit` |
+| `custom:` | Agent-specific types | `custom:my_type` |
 
-  properties:
-    - source: "$.port"
-      target: "port_number"
+### When to Use CustomEntity vs Canonical Types
 
-  relationships:
-    - type: HAS_PORT
-      from_template: "host:{{.host_ip}}"           # REMOVED
-      to_template: "port:{{.host_ip}}:{{.port}}"   # REMOVED
+| Scenario | Recommendation |
+|----------|----------------|
+| Standard network/web assets | Use canonical types (`Host`, `Port`, `Service`) |
+| Kubernetes resources | Use `CustomEntity` with `k8s:` namespace |
+| Cloud provider specific | Use `CustomEntity` with `aws:`/`azure:`/`gcp:` namespace |
+| Used by multiple agents | Consider adding canonical type to SDK |
+
+## Migration from Taxonomy Mappings
+
+The old taxonomy mapping system (YAML-based JSONPath extraction) has been **removed** in v0.20.0. Tools must now return `DiscoveryResult` with domain types.
+
+### What Was Removed
+
+The following files were deleted:
+- `gibson/internal/graphrag/engine/taxonomy_engine.go`
+- `gibson/internal/graphrag/engine/jsonpath.go`
+- `gibson/internal/graphrag/engine/template.go`
+- `gibson/internal/graphrag/taxonomy/` directory
+- `sdk/schema/taxonomy.go`
+
+### Migration Steps
+
+**1. Replace raw JSON output with DiscoveryResult:**
+
+```go
+// OLD (Removed)
+func execute(input map[string]any) (map[string]any, error) {
+    return map[string]any{
+        "hosts": []map[string]any{
+            {"ip": "192.168.1.1"},
+        },
+    }, nil
+}
+
+// NEW
+func execute(input map[string]any) (*domain.DiscoveryResult, error) {
+    result := domain.NewDiscoveryResult()
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP: "192.168.1.1",
+    })
+    return result, nil
+}
 ```
 
-### Key Differences
+**2. Remove schema.TaxonomyMapping definitions:**
 
-| Aspect | Old Format | New Format |
-|--------|-----------|-----------|
-| Node ID | `id_template` with Go templates | Generated from `identifying_properties` |
-| Relationships | `from_template`, `to_template` strings | `NodeReference` with type and properties |
-| Validation | Runtime (at storage) | Compile-time (at mapping parse) |
-| Type Safety | None (strings) | Full (typed references) |
-| Errors | Silent failures | Explicit errors with context |
+```go
+// OLD (Removed) - No longer needed
+hostSchema := schema.Object(...).WithTaxonomy(schema.TaxonomyMapping{
+    NodeType: "host",
+    IdentifyingProperties: map[string]string{"ip": "ip"},
+    // ...
+})
 
-## Migration Guide
-
-### Step 1: Convert `id_template` to `identifying_properties`
-
-**Before:**
-```yaml
-node_type: host
-id_template: "host:{{.ip}}"
+// NEW - Domain types are self-describing
+host := &domain.Host{IP: "192.168.1.1"}
+// NodeType(), IdentifyingProperties(), etc. are built-in methods
 ```
 
-**After:**
-```yaml
-node_type: host
-identifying_properties:
-  ip: "$.ip"  # JSONPath to extract identifying property
-```
+**3. Remove `--schema` flag handlers:**
 
-**Before:**
-```yaml
-node_type: port
-id_template: "port:{{.host_id}}:{{.port_number}}:{{.protocol}}"
-```
-
-**After:**
-```yaml
-node_type: port
-identifying_properties:
-  host_id: "$.host_id"
-  number: "$.port_number"
-  protocol: "$.protocol"
-```
-
-### Step 2: Convert Relationship Templates to Node References
-
-**Before:**
-```yaml
-relationships:
-  - type: HAS_PORT
-    from_template: "host:{{.host_ip}}"
-    to_template: "port:{{.host_ip}}:{{.port}}:{{.protocol}}"
-```
-
-**After:**
-```yaml
-relationships:
-  - type: HAS_PORT
-    from:
-      type: host
-      properties:
-        ip: "$.host_ip"
-    to:
-      type: self  # References the current port node
-```
-
-### Step 3: Use "self" for Current Node
-
-**Before:**
-```yaml
-relationships:
-  - type: RUNS_SERVICE
-    from_template: "port:{{.host_id}}:{{.port_number}}:{{.protocol}}"
-    to_template: "service:{{.port_id}}:{{.service_name}}"
-```
-
-**After:**
-```yaml
-relationships:
-  - type: RUNS_SERVICE
-    from:
-      type: self  # Current port node
-    to:
-      type: service
-      properties:
-        port_id: "$.port_id"
-        name: "$.service_name"
-```
-
-### Complete Migration Example
-
-**Before (nmap port scan output):**
-```yaml
-- node_type: port
-  id_template: "port:{{.host}}:{{.portid}}:{{.protocol}}"
-  path: "$.ports[*]"
-  properties:
-    - source: "$.portid"
-      target: "port_number"
-    - source: "$.protocol"
-      target: "protocol"
-    - source: "$.state.state"
-      target: "state"
-  relationships:
-    - type: HAS_PORT
-      from_template: "host:{{.host}}"
-      to_template: "port:{{.host}}:{{.portid}}:{{.protocol}}"
-```
-
-**After:**
-```yaml
-- node_type: port
-  path: "$.ports[*]"
-
-  identifying_properties:
-    host_id: "$.host"
-    number: "$.portid"
-    protocol: "$.protocol"
-
-  properties:
-    - source: "$.state.state"
-      target: "state"
-
-  relationships:
-    - type: HAS_PORT
-      from:
-        type: host
-        properties:
-          ip: "$.host"
-      to:
-        type: self
-```
+Tools no longer need to export taxonomy schemas. The domain types define everything.
 
 ## Examples
 
-### Example 1: Simple Host Node
+### Example 1: Simple Port Scanner Tool
 
 ```go
-import (
-    "github.com/zero-day-ai/sdk/graphrag"
-    "github.com/zero-day-ai/sdk/graphrag/id"
-)
+import "github.com/zero-day-ai/sdk/graphrag/domain"
 
-func createHostNode(ipAddress string) (*graphrag.GraphNode, error) {
-    registry := graphrag.Registry()
-    generator := id.NewGenerator(registry)
+func executePortScan(input map[string]any) (*domain.DiscoveryResult, error) {
+    target := input["target"].(string)
+    result := domain.NewDiscoveryResult()
 
-    // Generate deterministic ID
-    properties := map[string]any{"ip": ipAddress}
-    hostID, err := generator.Generate("host", properties)
-    if err != nil {
-        return nil, fmt.Errorf("failed to generate host ID: %w", err)
-    }
-
-    // Create node with generated ID
-    node := graphrag.NewGraphNode("host").
-        WithID(hostID).
-        WithProperty("ip", ipAddress).
-        WithProperty("hostname", "web-server.example.com")
-
-    return node, nil
-}
-```
-
-### Example 2: Port with Parent Relationship
-
-```go
-func createPortWithRelationship(hostIP string, portNumber int, protocol string) (*graphrag.Batch, error) {
-    registry := graphrag.Registry()
-    generator := id.NewGenerator(registry)
-
-    // Generate host ID
-    hostID, err := generator.Generate("host", map[string]any{"ip": hostIP})
-    if err != nil {
-        return nil, err
-    }
-
-    // Generate port ID
-    portID, err := generator.Generate("port", map[string]any{
-        "host_id":  hostID,
-        "number":   portNumber,
-        "protocol": protocol,
+    // Discover host
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP:       target,
+        Hostname: "web-server.example.com",
+        State:    "up",
+        OS:       "Linux",
     })
-    if err != nil {
-        return nil, err
-    }
 
-    // Create batch with both nodes and relationship
-    batch := graphrag.NewBatch()
-
-    // Host node
-    host := graphrag.NewGraphNode("host").
-        WithID(hostID).
-        WithProperty("ip", hostIP)
-    batch.Nodes = append(batch.Nodes, *host)
-
-    // Port node
-    port := graphrag.NewGraphNode("port").
-        WithID(portID).
-        WithProperty("host_id", hostID).
-        WithProperty("number", portNumber).
-        WithProperty("protocol", protocol)
-    batch.Nodes = append(batch.Nodes, *port)
-
-    // Relationship (validated - both nodes in batch)
-    rel := graphrag.NewRelationship(hostID, portID, graphrag.RelTypeHasPort)
-    batch.Relationships = append(batch.Relationships, *rel)
-
-    return batch, nil
-}
-```
-
-### Example 3: Extracting from Tool Output
-
-```go
-func extractFromNmapOutput(nmapJSON []byte) (*graphrag.Batch, error) {
-    registry := graphrag.Registry()
-    generator := id.NewGenerator(registry)
-    batch := graphrag.NewBatch()
-
-    // Parse nmap output
-    var output struct {
-        Host  string `json:"host"`
-        Ports []struct {
-            Port     int    `json:"portid"`
-            Protocol string `json:"protocol"`
-            State    string `json:"state"`
-        } `json:"ports"`
-    }
-    if err := json.Unmarshal(nmapJSON, &output); err != nil {
-        return nil, err
-    }
-
-    // Generate host ID
-    hostID, err := generator.Generate("host", map[string]any{
-        "ip": output.Host,
-    })
-    if err != nil {
-        return nil, err
-    }
-
-    // Create host node
-    host := graphrag.NewGraphNode("host").
-        WithID(hostID).
-        WithProperty("ip", output.Host)
-    batch.Nodes = append(batch.Nodes, *host)
-
-    // Create port nodes and relationships
-    for _, p := range output.Ports {
-        portID, err := generator.Generate("port", map[string]any{
-            "host_id":  hostID,
-            "number":   p.Port,
-            "protocol": p.Protocol,
+    // Discover ports (relationships are automatic via HostID)
+    openPorts := []int{22, 80, 443, 3306}
+    for _, portNum := range openPorts {
+        result.Ports = append(result.Ports, &domain.Port{
+            HostID:   target,
+            Number:   portNum,
+            Protocol: "tcp",
+            State:    "open",
         })
-        if err != nil {
-            return nil, err
-        }
-
-        port := graphrag.NewGraphNode("port").
-            WithID(portID).
-            WithProperty("host_id", hostID).
-            WithProperty("number", p.Port).
-            WithProperty("protocol", p.Protocol).
-            WithProperty("state", p.State)
-        batch.Nodes = append(batch.Nodes, *port)
-
-        rel := graphrag.NewRelationship(hostID, portID, graphrag.RelTypeHasPort)
-        batch.Relationships = append(batch.Relationships, *rel)
     }
 
-    return batch, nil
+    // Discover services
+    result.Services = append(result.Services, &domain.Service{
+        PortID:  target + ":443:tcp",
+        Name:    "https",
+        Version: "nginx/1.18.0",
+    })
+
+    return result, nil
+}
+```
+
+### Example 2: Kubernetes Scanner Agent
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag/domain"
+
+func scanKubernetesCluster() *domain.DiscoveryResult {
+    result := domain.NewDiscoveryResult()
+
+    // Mix canonical and custom types
+    // Canonical: Discovered hosts
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP:       "10.0.1.50",
+        Hostname: "k8s-node-01",
+    })
+
+    // Custom: Kubernetes nodes
+    k8sNode := domain.NewCustomEntity("k8s", "node").
+        WithIDProps(map[string]any{"name": "k8s-node-01"}).
+        WithAllProps(map[string]any{
+            "name":     "k8s-node-01",
+            "status":   "Ready",
+            "version":  "v1.28.0",
+        })
+    result.Custom = append(result.Custom, k8sNode)
+
+    // Custom: Kubernetes pods with parent relationship
+    pod := domain.NewCustomEntity("k8s", "pod").
+        WithIDProps(map[string]any{
+            "namespace": "default",
+            "name":      "web-server-abc123",
+        }).
+        WithAllProps(map[string]any{
+            "namespace": "default",
+            "name":      "web-server-abc123",
+            "status":    "Running",
+            "image":     "nginx:1.21",
+        }).
+        WithParent(&domain.NodeRef{
+            NodeType:   "k8s:node",
+            Properties: map[string]any{"name": "k8s-node-01"},
+        }, "RUNS_ON")
+    result.Custom = append(result.Custom, pod)
+
+    return result
+}
+```
+
+### Example 3: Processing Tool Output with Domain Types
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag/domain"
+
+// NmapOutput represents parsed nmap output
+type NmapOutput struct {
+    Host  string     `json:"host"`
+    Ports []NmapPort `json:"ports"`
+}
+
+type NmapPort struct {
+    Port     int    `json:"portid"`
+    Protocol string `json:"protocol"`
+    State    string `json:"state"`
+    Service  string `json:"service"`
+    Version  string `json:"version"`
+}
+
+func processNmapOutput(output NmapOutput) *domain.DiscoveryResult {
+    result := domain.NewDiscoveryResult()
+
+    // Create host
+    result.Hosts = append(result.Hosts, &domain.Host{
+        IP:    output.Host,
+        State: "up",
+    })
+
+    // Create ports and services
+    for _, p := range output.Ports {
+        result.Ports = append(result.Ports, &domain.Port{
+            HostID:   output.Host,
+            Number:   p.Port,
+            Protocol: p.Protocol,
+            State:    p.State,
+        })
+
+        if p.Service != "" {
+            result.Services = append(result.Services, &domain.Service{
+                PortID:  fmt.Sprintf("%s:%d:%s", output.Host, p.Port, p.Protocol),
+                Name:    p.Service,
+                Version: p.Version,
+            })
+        }
+    }
+
+    return result
 }
 ```
 
 ## Testing
 
-### Unit Testing ID Generation
+### Testing Domain Types
+
+```go
+import (
+    "testing"
+    "github.com/zero-day-ai/sdk/graphrag/domain"
+    "github.com/stretchr/testify/assert"
+)
+
+func TestHostDomainType(t *testing.T) {
+    host := &domain.Host{
+        IP:       "192.168.1.1",
+        Hostname: "web-server",
+        State:    "up",
+    }
+
+    // Test GraphNode interface implementation
+    assert.Equal(t, "host", host.NodeType())
+    assert.Equal(t, map[string]any{"ip": "192.168.1.1"}, host.IdentifyingProperties())
+    assert.Nil(t, host.ParentRef(), "Host should have no parent")
+}
+
+func TestPortDomainType(t *testing.T) {
+    port := &domain.Port{
+        HostID:   "192.168.1.1",
+        Number:   443,
+        Protocol: "tcp",
+        State:    "open",
+    }
+
+    // Test GraphNode interface
+    assert.Equal(t, "port", port.NodeType())
+    assert.Equal(t, map[string]any{
+        "host_id":  "192.168.1.1",
+        "number":   443,
+        "protocol": "tcp",
+    }, port.IdentifyingProperties())
+
+    // Test parent relationship
+    parent := port.ParentRef()
+    assert.NotNil(t, parent)
+    assert.Equal(t, "host", parent.NodeType)
+    assert.Equal(t, "192.168.1.1", parent.Properties["ip"])
+    assert.Equal(t, "HAS_PORT", port.RelationshipType())
+}
+
+func TestDiscoveryResult(t *testing.T) {
+    result := domain.NewDiscoveryResult()
+
+    result.Hosts = append(result.Hosts, &domain.Host{IP: "10.0.0.1"})
+    result.Ports = append(result.Ports, &domain.Port{
+        HostID:   "10.0.0.1",
+        Number:   22,
+        Protocol: "tcp",
+    })
+
+    // AllNodes returns in dependency order
+    nodes := result.AllNodes()
+    assert.Len(t, nodes, 2)
+    assert.Equal(t, "host", nodes[0].NodeType())  // Parent first
+    assert.Equal(t, "port", nodes[1].NodeType())  // Child second
+}
+
+func TestCustomEntity(t *testing.T) {
+    entity := domain.NewCustomEntity("k8s", "pod").
+        WithIDProps(map[string]any{"name": "web-pod"}).
+        WithAllProps(map[string]any{
+            "name":   "web-pod",
+            "status": "Running",
+        })
+
+    assert.Equal(t, "k8s:pod", entity.NodeType())
+    assert.Equal(t, map[string]any{"name": "web-pod"}, entity.IdentifyingProperties())
+}
+```
+
+### Testing ID Generation
 
 ```go
 func TestDeterministicIDs(t *testing.T) {
-    registry := graphrag.NewDefaultNodeTypeRegistry()
+    registry := graphrag.Registry()
     generator := id.NewGenerator(registry)
 
-    // Test 1: Same inputs produce same ID
-    id1, err := generator.Generate("host", map[string]any{"ip": "10.0.0.1"})
-    require.NoError(t, err)
+    // Same inputs produce same ID
+    id1, _ := generator.Generate("host", map[string]any{"ip": "10.0.0.1"})
+    id2, _ := generator.Generate("host", map[string]any{"ip": "10.0.0.1"})
+    assert.Equal(t, id1, id2)
 
-    id2, err := generator.Generate("host", map[string]any{"ip": "10.0.0.1"})
-    require.NoError(t, err)
+    // Different inputs produce different IDs
+    id3, _ := generator.Generate("host", map[string]any{"ip": "10.0.0.2"})
+    assert.NotEqual(t, id1, id3)
 
-    assert.Equal(t, id1, id2, "Same inputs must produce same ID")
-
-    // Test 2: Different inputs produce different IDs
-    id3, err := generator.Generate("host", map[string]any{"ip": "10.0.0.2"})
-    require.NoError(t, err)
-
-    assert.NotEqual(t, id1, id3, "Different inputs must produce different IDs")
-
-    // Test 3: Property order doesn't matter
-    id4, err := generator.Generate("port", map[string]any{
-        "host_id":  "host:abc",
-        "number":   443,
-        "protocol": "tcp",
+    // Property order doesn't matter
+    id4, _ := generator.Generate("port", map[string]any{
+        "host_id": "h1", "number": 443, "protocol": "tcp",
     })
-    require.NoError(t, err)
-
-    id5, err := generator.Generate("port", map[string]any{
-        "protocol": "tcp",
-        "number":   443,
-        "host_id":  "host:abc",
+    id5, _ := generator.Generate("port", map[string]any{
+        "protocol": "tcp", "number": 443, "host_id": "h1",
     })
-    require.NoError(t, err)
-
-    assert.Equal(t, id4, id5, "Property order must not affect ID")
-}
-```
-
-### Testing Registry
-
-```go
-func TestRegistry(t *testing.T) {
-    registry := graphrag.NewDefaultNodeTypeRegistry()
-
-    // Test 1: All standard types registered
-    assert.True(t, registry.IsRegistered("host"))
-    assert.True(t, registry.IsRegistered("port"))
-    assert.True(t, registry.IsRegistered("finding"))
-
-    // Test 2: Unknown types return error
-    _, err := registry.GetIdentifyingProperties("unknown_type")
-    assert.ErrorIs(t, err, graphrag.ErrNodeTypeNotRegistered)
-
-    // Test 3: Validation catches missing properties
-    _, err = registry.ValidateProperties("host", map[string]any{
-        "hostname": "server", // Missing "ip"
-    })
-    assert.ErrorIs(t, err, graphrag.ErrMissingIdentifyingProperties)
-
-    // Test 4: Validation passes with all properties
-    _, err = registry.ValidateProperties("host", map[string]any{
-        "ip":       "10.0.0.1",
-        "hostname": "server", // Extra properties OK
-    })
-    assert.NoError(t, err)
-}
-```
-
-### Integration Testing
-
-```go
-func TestEndToEndExtraction(t *testing.T) {
-    // Setup
-    registry := graphrag.NewDefaultNodeTypeRegistry()
-    generator := id.NewGenerator(registry)
-
-    // Simulate nmap output
-    nmapOutput := `{"host": "10.0.0.1", "ports": [{"portid": 443, "protocol": "tcp"}]}`
-
-    // Extract to batch
-    batch, err := extractFromNmapOutput([]byte(nmapOutput))
-    require.NoError(t, err)
-
-    // Verify nodes
-    assert.Len(t, batch.Nodes, 2) // host + port
-
-    hostNode := batch.Nodes[0]
-    assert.Equal(t, "host", hostNode.Type)
-    assert.Contains(t, hostNode.ID, "host:")
-
-    portNode := batch.Nodes[1]
-    assert.Equal(t, "port", portNode.Type)
-    assert.Contains(t, portNode.ID, "port:")
-
-    // Verify relationship
-    assert.Len(t, batch.Relationships, 1)
-    rel := batch.Relationships[0]
-    assert.Equal(t, hostNode.ID, rel.FromID)
-    assert.Equal(t, portNode.ID, rel.ToID)
-    assert.Equal(t, "HAS_PORT", rel.Type)
-
-    // Test idempotency: re-extract same output
-    batch2, err := extractFromNmapOutput([]byte(nmapOutput))
-    require.NoError(t, err)
-
-    assert.Equal(t, batch.Nodes[0].ID, batch2.Nodes[0].ID, "Host ID must be stable")
-    assert.Equal(t, batch.Nodes[1].ID, batch2.Nodes[1].ID, "Port ID must be stable")
+    assert.Equal(t, id4, id5)
 }
 ```
 
 ## Best Practices
 
-1. **Always use the registry** - Never hardcode property lists
-2. **Validate before creating** - Use `ValidateProperties` to catch errors early
-3. **Use identifying properties only** - Don't include extra properties in ID generation
-4. **Normalize inputs** - The generator handles normalization, but consistent inputs help
-5. **Test idempotency** - Verify same inputs produce same IDs in tests
-6. **Handle errors explicitly** - Never ignore ID generation errors
+1. **Use domain types** - Prefer `Host`, `Port`, `Service` over raw maps
+2. **Use DiscoveryResult** - Container ensures proper dependency ordering
+3. **Use CustomEntity for custom types** - Namespace with `k8s:`, `aws:`, etc.
+4. **Test GraphNode methods** - Verify interface implementation
+5. **Validate identifying properties** - All required properties must be set
+6. **Check parent relationships** - Ensure parent nodes are created first
 
 ## See Also
 
+- **`domain/README.md`** - Detailed domain types documentation
+- **`domain/interfaces.go`** - GraphNode interface definition
 - **`registry.go`** - NodeTypeRegistry implementation
 - **`id/generator.go`** - Deterministic ID generator
-- **`taxonomy_generated.go`** - Canonical node and relationship types
-- **`node.go`** - GraphNode and Relationship types
-- **`../schema/taxonomy.go`** - Taxonomy mapping structures
+- **`taxonomy_generated.go`** - Node and relationship type constants

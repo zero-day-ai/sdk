@@ -17,9 +17,10 @@
 // IDs follow the format: {nodeType}:{base64url(sha256(canonical)[:12])}
 //
 // Example:
-//   host:YlVwLX3qR0SyC7uV
-//   port:8K7J6H5G4F3D2S1A
-//   domain:X9Y8Z7W6V5U4T3S2
+//
+//	host:YlVwLX3qR0SyC7uV
+//	port:8K7J6H5G4F3D2S1A
+//	domain:X9Y8Z7W6V5U4T3S2
 //
 // The node type prefix makes IDs human-readable and self-documenting.
 // The hash ensures uniqueness while maintaining determinism.

@@ -43,8 +43,8 @@ func TestHost_GraphNodeInterface(t *testing.T) {
 				graphrag.PropIP: "192.168.1.10",
 			},
 			wantAll: map[string]any{
-				graphrag.PropIP: "192.168.1.10",
-				"hostname":      "web-server.example.com",
+				graphrag.PropIP:    "192.168.1.10",
+				"hostname":         "web-server.example.com",
 				graphrag.PropState: "up",
 				"os":               "Linux Ubuntu 22.04",
 			},
@@ -82,13 +82,13 @@ func TestHost_GraphNodeInterface(t *testing.T) {
 // TestPort_GraphNodeInterface tests that Port implements GraphNode correctly.
 func TestPort_GraphNodeInterface(t *testing.T) {
 	tests := []struct {
-		name     string
-		port     *Port
-		wantType string
-		wantID   map[string]any
-		wantAll  map[string]any
+		name       string
+		port       *Port
+		wantType   string
+		wantID     map[string]any
+		wantAll    map[string]any
 		wantParent *NodeRef
-		wantRel  string
+		wantRel    string
 	}{
 		{
 			name: "minimal port - open TCP 80",
@@ -293,8 +293,8 @@ func TestService_GraphNodeInterface(t *testing.T) {
 // TestService_ParentRef_InvalidPortID tests Service.ParentRef() with invalid PortID formats.
 func TestService_ParentRef_InvalidPortID(t *testing.T) {
 	tests := []struct {
-		name    string
-		portID  string
+		name   string
+		portID string
 	}{
 		{name: "empty port ID", portID: ""},
 		{name: "missing protocol", portID: "192.168.1.1:80"},
@@ -1079,23 +1079,23 @@ func TestToolExecution_GraphNodeInterface(t *testing.T) {
 		{
 			name: "minimal tool execution",
 			exec: &ToolExecution{
-				ID:          "exec-789",
-				AgentRunID:  "run-123",
-				ToolName:    "nmap",
-				Sequence:    1,
+				ID:         "exec-789",
+				AgentRunID: "run-123",
+				ToolName:   "nmap",
+				Sequence:   1,
 			},
 			wantType: graphrag.NodeTypeToolExecution,
 			wantID: map[string]any{
-				"id":            "exec-789",
-				"agent_run_id":  "run-123",
-				"tool_name":     "nmap",
-				"sequence":      1,
+				"id":           "exec-789",
+				"agent_run_id": "run-123",
+				"tool_name":    "nmap",
+				"sequence":     1,
 			},
 			wantAll: map[string]any{
-				"id":            "exec-789",
-				"agent_run_id":  "run-123",
-				"tool_name":     "nmap",
-				"sequence":      1,
+				"id":           "exec-789",
+				"agent_run_id": "run-123",
+				"tool_name":    "nmap",
+				"sequence":     1,
 			},
 			wantParent: &NodeRef{
 				NodeType: graphrag.NodeTypeAgentRun,
@@ -1108,35 +1108,35 @@ func TestToolExecution_GraphNodeInterface(t *testing.T) {
 		{
 			name: "full tool execution with all fields",
 			exec: &ToolExecution{
-				ID:          "exec-789",
-				AgentRunID:  "run-123",
-				ToolName:    "nmap",
-				Sequence:    1,
-				StartTime:   "2024-01-20T10:05:00Z",
-				EndTime:     "2024-01-20T10:10:12Z",
-				Duration:    312.5,
-				Status:      "success",
-				Error:       "",
-				ExitCode:    0,
-				Command:     "nmap -sS -p- 192.168.1.0/24",
+				ID:         "exec-789",
+				AgentRunID: "run-123",
+				ToolName:   "nmap",
+				Sequence:   1,
+				StartTime:  "2024-01-20T10:05:00Z",
+				EndTime:    "2024-01-20T10:10:12Z",
+				Duration:   312.5,
+				Status:     "success",
+				Error:      "",
+				ExitCode:   0,
+				Command:    "nmap -sS -p- 192.168.1.0/24",
 			},
 			wantType: graphrag.NodeTypeToolExecution,
 			wantID: map[string]any{
-				"id":            "exec-789",
-				"agent_run_id":  "run-123",
-				"tool_name":     "nmap",
-				"sequence":      1,
+				"id":           "exec-789",
+				"agent_run_id": "run-123",
+				"tool_name":    "nmap",
+				"sequence":     1,
 			},
 			wantAll: map[string]any{
-				"id":            "exec-789",
-				"agent_run_id":  "run-123",
-				"tool_name":     "nmap",
-				"sequence":      1,
-				"start_time":    "2024-01-20T10:05:00Z",
-				"end_time":      "2024-01-20T10:10:12Z",
-				"duration":      312.5,
-				"status":        "success",
-				"command":       "nmap -sS -p- 192.168.1.0/24",
+				"id":           "exec-789",
+				"agent_run_id": "run-123",
+				"tool_name":    "nmap",
+				"sequence":     1,
+				"start_time":   "2024-01-20T10:05:00Z",
+				"end_time":     "2024-01-20T10:10:12Z",
+				"duration":     312.5,
+				"status":       "success",
+				"command":      "nmap -sS -p- 192.168.1.0/24",
 			},
 			wantParent: &NodeRef{
 				NodeType: graphrag.NodeTypeAgentRun,
@@ -1149,29 +1149,29 @@ func TestToolExecution_GraphNodeInterface(t *testing.T) {
 		{
 			name: "failed tool execution with error",
 			exec: &ToolExecution{
-				ID:          "exec-999",
-				AgentRunID:  "run-456",
-				ToolName:    "sqlmap",
-				Sequence:    3,
-				Status:      "failed",
-				Error:       "target unreachable",
-				ExitCode:    1,
+				ID:         "exec-999",
+				AgentRunID: "run-456",
+				ToolName:   "sqlmap",
+				Sequence:   3,
+				Status:     "failed",
+				Error:      "target unreachable",
+				ExitCode:   1,
 			},
 			wantType: graphrag.NodeTypeToolExecution,
 			wantID: map[string]any{
-				"id":            "exec-999",
-				"agent_run_id":  "run-456",
-				"tool_name":     "sqlmap",
-				"sequence":      3,
+				"id":           "exec-999",
+				"agent_run_id": "run-456",
+				"tool_name":    "sqlmap",
+				"sequence":     3,
 			},
 			wantAll: map[string]any{
-				"id":            "exec-999",
-				"agent_run_id":  "run-456",
-				"tool_name":     "sqlmap",
-				"sequence":      3,
-				"status":        "failed",
-				"error":         "target unreachable",
-				"exit_code":     1,
+				"id":           "exec-999",
+				"agent_run_id": "run-456",
+				"tool_name":    "sqlmap",
+				"sequence":     3,
+				"status":       "failed",
+				"error":        "target unreachable",
+				"exit_code":    1,
 			},
 			wantParent: &NodeRef{
 				NodeType: graphrag.NodeTypeAgentRun,
@@ -1184,23 +1184,23 @@ func TestToolExecution_GraphNodeInterface(t *testing.T) {
 		{
 			name: "tool execution with empty AgentRunID returns nil parent",
 			exec: &ToolExecution{
-				ID:          "exec-orphan",
-				AgentRunID:  "",
-				ToolName:    "test",
-				Sequence:    1,
+				ID:         "exec-orphan",
+				AgentRunID: "",
+				ToolName:   "test",
+				Sequence:   1,
 			},
 			wantType: graphrag.NodeTypeToolExecution,
 			wantID: map[string]any{
-				"id":            "exec-orphan",
-				"agent_run_id":  "",
-				"tool_name":     "test",
-				"sequence":      1,
+				"id":           "exec-orphan",
+				"agent_run_id": "",
+				"tool_name":    "test",
+				"sequence":     1,
 			},
 			wantAll: map[string]any{
-				"id":            "exec-orphan",
-				"agent_run_id":  "",
-				"tool_name":     "test",
-				"sequence":      1,
+				"id":           "exec-orphan",
+				"agent_run_id": "",
+				"tool_name":    "test",
+				"sequence":     1,
 			},
 			wantParent: nil,
 			wantRel:    graphrag.RelTypePartOf,
@@ -1372,7 +1372,7 @@ func TestCustomEntity_FluentAPI(t *testing.T) {
 	entityWithParent := NewCustomEntity("aws", "subnet").
 		WithIDProps(map[string]any{"id": "subnet-123"}).
 		WithParent(&NodeRef{
-			NodeType: "aws:vpc",
+			NodeType:   "aws:vpc",
 			Properties: map[string]any{"id": "vpc-456"},
 		}, "PART_OF")
 
@@ -1421,17 +1421,22 @@ func TestDiscoveryResult_AllNodes(t *testing.T) {
 	nodes := result.AllNodes()
 	assert.Len(t, nodes, 11)
 
-	// Verify order: root nodes first, then dependent nodes
+	// Verify order: new dependency-based ordering
+	// 1. Compute: Hosts
 	assert.Equal(t, graphrag.NodeTypeHost, nodes[0].NodeType())
-	assert.Equal(t, graphrag.NodeTypeDomain, nodes[1].NodeType())
-	assert.Equal(t, graphrag.NodeTypeTechnology, nodes[2].NodeType())
-	assert.Equal(t, graphrag.NodeTypeCertificate, nodes[3].NodeType())
-	assert.Equal(t, graphrag.NodeTypeCloudAsset, nodes[4].NodeType())
-	assert.Equal(t, graphrag.NodeTypeApi, nodes[5].NodeType())
-	assert.Equal(t, graphrag.NodeTypePort, nodes[6].NodeType())
-	assert.Equal(t, graphrag.NodeTypeSubdomain, nodes[7].NodeType())
-	assert.Equal(t, graphrag.NodeTypeService, nodes[8].NodeType())
+	// 2. Network details: Ports
+	assert.Equal(t, graphrag.NodeTypePort, nodes[1].NodeType())
+	// 3. Services and domains
+	assert.Equal(t, graphrag.NodeTypeService, nodes[2].NodeType())
+	assert.Equal(t, graphrag.NodeTypeDomain, nodes[3].NodeType())
+	assert.Equal(t, graphrag.NodeTypeSubdomain, nodes[4].NodeType())
+	assert.Equal(t, graphrag.NodeTypeTechnology, nodes[5].NodeType())
+	assert.Equal(t, graphrag.NodeTypeCertificate, nodes[6].NodeType())
+	assert.Equal(t, graphrag.NodeTypeCloudAsset, nodes[7].NodeType())
+	// 4. Web/API resources
+	assert.Equal(t, graphrag.NodeTypeApi, nodes[8].NodeType())
 	assert.Equal(t, graphrag.NodeTypeEndpoint, nodes[9].NodeType())
+	// 5. Custom nodes
 	assert.Equal(t, "k8s:pod", nodes[10].NodeType())
 }
 

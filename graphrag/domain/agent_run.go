@@ -64,20 +64,20 @@ func (a *AgentRun) NodeType() string {
 // An agent run is identified by its ID, mission ID, agent name, and run number.
 func (a *AgentRun) IdentifyingProperties() map[string]any {
 	return map[string]any{
-		"id":          a.ID,
-		"mission_id":  a.MissionID,
-		"agent_name":  a.AgentName,
-		"run_number":  a.RunNumber,
+		"id":         a.ID,
+		"mission_id": a.MissionID,
+		"agent_name": a.AgentName,
+		"run_number": a.RunNumber,
 	}
 }
 
 // Properties returns all properties to set on the agent run node.
 func (a *AgentRun) Properties() map[string]any {
 	props := map[string]any{
-		"id":          a.ID,
-		"mission_id":  a.MissionID,
-		"agent_name":  a.AgentName,
-		"run_number":  a.RunNumber,
+		"id":         a.ID,
+		"mission_id": a.MissionID,
+		"agent_name": a.AgentName,
+		"run_number": a.RunNumber,
 	}
 
 	// Add optional properties if present

@@ -21,22 +21,22 @@ import "github.com/zero-day-ai/sdk/graphrag"
 type Domain struct {
 	// Name is the domain name (e.g., "example.com").
 	// This is an identifying property.
-	Name string
+	Name string `json:"name"`
 
 	// Registrar is the domain registrar (optional).
-	Registrar string
+	Registrar string `json:"registrar,omitempty"`
 
 	// CreatedAt is the domain registration date (optional).
-	CreatedAt string
+	CreatedAt string `json:"created_at,omitempty"`
 
 	// ExpiresAt is the domain expiration date (optional).
-	ExpiresAt string
+	ExpiresAt string `json:"expires_at,omitempty"`
 
 	// Nameservers is the list of nameservers for this domain (optional).
-	Nameservers []string
+	Nameservers []string `json:"nameservers,omitempty"`
 
 	// Status is the domain status (e.g., "active", "expired") (optional).
-	Status string
+	Status string `json:"status,omitempty"`
 }
 
 // NodeType returns the canonical node type for domains.

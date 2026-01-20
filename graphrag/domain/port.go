@@ -30,21 +30,21 @@ type Port struct {
 	// This is an identifying property and is required.
 	// Must match the IP of an existing or to-be-created Host node.
 	// Example: "192.168.1.1"
-	HostID string
+	HostID string `json:"host_id"`
 
 	// Number is the port number.
 	// This is an identifying property and is required.
 	// Valid range: 1-65535
-	Number int
+	Number int `json:"number"`
 
 	// Protocol is the transport protocol for this port.
 	// This is an identifying property and is required.
 	// Common values: "tcp", "udp", "sctp"
-	Protocol string
+	Protocol string `json:"protocol"`
 
 	// State represents the port's current state.
 	// Optional. Common values: "open", "closed", "filtered"
-	State string
+	State string `json:"state,omitempty"`
 }
 
 // NodeType returns the canonical node type for Port nodes.

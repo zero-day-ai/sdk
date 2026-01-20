@@ -22,30 +22,30 @@ import "github.com/zero-day-ai/sdk/graphrag"
 type Endpoint struct {
 	// ServiceID is the composite ID of the parent service ("{host_id}:{number}:{protocol}:{service_name}").
 	// This is an identifying property.
-	ServiceID string
+	ServiceID string `json:"service_id"`
 
 	// URL is the endpoint path or full URL.
 	// This is an identifying property.
-	URL string
+	URL string `json:"url"`
 
 	// Method is the HTTP method (GET, POST, PUT, DELETE, etc.).
 	// This is an identifying property.
-	Method string
+	Method string `json:"method"`
 
 	// StatusCode is the HTTP response status code (optional).
-	StatusCode int
+	StatusCode int `json:"status_code,omitempty"`
 
 	// Headers contains HTTP response headers (optional).
-	Headers map[string]string
+	Headers map[string]string `json:"headers,omitempty"`
 
 	// ResponseTime is the response time in milliseconds (optional).
-	ResponseTime int64
+	ResponseTime int64 `json:"response_time,omitempty"`
 
 	// ContentType is the response Content-Type header (optional).
-	ContentType string
+	ContentType string `json:"content_type,omitempty"`
 
 	// ContentLength is the response Content-Length in bytes (optional).
-	ContentLength int64
+	ContentLength int64 `json:"content_length,omitempty"`
 }
 
 // NodeType returns the canonical node type for endpoints.

@@ -33,20 +33,20 @@ type Service struct {
 	// This is an identifying property and is required.
 	// Format: "{host_id}:{number}:{protocol}"
 	// Example: "192.168.1.1:80:tcp"
-	PortID string
+	PortID string `json:"port_id"`
 
 	// Name is the service name or protocol identifier.
 	// This is an identifying property and is required.
 	// Examples: "http", "https", "ssh", "mysql", "smtp"
-	Name string
+	Name string `json:"name"`
 
 	// Version is the detected version of the service.
 	// Optional. Example: "Apache 2.4.51", "OpenSSH 8.2"
-	Version string
+	Version string `json:"version,omitempty"`
 
 	// Banner is the service banner or identification string.
 	// Optional. Example: "Apache/2.4.51 (Ubuntu)", "SSH-2.0-OpenSSH_8.2p1"
-	Banner string
+	Banner string `json:"banner,omitempty"`
 }
 
 // NodeType returns the canonical node type for Service nodes.

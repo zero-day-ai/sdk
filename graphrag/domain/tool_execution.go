@@ -68,20 +68,20 @@ func (t *ToolExecution) NodeType() string {
 // A tool execution is identified by its ID, agent run ID, tool name, and sequence number.
 func (t *ToolExecution) IdentifyingProperties() map[string]any {
 	return map[string]any{
-		"id":            t.ID,
-		"agent_run_id":  t.AgentRunID,
-		"tool_name":     t.ToolName,
-		"sequence":      t.Sequence,
+		"id":           t.ID,
+		"agent_run_id": t.AgentRunID,
+		"tool_name":    t.ToolName,
+		"sequence":     t.Sequence,
 	}
 }
 
 // Properties returns all properties to set on the tool execution node.
 func (t *ToolExecution) Properties() map[string]any {
 	props := map[string]any{
-		"id":            t.ID,
-		"agent_run_id":  t.AgentRunID,
-		"tool_name":     t.ToolName,
-		"sequence":      t.Sequence,
+		"id":           t.ID,
+		"agent_run_id": t.AgentRunID,
+		"tool_name":    t.ToolName,
+		"sequence":     t.Sequence,
 	}
 
 	// Add optional properties if present

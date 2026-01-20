@@ -27,19 +27,19 @@ type Host struct {
 	// IP is the IP address of the host (IPv4 or IPv6).
 	// This is the identifying property and is required.
 	// Example: "192.168.1.1", "2001:db8::1"
-	IP string
+	IP string `json:"ip"`
 
 	// Hostname is the DNS hostname or FQDN of the host.
 	// Optional. Example: "web-server.example.com"
-	Hostname string
+	Hostname string `json:"hostname,omitempty"`
 
 	// State represents the host's current state.
 	// Optional. Common values: "up", "down", "unknown"
-	State string
+	State string `json:"state,omitempty"`
 
 	// OS is the operating system detected on the host.
 	// Optional. Example: "Linux Ubuntu 22.04", "Windows Server 2019"
-	OS string
+	OS string `json:"os,omitempty"`
 }
 
 // NodeType returns the canonical node type for Host nodes.

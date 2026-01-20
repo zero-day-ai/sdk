@@ -88,9 +88,9 @@ type GraphNode interface {
 //
 // NodeRef is used by GraphNode implementations to specify parent relationships,
 // enabling the GraphRAG system to create hierarchical structures like:
-//  - Host -> Port -> Service -> Endpoint
-//  - Domain -> Subdomain -> Host
-//  - Mission -> AgentRun -> ToolExecution
+//   - Host -> Port -> Service -> Endpoint
+//   - Domain -> Subdomain -> Host
+//   - Mission -> AgentRun -> ToolExecution
 //
 // Example:
 //
