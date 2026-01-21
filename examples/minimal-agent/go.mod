@@ -2,7 +2,7 @@ module github.com/zero-day-ai/sdk/examples/minimal-agent
 
 go 1.24.4
 
-require github.com/zero-day-ai/sdk v0.23.0
+require github.com/zero-day-ai/sdk v0.27.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -31,5 +31,3 @@ require (
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/zero-day-ai/sdk => ../..
