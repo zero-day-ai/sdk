@@ -10,7 +10,7 @@ import "github.com/zero-day-ai/sdk/graphrag"
 // Identifying Properties: parent_domain, name
 // Parent: Domain (via HAS_SUBDOMAIN relationship)
 //
-// Example:
+// Example (legacy):
 //
 //	subdomain := &Subdomain{
 //	    ParentDomain: "example.com",
@@ -18,6 +18,13 @@ import "github.com/zero-day-ai/sdk/graphrag"
 //	    RecordType:   "A",
 //	    RecordValue:  "192.168.1.1",
 //	}
+//
+// Example (new BelongsTo pattern):
+//
+//	domain := &Domain{Name: "example.com"}
+//	subdomain := NewSubdomain("api.example.com").BelongsTo(domain)
+//	subdomain.RecordType = "A"
+//	subdomain.RecordValue = "192.168.1.1"
 type Subdomain struct {
 	// ParentDomain is the name of the parent domain (e.g., "example.com").
 	// This is an identifying property.
@@ -38,6 +45,56 @@ type Subdomain struct {
 
 	// Status is the subdomain status (e.g., "active", "inactive") (optional).
 	Status string `json:"status,omitempty"`
+
+	// parent is the internal parent reference set via BelongsTo().
+	// This takes precedence over ParentDomain for ParentRef() if set.
+	parent *NodeRef
+}
+
+// NewSubdomain creates a new Subdomain with the required identifying properties.
+// This is the recommended way to create Subdomain nodes using the builder pattern.
+//
+// Example:
+//
+//	domain := &Domain{Name: "example.com"}
+//	subdomain := NewSubdomain("api.example.com").BelongsTo(domain)
+//	subdomain.RecordType = "A"
+func NewSubdomain(name string) *Subdomain {
+	return &Subdomain{
+		Name: name,
+	}
+}
+
+// BelongsTo sets the parent domain for this subdomain.
+// This method should be called before storing the subdomain to establish the parent relationship.
+// Returns the subdomain instance for method chaining.
+//
+// Example:
+//
+//	domain := &Domain{Name: "example.com"}
+//	subdomain := NewSubdomain("api.example.com").BelongsTo(domain)
+//
+// Note: If you set ParentDomain directly (legacy pattern), BelongsTo takes precedence.
+func (s *Subdomain) BelongsTo(domain *Domain) *Subdomain {
+	if domain == nil {
+		panic("Subdomain.BelongsTo: domain cannot be nil")
+	}
+	if domain.Name == "" {
+		panic("Subdomain.BelongsTo: domain.Name cannot be empty")
+	}
+
+	// Set the internal parent reference
+	s.parent = &NodeRef{
+		NodeType: graphrag.NodeTypeDomain,
+		Properties: map[string]any{
+			"name": domain.Name,
+		},
+	}
+
+	// Also set ParentDomain for backward compatibility
+	s.ParentDomain = domain.Name
+
+	return s
 }
 
 // NodeType returns the canonical node type for subdomains.
@@ -79,7 +136,15 @@ func (s *Subdomain) Properties() map[string]any {
 }
 
 // ParentRef returns a reference to the parent Domain node.
+// If BelongsTo() was called, returns the internal parent reference.
+// Otherwise, falls back to using ParentDomain for backward compatibility.
 func (s *Subdomain) ParentRef() *NodeRef {
+	// Use internal parent if set via BelongsTo()
+	if s.parent != nil {
+		return s.parent
+	}
+
+	// Fall back to ParentDomain for backward compatibility
 	if s.ParentDomain == "" {
 		return nil
 	}

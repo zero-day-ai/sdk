@@ -1305,7 +1305,7 @@ func (h *CallbackHarness) GetAllRunFindings(ctx context.Context, filter finding.
 // Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
 func (h *CallbackHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
 	// Apply scope to query
-	query.MissionScope = scope
+	query.Scope = scope
 
 	// Add mission context for scoped queries
 	if scope == graphrag.ScopeCurrentRun || scope == graphrag.ScopeSameMission {

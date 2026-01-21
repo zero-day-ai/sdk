@@ -8,9 +8,9 @@ import "github.com/zero-day-ai/sdk/graphrag"
 // Hierarchy: Host -> Port -> Service -> Endpoint
 //
 // Identifying Properties: service_id, url, method
-// Parent: Service (via RUNS_SERVICE relationship)
+// Parent: Service (via HAS_ENDPOINT relationship)
 //
-// Example:
+// Example (legacy):
 //
 //	endpoint := &Endpoint{
 //	    ServiceID:  "192.168.1.1:443:tcp:https",
@@ -19,6 +19,12 @@ import "github.com/zero-day-ai/sdk/graphrag"
 //	    StatusCode: 200,
 //	    Headers:    map[string]string{"Content-Type": "application/json"},
 //	}
+//
+// Example (new BelongsTo pattern):
+//
+//	service := NewService("https").BelongsTo(port)
+//	endpoint := NewEndpoint("/api/users", "GET").BelongsTo(service)
+//	endpoint.StatusCode = 200
 type Endpoint struct {
 	// ServiceID is the composite ID of the parent service ("{host_id}:{number}:{protocol}:{service_name}").
 	// This is an identifying property.
@@ -46,6 +52,62 @@ type Endpoint struct {
 
 	// ContentLength is the response Content-Length in bytes (optional).
 	ContentLength int64 `json:"content_length,omitempty"`
+
+	// parent is the internal parent reference set via BelongsTo().
+	// This takes precedence over ServiceID for ParentRef() if set.
+	parent *NodeRef
+}
+
+// NewEndpoint creates a new Endpoint with the required identifying properties.
+// This is the recommended way to create Endpoint nodes using the builder pattern.
+//
+// Example:
+//
+//	service := NewService("https").BelongsTo(port)
+//	endpoint := NewEndpoint("/api/users", "GET").BelongsTo(service)
+//	endpoint.StatusCode = 200
+func NewEndpoint(url, method string) *Endpoint {
+	return &Endpoint{
+		URL:    url,
+		Method: method,
+	}
+}
+
+// BelongsTo sets the parent service for this endpoint.
+// This method should be called before storing the endpoint to establish the parent relationship.
+// Returns the endpoint instance for method chaining.
+//
+// Example:
+//
+//	service := NewService("https").BelongsTo(port)
+//	endpoint := NewEndpoint("/api/users", "GET").BelongsTo(service)
+//
+// Note: If you set ServiceID directly (legacy pattern), BelongsTo takes precedence.
+func (e *Endpoint) BelongsTo(service *Service) *Endpoint {
+	if service == nil {
+		panic("Endpoint.BelongsTo: service cannot be nil")
+	}
+	if service.Name == "" {
+		panic("Endpoint.BelongsTo: service.Name cannot be empty")
+	}
+	if service.PortID == "" {
+		panic("Endpoint.BelongsTo: service.PortID cannot be empty")
+	}
+
+	// Set the internal parent reference
+	// ServiceID format is "{port_id}:{service_name}" = "{host_id}:{number}:{protocol}:{name}"
+	e.parent = &NodeRef{
+		NodeType: graphrag.NodeTypeService,
+		Properties: map[string]any{
+			graphrag.PropPortID: service.PortID,
+			graphrag.PropName:   service.Name,
+		},
+	}
+
+	// Also set ServiceID for backward compatibility
+	e.ServiceID = service.PortID + ":" + service.Name
+
+	return e
 }
 
 // NodeType returns the canonical node type for endpoints.
@@ -92,8 +154,16 @@ func (e *Endpoint) Properties() map[string]any {
 }
 
 // ParentRef returns a reference to the parent Service node.
+// If BelongsTo() was called, returns the internal parent reference.
+// Otherwise, falls back to using ServiceID for backward compatibility.
 // The service is identified by its composite service_id.
 func (e *Endpoint) ParentRef() *NodeRef {
+	// Use internal parent if set via BelongsTo()
+	if e.parent != nil {
+		return e.parent
+	}
+
+	// Fall back to ServiceID for backward compatibility
 	if e.ServiceID == "" {
 		return nil
 	}

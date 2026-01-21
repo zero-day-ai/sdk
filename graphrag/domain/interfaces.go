@@ -1,6 +1,36 @@
 // Package domain provides strongly-typed domain objects for GraphRAG nodes.
 // These types implement the GraphNode interface, allowing agents to create and
 // manage knowledge graph nodes with compile-time type safety.
+//
+// # Builder Pattern with BelongsTo
+//
+// Child nodes (Port, Service, Endpoint, Subdomain, etc.) use the BelongsTo pattern
+// to establish parent relationships before storing in the graph. This pattern ensures
+// correct graph structure and enables mission-scoped storage.
+//
+// Example usage:
+//
+//	// Create a complete hierarchy using BelongsTo
+//	host := &Host{IP: "192.168.1.1", Hostname: "web-server"}
+//	port := NewPort(443, "tcp").BelongsTo(host)
+//	port.State = "open"
+//
+//	service := NewService("https").BelongsTo(port)
+//	service.Version = "nginx 1.18.0"
+//
+//	endpoint := NewEndpoint("/api/v1/users", "GET").BelongsTo(service)
+//	endpoint.StatusCode = 200
+//
+//	// Store in GraphRAG (parent relationships are automatically created)
+//	h.StoreStructured(ctx, host)     // Root node, attached to MissionRun
+//	h.StoreStructured(ctx, port)     // Creates HAS_PORT relationship to host
+//	h.StoreStructured(ctx, service)  // Creates RUNS_SERVICE relationship to port
+//	h.StoreStructured(ctx, endpoint) // Creates HAS_ENDPOINT relationship to service
+//
+// # Backward Compatibility
+//
+// Legacy code that sets parent IDs directly (e.g., port.HostID) still works.
+// The BelongsTo pattern is the recommended approach for new code.
 package domain
 
 // GraphNode represents a strongly-typed domain object that can be stored in the GraphRAG knowledge graph.
@@ -14,7 +44,7 @@ package domain
 //  4. ParentRef() - Returns reference to parent node for hierarchical relationships (nil for root nodes)
 //  5. RelationshipType() - Returns the relationship type to the parent node
 //
-// Example usage:
+// Example usage (legacy pattern):
 //
 //	host := &Host{IP: "192.168.1.1", Hostname: "web-server", State: "up"}
 //	nodeType := host.NodeType()                   // "host"
@@ -25,6 +55,14 @@ package domain
 //	port := &Port{HostID: "192.168.1.1", Number: 80, Protocol: "tcp", State: "open"}
 //	parent = port.ParentRef()                     // &NodeRef{NodeType: "host", Properties: {"ip": "192.168.1.1"}}
 //	relType := port.RelationshipType()            // "HAS_PORT"
+//
+// Example usage (recommended BelongsTo pattern):
+//
+//	host := &Host{IP: "192.168.1.1", Hostname: "web-server"}
+//	port := NewPort(80, "tcp").BelongsTo(host)    // Sets parent relationship
+//	port.State = "open"
+//	parent := port.ParentRef()                     // &NodeRef{NodeType: "host", Properties: {"ip": "192.168.1.1"}}
+//	relType := port.RelationshipType()             // "HAS_PORT"
 type GraphNode interface {
 	// NodeType returns the canonical node type from the GraphRAG taxonomy.
 	// This must be one of the NodeType* constants from taxonomy_generated.go

@@ -376,35 +376,35 @@ func Example_missionIsolation() {
 
 // ExampleMissionScope demonstrates using mission scopes to control query result filtering.
 func ExampleMissionScope() {
-	// Default scope includes all missions (backwards compatible)
+	// Default scope queries current mission run only
 	defaultScope := graphrag.DefaultMissionScope
 	fmt.Println("Default scope:", defaultScope.String())
 
-	// Query only current run
-	currentRunScope := graphrag.ScopeCurrentRun
-	fmt.Println("Current run scope:", currentRunScope.String())
-	fmt.Println("Current run valid:", currentRunScope.IsValid())
+	// Query only current mission run (same as default)
+	missionRunScope := graphrag.ScopeMissionRun
+	fmt.Println("Mission run scope:", missionRunScope.String())
+	fmt.Println("Mission run valid:", missionRunScope.IsValid())
 
 	// Query all runs of same mission
-	sameMissionScope := graphrag.ScopeSameMission
-	fmt.Println("Same mission scope:", sameMissionScope.String())
+	missionScope := graphrag.ScopeMission
+	fmt.Println("Mission scope:", missionScope.String())
 
-	// Query across all missions
-	allScope := graphrag.ScopeAll
-	fmt.Println("All scope:", allScope.String())
+	// Query across all missions (global)
+	globalScope := graphrag.ScopeGlobal
+	fmt.Println("Global scope:", globalScope.String())
 
 	// Output:
-	// Default scope: all
-	// Current run scope: current_run
-	// Current run valid: true
-	// Same mission scope: same_mission
-	// All scope: all
+	// Default scope: mission_run
+	// Mission run scope: mission_run
+	// Mission run valid: true
+	// Mission scope: mission
+	// Global scope: global
 }
 
 // ExampleParseMissionScope demonstrates parsing and validating mission scopes.
 func ExampleParseMissionScope() {
-	// Parse valid scope
-	scope, err := graphrag.ParseMissionScope("current_run")
+	// Parse valid scope (both old and new names are accepted)
+	scope, err := graphrag.ParseMissionScope("mission_run")
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return
@@ -423,7 +423,7 @@ func ExampleParseMissionScope() {
 	fmt.Println("Available scopes:", len(allScopes))
 
 	// Output:
-	// Parsed scope: current_run
+	// Parsed scope: mission_run
 	// Scope is valid: true
 	// Available scopes: 3
 }

@@ -12,7 +12,7 @@ import (
 // A service is identified by its port ID (composite format) and service name.
 // Service nodes are children of Port nodes via the RUNS_SERVICE relationship.
 //
-// Example:
+// Example (legacy):
 //
 //	service := &Service{
 //	    PortID:  "192.168.1.1:80:tcp",
@@ -20,6 +20,12 @@ import (
 //	    Version: "Apache 2.4.51",
 //	    Banner:  "Apache/2.4.51 (Ubuntu)",
 //	}
+//
+// Example (new BelongsTo pattern):
+//
+//	port := NewPort(80, "tcp").BelongsTo(host)
+//	service := NewService("http").BelongsTo(port)
+//	service.Version = "Apache 2.4.51"
 //
 // Identifying Properties:
 //   - port_id (required): Composite identifier in format "{host_id}:{number}:{protocol}"
@@ -47,6 +53,64 @@ type Service struct {
 	// Banner is the service banner or identification string.
 	// Optional. Example: "Apache/2.4.51 (Ubuntu)", "SSH-2.0-OpenSSH_8.2p1"
 	Banner string `json:"banner,omitempty"`
+
+	// parent is the internal parent reference set via BelongsTo().
+	// This takes precedence over PortID for ParentRef() if set.
+	parent *NodeRef
+}
+
+// NewService creates a new Service with the required identifying properties.
+// This is the recommended way to create Service nodes using the builder pattern.
+//
+// Example:
+//
+//	port := NewPort(443, "tcp").BelongsTo(host)
+//	service := NewService("https").BelongsTo(port)
+//	service.Version = "nginx 1.18.0"
+func NewService(name string) *Service {
+	return &Service{
+		Name: name,
+	}
+}
+
+// BelongsTo sets the parent port for this service.
+// This method should be called before storing the service to establish the parent relationship.
+// Returns the service instance for method chaining.
+//
+// Example:
+//
+//	port := NewPort(80, "tcp").BelongsTo(host)
+//	service := NewService("http").BelongsTo(port)
+//
+// Note: If you set PortID directly (legacy pattern), BelongsTo takes precedence.
+func (s *Service) BelongsTo(port *Port) *Service {
+	if port == nil {
+		panic("Service.BelongsTo: port cannot be nil")
+	}
+	if port.Number == 0 {
+		panic("Service.BelongsTo: port.Number cannot be zero")
+	}
+	if port.Protocol == "" {
+		panic("Service.BelongsTo: port.Protocol cannot be empty")
+	}
+	if port.HostID == "" {
+		panic("Service.BelongsTo: port.HostID cannot be empty")
+	}
+
+	// Set the internal parent reference
+	s.parent = &NodeRef{
+		NodeType: graphrag.NodeTypePort,
+		Properties: map[string]any{
+			graphrag.PropHostID:   port.HostID,
+			graphrag.PropNumber:   port.Number,
+			graphrag.PropProtocol: port.Protocol,
+		},
+	}
+
+	// Also set PortID for backward compatibility
+	s.PortID = fmt.Sprintf("%s:%d:%s", port.HostID, port.Number, port.Protocol)
+
+	return s
 }
 
 // NodeType returns the canonical node type for Service nodes.
@@ -87,10 +151,21 @@ func (s *Service) Properties() map[string]any {
 }
 
 // ParentRef returns a reference to the parent Port node.
-// The PortID is parsed to extract host_id, number, and protocol for the parent port.
+// If BelongsTo() was called, returns the internal parent reference.
+// Otherwise, falls back to parsing PortID for backward compatibility.
 // Returns nil if PortID cannot be parsed (invalid format).
 // Implements GraphNode interface.
 func (s *Service) ParentRef() *NodeRef {
+	// Use internal parent if set via BelongsTo()
+	if s.parent != nil {
+		return s.parent
+	}
+
+	// Fall back to PortID parsing for backward compatibility
+	if s.PortID == "" {
+		return nil
+	}
+
 	// Parse PortID format: "{host_id}:{number}:{protocol}"
 	hostID, portNumber, protocol, err := parsePortID(s.PortID)
 	if err != nil {

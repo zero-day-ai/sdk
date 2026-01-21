@@ -8,7 +8,7 @@ import (
 // A port is identified by its host ID (IP address), port number, and protocol.
 // Port nodes are children of Host nodes via the HAS_PORT relationship.
 //
-// Example:
+// Example (legacy):
 //
 //	port := &Port{
 //	    HostID:   "192.168.1.1",
@@ -16,6 +16,12 @@ import (
 //	    Protocol: "tcp",
 //	    State:    "open",
 //	}
+//
+// Example (new BelongsTo pattern):
+//
+//	host := &Host{IP: "192.168.1.1"}
+//	port := NewPort(80, "tcp").BelongsTo(host)
+//	port.State = "open"
 //
 // Identifying Properties:
 //   - host_id (required): IP address of the host this port belongs to
@@ -45,6 +51,57 @@ type Port struct {
 	// State represents the port's current state.
 	// Optional. Common values: "open", "closed", "filtered"
 	State string `json:"state,omitempty"`
+
+	// parent is the internal parent reference set via BelongsTo().
+	// This takes precedence over HostID for ParentRef() if set.
+	parent *NodeRef
+}
+
+// NewPort creates a new Port with the required identifying properties.
+// This is the recommended way to create Port nodes using the builder pattern.
+//
+// Example:
+//
+//	host := &Host{IP: "192.168.1.1"}
+//	port := NewPort(443, "tcp").BelongsTo(host)
+//	port.State = "open"
+func NewPort(number int, protocol string) *Port {
+	return &Port{
+		Number:   number,
+		Protocol: protocol,
+	}
+}
+
+// BelongsTo sets the parent host for this port.
+// This method should be called before storing the port to establish the parent relationship.
+// Returns the port instance for method chaining.
+//
+// Example:
+//
+//	host := &Host{IP: "192.168.1.1"}
+//	port := NewPort(443, "tcp").BelongsTo(host)
+//
+// Note: If you set HostID directly (legacy pattern), BelongsTo takes precedence.
+func (p *Port) BelongsTo(host *Host) *Port {
+	if host == nil {
+		panic("Port.BelongsTo: host cannot be nil")
+	}
+	if host.IP == "" {
+		panic("Port.BelongsTo: host.IP cannot be empty")
+	}
+
+	// Set the internal parent reference
+	p.parent = &NodeRef{
+		NodeType: graphrag.NodeTypeHost,
+		Properties: map[string]any{
+			graphrag.PropIP: host.IP,
+		},
+	}
+
+	// Also set HostID for backward compatibility with code that reads HostID directly
+	p.HostID = host.IP
+
+	return p
 }
 
 // NodeType returns the canonical node type for Port nodes.
@@ -84,9 +141,20 @@ func (p *Port) Properties() map[string]any {
 }
 
 // ParentRef returns a reference to the parent Host node.
-// The parent is identified by the IP address (HostID).
+// If BelongsTo() was called, returns the internal parent reference.
+// Otherwise, falls back to using HostID for backward compatibility.
 // Implements GraphNode interface.
 func (p *Port) ParentRef() *NodeRef {
+	// Use internal parent if set via BelongsTo()
+	if p.parent != nil {
+		return p.parent
+	}
+
+	// Fall back to HostID-based reference for backward compatibility
+	if p.HostID == "" {
+		return nil
+	}
+
 	return &NodeRef{
 		NodeType: graphrag.NodeTypeHost,
 		Properties: map[string]any{
