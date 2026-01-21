@@ -365,14 +365,27 @@ func (x *HarnessHealthStatus) GetCheckedAt() int64 {
 }
 
 type ContextInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	AgentName     string                 `protobuf:"bytes,2,opt,name=agent_name,json=agentName,proto3" json:"agent_name,omitempty"`
-	TraceId       string                 `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
-	SpanId        string                 `protobuf:"bytes,4,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
-	MissionId     string                 `protobuf:"bytes,5,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	TaskId    string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	AgentName string                 `protobuf:"bytes,2,opt,name=agent_name,json=agentName,proto3" json:"agent_name,omitempty"`
+	TraceId   string                 `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	SpanId    string                 `protobuf:"bytes,4,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	MissionId string                 `protobuf:"bytes,5,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
+	// Mission run ID - unique identifier for this specific mission execution.
+	// Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+	// Used for mission-scoped GraphRAG storage (nodes BELONGS_TO mission_run).
+	MissionRunId string `protobuf:"bytes,6,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
+	// Agent run ID - unique identifier for this specific agent execution.
+	// Used for DISCOVERED relationships and provenance tracking.
+	AgentRunId string `protobuf:"bytes,7,opt,name=agent_run_id,json=agentRunId,proto3" json:"agent_run_id,omitempty"`
+	// Run number - sequential number for this mission (1, 2, 3...).
+	// Used for mission memory queries and historical comparisons.
+	RunNumber int32 `protobuf:"varint,8,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
+	// Tool execution ID - unique identifier for tool execution provenance.
+	// Used to create PRODUCED relationships from tool executions to nodes.
+	ToolExecutionId string `protobuf:"bytes,9,opt,name=tool_execution_id,json=toolExecutionId,proto3" json:"tool_execution_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ContextInfo) Reset() {
@@ -436,6 +449,34 @@ func (x *ContextInfo) GetSpanId() string {
 func (x *ContextInfo) GetMissionId() string {
 	if x != nil {
 		return x.MissionId
+	}
+	return ""
+}
+
+func (x *ContextInfo) GetMissionRunId() string {
+	if x != nil {
+		return x.MissionRunId
+	}
+	return ""
+}
+
+func (x *ContextInfo) GetAgentRunId() string {
+	if x != nil {
+		return x.AgentRunId
+	}
+	return ""
+}
+
+func (x *ContextInfo) GetRunNumber() int32 {
+	if x != nil {
+		return x.RunNumber
+	}
+	return 0
+}
+
+func (x *ContextInfo) GetToolExecutionId() string {
+	if x != nil {
+		return x.ToolExecutionId
 	}
 	return ""
 }
@@ -8506,7 +8547,7 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1d\n" +
 	"\n" +
-	"checked_at\x18\x03 \x01(\x03R\tcheckedAt\"\x98\x01\n" +
+	"checked_at\x18\x03 \x01(\x03R\tcheckedAt\"\xab\x02\n" +
 	"\vContextInfo\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1d\n" +
 	"\n" +
@@ -8514,7 +8555,13 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\btrace_id\x18\x03 \x01(\tR\atraceId\x12\x17\n" +
 	"\aspan_id\x18\x04 \x01(\tR\x06spanId\x12\x1d\n" +
 	"\n" +
-	"mission_id\x18\x05 \x01(\tR\tmissionId\"w\n" +
+	"mission_id\x18\x05 \x01(\tR\tmissionId\x12$\n" +
+	"\x0emission_run_id\x18\x06 \x01(\tR\fmissionRunId\x12 \n" +
+	"\fagent_run_id\x18\a \x01(\tR\n" +
+	"agentRunId\x12\x1d\n" +
+	"\n" +
+	"run_number\x18\b \x01(\x05R\trunNumber\x12*\n" +
+	"\x11tool_execution_id\x18\t \x01(\tR\x0ftoolExecutionId\"w\n" +
 	"\n" +
 	"TokenUsage\x12!\n" +
 	"\finput_tokens\x18\x01 \x01(\x05R\vinputTokens\x12#\n" +

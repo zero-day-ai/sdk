@@ -102,6 +102,19 @@ message ContextInfo {
     string trace_id = 3;
     string span_id = 4;
     string mission_id = 5;
+    // Mission run ID - unique identifier for this specific mission execution.
+    // Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+    // Used for mission-scoped GraphRAG storage (nodes BELONGS_TO mission_run).
+    string mission_run_id = 6;
+    // Agent run ID - unique identifier for this specific agent execution.
+    // Used for DISCOVERED relationships and provenance tracking.
+    string agent_run_id = 7;
+    // Run number - sequential number for this mission (1, 2, 3...).
+    // Used for mission memory queries and historical comparisons.
+    int32 run_number = 8;
+    // Tool execution ID - unique identifier for tool execution provenance.
+    // Used to create PRODUCED relationships from tool executions to nodes.
+    string tool_execution_id = 9;
 }
 
 message TokenUsage {

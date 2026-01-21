@@ -273,10 +273,19 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 		}
 	}
 
-	// Set task context for callback requests
-	// Pass mission ID explicitly so the callback service can use it directly
-	// for mission-based harness lookup (keyed by missionID:agentName)
-	client.SetTaskContext(task.ID, s.agent.Name(), mission.ID, req.TraceId, req.ParentSpanId)
+	// Set full task context for callback requests including mission-scoped storage fields
+	// Pass all context explicitly so the callback service can use them directly
+	// for mission-based harness lookup and GraphRAG storage
+	client.SetFullContext(TaskContextParams{
+		TaskID:       task.ID,
+		AgentName:    s.agent.Name(),
+		MissionID:    mission.ID,
+		TraceID:      req.TraceId,
+		SpanID:       req.ParentSpanId,
+		MissionRunID: req.MissionRunId,
+		AgentRunID:   req.AgentRunId,
+		RunNumber:    req.RunNumber,
+	})
 
 	// Parse target info if provided
 	var target types.TargetInfo

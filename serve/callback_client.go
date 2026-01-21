@@ -30,11 +30,15 @@ type CallbackClient struct {
 	token    string
 
 	// Context tracking
-	taskID    string
-	agentName string
-	missionID string
-	traceID   string
-	spanID    string
+	taskID          string
+	agentName       string
+	missionID       string
+	traceID         string
+	spanID          string
+	missionRunID    string // Unique ID for this mission execution
+	agentRunID      string // Unique ID for this agent execution
+	runNumber       int32  // Sequential run number (1, 2, 3...)
+	toolExecutionID string // ID for tool execution provenance
 
 	// Connection lifecycle
 	connected bool
@@ -145,6 +149,7 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 
 // SetTaskContext updates the task context for subsequent RPC calls.
 // This should be called at the start of each task execution.
+// Deprecated: Use SetFullContext instead which includes all context fields.
 func (c *CallbackClient) SetTaskContext(taskID, agentName, missionID, traceID, spanID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -156,17 +161,51 @@ func (c *CallbackClient) SetTaskContext(taskID, agentName, missionID, traceID, s
 	c.spanID = spanID
 }
 
+// TaskContextParams contains all the context parameters for RPC calls.
+type TaskContextParams struct {
+	TaskID          string
+	AgentName       string
+	MissionID       string
+	TraceID         string
+	SpanID          string
+	MissionRunID    string // Unique ID for this mission execution
+	AgentRunID      string // Unique ID for this agent execution
+	RunNumber       int32  // Sequential run number (1, 2, 3...)
+	ToolExecutionID string // ID for tool execution provenance
+}
+
+// SetFullContext updates the complete task context for subsequent RPC calls.
+// This should be called at the start of each task execution with all available context.
+func (c *CallbackClient) SetFullContext(params TaskContextParams) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.taskID = params.TaskID
+	c.agentName = params.AgentName
+	c.missionID = params.MissionID
+	c.traceID = params.TraceID
+	c.spanID = params.SpanID
+	c.missionRunID = params.MissionRunID
+	c.agentRunID = params.AgentRunID
+	c.runNumber = params.RunNumber
+	c.toolExecutionID = params.ToolExecutionID
+}
+
 // contextInfo builds the ContextInfo proto message with current task context.
 func (c *CallbackClient) contextInfo() *proto.ContextInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	return &proto.ContextInfo{
-		TaskId:    c.taskID,
-		AgentName: c.agentName,
-		MissionId: c.missionID,
-		TraceId:   c.traceID,
-		SpanId:    c.spanID,
+		TaskId:          c.taskID,
+		AgentName:       c.agentName,
+		MissionId:       c.missionID,
+		TraceId:         c.traceID,
+		SpanId:          c.spanID,
+		MissionRunId:    c.missionRunID,
+		AgentRunId:      c.agentRunID,
+		RunNumber:       c.runNumber,
+		ToolExecutionId: c.toolExecutionID,
 	}
 }
 

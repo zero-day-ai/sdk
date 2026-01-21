@@ -73,6 +73,16 @@ message AgentExecuteRequest {
     string trace_id = 7;
     // Parent span ID for distributed tracing (propagated from orchestrator).
     string parent_span_id = 8;
+    // Mission run ID - unique identifier for this specific mission execution.
+    // Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+    // Used for mission-scoped GraphRAG storage.
+    string mission_run_id = 9;
+    // Agent run ID - unique identifier for this specific agent execution.
+    // Used for DISCOVERED relationships and provenance tracking.
+    string agent_run_id = 10;
+    // Run number - sequential number for this mission (1, 2, 3...).
+    // Used for mission memory queries and historical comparisons.
+    int32 run_number = 11;
 }
 
 message AgentExecuteResponse {
@@ -106,6 +116,16 @@ message StartExecutionRequest {
     string mission_json = 5;
     // Target information for this execution.
     string target_json = 6;
+    // Trace ID for distributed tracing (propagated from orchestrator).
+    string trace_id = 7;
+    // Parent span ID for distributed tracing (propagated from orchestrator).
+    string parent_span_id = 8;
+    // Mission run ID - unique identifier for this specific mission execution.
+    string mission_run_id = 9;
+    // Agent run ID - unique identifier for this specific agent execution.
+    string agent_run_id = 10;
+    // Run number - sequential number for this mission (1, 2, 3...).
+    int32 run_number = 11;
 }
 
 message SteeringMessage {

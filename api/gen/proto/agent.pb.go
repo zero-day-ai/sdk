@@ -616,7 +616,17 @@ type AgentExecuteRequest struct {
 	// Trace ID for distributed tracing (propagated from orchestrator).
 	TraceId string `protobuf:"bytes,7,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
 	// Parent span ID for distributed tracing (propagated from orchestrator).
-	ParentSpanId  string `protobuf:"bytes,8,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
+	ParentSpanId string `protobuf:"bytes,8,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
+	// Mission run ID - unique identifier for this specific mission execution.
+	// Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+	// Used for mission-scoped GraphRAG storage.
+	MissionRunId string `protobuf:"bytes,9,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
+	// Agent run ID - unique identifier for this specific agent execution.
+	// Used for DISCOVERED relationships and provenance tracking.
+	AgentRunId string `protobuf:"bytes,10,opt,name=agent_run_id,json=agentRunId,proto3" json:"agent_run_id,omitempty"`
+	// Run number - sequential number for this mission (1, 2, 3...).
+	// Used for mission memory queries and historical comparisons.
+	RunNumber     int32 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -705,6 +715,27 @@ func (x *AgentExecuteRequest) GetParentSpanId() string {
 		return x.ParentSpanId
 	}
 	return ""
+}
+
+func (x *AgentExecuteRequest) GetMissionRunId() string {
+	if x != nil {
+		return x.MissionRunId
+	}
+	return ""
+}
+
+func (x *AgentExecuteRequest) GetAgentRunId() string {
+	if x != nil {
+		return x.AgentRunId
+	}
+	return ""
+}
+
+func (x *AgentExecuteRequest) GetRunNumber() int32 {
+	if x != nil {
+		return x.RunNumber
+	}
+	return 0
 }
 
 type AgentExecuteResponse struct {
@@ -939,7 +970,17 @@ type StartExecutionRequest struct {
 	// Mission context for this execution.
 	MissionJson string `protobuf:"bytes,5,opt,name=mission_json,json=missionJson,proto3" json:"mission_json,omitempty"`
 	// Target information for this execution.
-	TargetJson    string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
+	TargetJson string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
+	// Trace ID for distributed tracing (propagated from orchestrator).
+	TraceId string `protobuf:"bytes,7,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	// Parent span ID for distributed tracing (propagated from orchestrator).
+	ParentSpanId string `protobuf:"bytes,8,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
+	// Mission run ID - unique identifier for this specific mission execution.
+	MissionRunId string `protobuf:"bytes,9,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
+	// Agent run ID - unique identifier for this specific agent execution.
+	AgentRunId string `protobuf:"bytes,10,opt,name=agent_run_id,json=agentRunId,proto3" json:"agent_run_id,omitempty"`
+	// Run number - sequential number for this mission (1, 2, 3...).
+	RunNumber     int32 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1014,6 +1055,41 @@ func (x *StartExecutionRequest) GetTargetJson() string {
 		return x.TargetJson
 	}
 	return ""
+}
+
+func (x *StartExecutionRequest) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *StartExecutionRequest) GetParentSpanId() string {
+	if x != nil {
+		return x.ParentSpanId
+	}
+	return ""
+}
+
+func (x *StartExecutionRequest) GetMissionRunId() string {
+	if x != nil {
+		return x.MissionRunId
+	}
+	return ""
+}
+
+func (x *StartExecutionRequest) GetAgentRunId() string {
+	if x != nil {
+		return x.AgentRunId
+	}
+	return ""
+}
+
+func (x *StartExecutionRequest) GetRunNumber() int32 {
+	if x != nil {
+		return x.RunNumber
+	}
+	return 0
 }
 
 type SteeringMessage struct {
@@ -1820,7 +1896,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x11required_features\x18\x02 \x03(\tR\x10requiredFeatures\"\x1b\n" +
 	"\x19AgentGetSlotSchemaRequest\"U\n" +
 	"\x1aAgentGetSlotSchemaResponse\x127\n" +
-	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\xaa\x02\n" +
+	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\x91\x03\n" +
 	"\x13AgentExecuteRequest\x12\x1b\n" +
 	"\ttask_json\x18\x01 \x01(\tR\btaskJson\x12\x1d\n" +
 	"\n" +
@@ -1831,7 +1907,13 @@ const file_agent_proto_rawDesc = "" +
 	"\vtarget_json\x18\x06 \x01(\tR\n" +
 	"targetJson\x12\x19\n" +
 	"\btrace_id\x18\a \x01(\tR\atraceId\x12$\n" +
-	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\"c\n" +
+	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\x12$\n" +
+	"\x0emission_run_id\x18\t \x01(\tR\fmissionRunId\x12 \n" +
+	"\fagent_run_id\x18\n" +
+	" \x01(\tR\n" +
+	"agentRunId\x12\x1d\n" +
+	"\n" +
+	"run_number\x18\v \x01(\x05R\trunNumber\"c\n" +
 	"\x14AgentExecuteResponse\x12\x1f\n" +
 	"\vresult_json\x18\x01 \x01(\tR\n" +
 	"resultJson\x12*\n" +
@@ -1843,7 +1925,7 @@ const file_agent_proto_rawDesc = "" +
 	"\tinterrupt\x18\x03 \x01(\v2\x1e.gibson.agent.InterruptRequestH\x00R\tinterrupt\x129\n" +
 	"\bset_mode\x18\x04 \x01(\v2\x1c.gibson.agent.SetModeRequestH\x00R\asetMode\x125\n" +
 	"\x06resume\x18\x05 \x01(\v2\x1b.gibson.agent.ResumeRequestH\x00R\x06resumeB\t\n" +
-	"\apayload\"\x88\x02\n" +
+	"\apayload\"\xb0\x03\n" +
 	"\x15StartExecutionRequest\x12\x1b\n" +
 	"\ttask_json\x18\x01 \x01(\tR\btaskJson\x12:\n" +
 	"\finitial_mode\x18\x02 \x01(\x0e2\x17.gibson.agent.AgentModeR\vinitialMode\x12+\n" +
@@ -1851,7 +1933,15 @@ const file_agent_proto_rawDesc = "" +
 	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x12!\n" +
 	"\fmission_json\x18\x05 \x01(\tR\vmissionJson\x12\x1f\n" +
 	"\vtarget_json\x18\x06 \x01(\tR\n" +
-	"targetJson\"\xc1\x01\n" +
+	"targetJson\x12\x19\n" +
+	"\btrace_id\x18\a \x01(\tR\atraceId\x12$\n" +
+	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\x12$\n" +
+	"\x0emission_run_id\x18\t \x01(\tR\fmissionRunId\x12 \n" +
+	"\fagent_run_id\x18\n" +
+	" \x01(\tR\n" +
+	"agentRunId\x12\x1d\n" +
+	"\n" +
+	"run_number\x18\v \x01(\x05R\trunNumber\"\xc1\x01\n" +
 	"\x0fSteeringMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12G\n" +

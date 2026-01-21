@@ -14,7 +14,7 @@ GOMOD=$(GOCMD) mod
 BIN_DIR=bin
 EXAMPLES_DIR=examples
 PROTO_DIR=api/proto
-PROTO_OUT=api/gen
+PROTO_OUT=api/gen/proto
 
 # Example binaries to build
 EXAMPLES=minimal-agent custom-tool custom-plugin
