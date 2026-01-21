@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
@@ -12,6 +14,33 @@ import (
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/types"
 )
+
+// sanitizeUTF8 ensures a string contains only valid UTF-8 characters.
+// Invalid UTF-8 sequences are replaced with the Unicode replacement character (U+FFFD).
+// This is necessary because protobuf string fields require valid UTF-8.
+func sanitizeUTF8(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+
+	// Build a new string, replacing invalid sequences
+	var builder strings.Builder
+	builder.Grow(len(s))
+
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 byte, replace with replacement character
+			builder.WriteRune(utf8.RuneError)
+			i++
+		} else {
+			builder.WriteRune(r)
+			i += size
+		}
+	}
+
+	return builder.String()
+}
 
 // ToTypedValue converts any Go value to a proto TypedValue.
 // Supports primitives, arrays, maps, and JSON-serializable types.
@@ -41,9 +70,10 @@ func ToTypedValue(v any) *proto.TypedValue {
 
 	switch val.Kind() {
 	case reflect.String:
+		// Sanitize string to ensure valid UTF-8 for protobuf
 		return &proto.TypedValue{
 			Kind: &proto.TypedValue_StringValue{
-				StringValue: val.String(),
+				StringValue: sanitizeUTF8(val.String()),
 			},
 		}
 
@@ -120,13 +150,14 @@ func ToTypedValue(v any) *proto.TypedValue {
 		// This is a fallback for types that don't fit the TypedValue model
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
-			// If JSON encoding fails, return a string representation
+			// If JSON encoding fails, return a sanitized string representation
 			return &proto.TypedValue{
 				Kind: &proto.TypedValue_StringValue{
-					StringValue: fmt.Sprintf("%v", v),
+					StringValue: sanitizeUTF8(fmt.Sprintf("%v", v)),
 				},
 			}
 		}
+		// JSON output is always valid UTF-8, no sanitization needed
 		return &proto.TypedValue{
 			Kind: &proto.TypedValue_StringValue{
 				StringValue: string(jsonBytes),
