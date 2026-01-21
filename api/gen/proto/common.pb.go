@@ -21,6 +21,222 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// NullValue represents a null value in TypedValue
+type NullValue int32
+
+const (
+	NullValue_NULL_VALUE NullValue = 0
+)
+
+// Enum value maps for NullValue.
+var (
+	NullValue_name = map[int32]string{
+		0: "NULL_VALUE",
+	}
+	NullValue_value = map[string]int32{
+		"NULL_VALUE": 0,
+	}
+)
+
+func (x NullValue) Enum() *NullValue {
+	p := new(NullValue)
+	*p = x
+	return p
+}
+
+func (x NullValue) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NullValue) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_proto_enumTypes[0].Descriptor()
+}
+
+func (NullValue) Type() protoreflect.EnumType {
+	return &file_common_proto_enumTypes[0]
+}
+
+func (x NullValue) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NullValue.Descriptor instead.
+func (NullValue) EnumDescriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{0}
+}
+
+// ErrorCode defines standard error codes across the system
+type ErrorCode int32
+
+const (
+	ErrorCode_ERROR_CODE_UNSPECIFIED          ErrorCode = 0
+	ErrorCode_ERROR_CODE_INTERNAL             ErrorCode = 1
+	ErrorCode_ERROR_CODE_INVALID_ARGUMENT     ErrorCode = 2
+	ErrorCode_ERROR_CODE_NOT_FOUND            ErrorCode = 3
+	ErrorCode_ERROR_CODE_TIMEOUT              ErrorCode = 4
+	ErrorCode_ERROR_CODE_UNAVAILABLE          ErrorCode = 5
+	ErrorCode_ERROR_CODE_PERMISSION_DENIED    ErrorCode = 6
+	ErrorCode_ERROR_CODE_ALREADY_EXISTS       ErrorCode = 7
+	ErrorCode_ERROR_CODE_RESOURCE_EXHAUSTED   ErrorCode = 8
+	ErrorCode_ERROR_CODE_CANCELLED            ErrorCode = 9
+	ErrorCode_ERROR_CODE_AGENT_TIMEOUT        ErrorCode = 10
+	ErrorCode_ERROR_CODE_AGENT_PANIC          ErrorCode = 11
+	ErrorCode_ERROR_CODE_AGENT_INIT_FAILED    ErrorCode = 12
+	ErrorCode_ERROR_CODE_LLM_RATE_LIMITED     ErrorCode = 13
+	ErrorCode_ERROR_CODE_LLM_CONTEXT_EXCEEDED ErrorCode = 14
+	ErrorCode_ERROR_CODE_LLM_API_ERROR        ErrorCode = 15
+	ErrorCode_ERROR_CODE_LLM_PARSE_ERROR      ErrorCode = 16
+	ErrorCode_ERROR_CODE_TOOL_NOT_FOUND       ErrorCode = 17
+	ErrorCode_ERROR_CODE_TOOL_TIMEOUT         ErrorCode = 18
+	ErrorCode_ERROR_CODE_TOOL_EXEC_FAILED     ErrorCode = 19
+	ErrorCode_ERROR_CODE_NETWORK_TIMEOUT      ErrorCode = 20
+	ErrorCode_ERROR_CODE_NETWORK_UNREACHABLE  ErrorCode = 21
+	ErrorCode_ERROR_CODE_TLS_ERROR            ErrorCode = 22
+	ErrorCode_ERROR_CODE_DELEGATION_FAILED    ErrorCode = 23
+	ErrorCode_ERROR_CODE_CHILD_AGENT_FAILED   ErrorCode = 24
+	ErrorCode_ERROR_CODE_CONFIG_ERROR         ErrorCode = 25
+)
+
+// Enum value maps for ErrorCode.
+var (
+	ErrorCode_name = map[int32]string{
+		0:  "ERROR_CODE_UNSPECIFIED",
+		1:  "ERROR_CODE_INTERNAL",
+		2:  "ERROR_CODE_INVALID_ARGUMENT",
+		3:  "ERROR_CODE_NOT_FOUND",
+		4:  "ERROR_CODE_TIMEOUT",
+		5:  "ERROR_CODE_UNAVAILABLE",
+		6:  "ERROR_CODE_PERMISSION_DENIED",
+		7:  "ERROR_CODE_ALREADY_EXISTS",
+		8:  "ERROR_CODE_RESOURCE_EXHAUSTED",
+		9:  "ERROR_CODE_CANCELLED",
+		10: "ERROR_CODE_AGENT_TIMEOUT",
+		11: "ERROR_CODE_AGENT_PANIC",
+		12: "ERROR_CODE_AGENT_INIT_FAILED",
+		13: "ERROR_CODE_LLM_RATE_LIMITED",
+		14: "ERROR_CODE_LLM_CONTEXT_EXCEEDED",
+		15: "ERROR_CODE_LLM_API_ERROR",
+		16: "ERROR_CODE_LLM_PARSE_ERROR",
+		17: "ERROR_CODE_TOOL_NOT_FOUND",
+		18: "ERROR_CODE_TOOL_TIMEOUT",
+		19: "ERROR_CODE_TOOL_EXEC_FAILED",
+		20: "ERROR_CODE_NETWORK_TIMEOUT",
+		21: "ERROR_CODE_NETWORK_UNREACHABLE",
+		22: "ERROR_CODE_TLS_ERROR",
+		23: "ERROR_CODE_DELEGATION_FAILED",
+		24: "ERROR_CODE_CHILD_AGENT_FAILED",
+		25: "ERROR_CODE_CONFIG_ERROR",
+	}
+	ErrorCode_value = map[string]int32{
+		"ERROR_CODE_UNSPECIFIED":          0,
+		"ERROR_CODE_INTERNAL":             1,
+		"ERROR_CODE_INVALID_ARGUMENT":     2,
+		"ERROR_CODE_NOT_FOUND":            3,
+		"ERROR_CODE_TIMEOUT":              4,
+		"ERROR_CODE_UNAVAILABLE":          5,
+		"ERROR_CODE_PERMISSION_DENIED":    6,
+		"ERROR_CODE_ALREADY_EXISTS":       7,
+		"ERROR_CODE_RESOURCE_EXHAUSTED":   8,
+		"ERROR_CODE_CANCELLED":            9,
+		"ERROR_CODE_AGENT_TIMEOUT":        10,
+		"ERROR_CODE_AGENT_PANIC":          11,
+		"ERROR_CODE_AGENT_INIT_FAILED":    12,
+		"ERROR_CODE_LLM_RATE_LIMITED":     13,
+		"ERROR_CODE_LLM_CONTEXT_EXCEEDED": 14,
+		"ERROR_CODE_LLM_API_ERROR":        15,
+		"ERROR_CODE_LLM_PARSE_ERROR":      16,
+		"ERROR_CODE_TOOL_NOT_FOUND":       17,
+		"ERROR_CODE_TOOL_TIMEOUT":         18,
+		"ERROR_CODE_TOOL_EXEC_FAILED":     19,
+		"ERROR_CODE_NETWORK_TIMEOUT":      20,
+		"ERROR_CODE_NETWORK_UNREACHABLE":  21,
+		"ERROR_CODE_TLS_ERROR":            22,
+		"ERROR_CODE_DELEGATION_FAILED":    23,
+		"ERROR_CODE_CHILD_AGENT_FAILED":   24,
+		"ERROR_CODE_CONFIG_ERROR":         25,
+	}
+)
+
+func (x ErrorCode) Enum() *ErrorCode {
+	p := new(ErrorCode)
+	*p = x
+	return p
+}
+
+func (x ErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_proto_enumTypes[1].Descriptor()
+}
+
+func (ErrorCode) Type() protoreflect.EnumType {
+	return &file_common_proto_enumTypes[1]
+}
+
+func (x ErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ErrorCode.Descriptor instead.
+func (ErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{1}
+}
+
+// HealthState defines standard health states
+type HealthState int32
+
+const (
+	HealthState_HEALTH_STATE_UNSPECIFIED HealthState = 0
+	HealthState_HEALTH_STATE_HEALTHY     HealthState = 1
+	HealthState_HEALTH_STATE_DEGRADED    HealthState = 2
+	HealthState_HEALTH_STATE_UNHEALTHY   HealthState = 3
+)
+
+// Enum value maps for HealthState.
+var (
+	HealthState_name = map[int32]string{
+		0: "HEALTH_STATE_UNSPECIFIED",
+		1: "HEALTH_STATE_HEALTHY",
+		2: "HEALTH_STATE_DEGRADED",
+		3: "HEALTH_STATE_UNHEALTHY",
+	}
+	HealthState_value = map[string]int32{
+		"HEALTH_STATE_UNSPECIFIED": 0,
+		"HEALTH_STATE_HEALTHY":     1,
+		"HEALTH_STATE_DEGRADED":    2,
+		"HEALTH_STATE_UNHEALTHY":   3,
+	}
+)
+
+func (x HealthState) Enum() *HealthState {
+	p := new(HealthState)
+	*p = x
+	return p
+}
+
+func (x HealthState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (HealthState) Descriptor() protoreflect.EnumDescriptor {
+	return file_common_proto_enumTypes[2].Descriptor()
+}
+
+func (HealthState) Type() protoreflect.EnumType {
+	return &file_common_proto_enumTypes[2]
+}
+
+func (x HealthState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use HealthState.Descriptor instead.
+func (HealthState) EnumDescriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{2}
+}
+
 type HealthStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	State         string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"` // healthy, degraded, unhealthy
@@ -185,6 +401,275 @@ func (x *Error) GetRetryable() bool {
 	return false
 }
 
+// TypedValue represents a dynamically typed value
+type TypedValue struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*TypedValue_NullValue
+	//	*TypedValue_StringValue
+	//	*TypedValue_IntValue
+	//	*TypedValue_DoubleValue
+	//	*TypedValue_BoolValue
+	//	*TypedValue_BytesValue
+	//	*TypedValue_ArrayValue
+	//	*TypedValue_MapValue
+	Kind          isTypedValue_Kind `protobuf_oneof:"kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TypedValue) Reset() {
+	*x = TypedValue{}
+	mi := &file_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TypedValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TypedValue) ProtoMessage() {}
+
+func (x *TypedValue) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TypedValue.ProtoReflect.Descriptor instead.
+func (*TypedValue) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TypedValue) GetKind() isTypedValue_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *TypedValue) GetNullValue() NullValue {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_NullValue); ok {
+			return x.NullValue
+		}
+	}
+	return NullValue_NULL_VALUE
+}
+
+func (x *TypedValue) GetStringValue() string {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_StringValue); ok {
+			return x.StringValue
+		}
+	}
+	return ""
+}
+
+func (x *TypedValue) GetIntValue() int64 {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_IntValue); ok {
+			return x.IntValue
+		}
+	}
+	return 0
+}
+
+func (x *TypedValue) GetDoubleValue() float64 {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_DoubleValue); ok {
+			return x.DoubleValue
+		}
+	}
+	return 0
+}
+
+func (x *TypedValue) GetBoolValue() bool {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_BoolValue); ok {
+			return x.BoolValue
+		}
+	}
+	return false
+}
+
+func (x *TypedValue) GetBytesValue() []byte {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_BytesValue); ok {
+			return x.BytesValue
+		}
+	}
+	return nil
+}
+
+func (x *TypedValue) GetArrayValue() *TypedArray {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_ArrayValue); ok {
+			return x.ArrayValue
+		}
+	}
+	return nil
+}
+
+func (x *TypedValue) GetMapValue() *TypedMap {
+	if x != nil {
+		if x, ok := x.Kind.(*TypedValue_MapValue); ok {
+			return x.MapValue
+		}
+	}
+	return nil
+}
+
+type isTypedValue_Kind interface {
+	isTypedValue_Kind()
+}
+
+type TypedValue_NullValue struct {
+	NullValue NullValue `protobuf:"varint,1,opt,name=null_value,json=nullValue,proto3,enum=gibson.common.NullValue,oneof"`
+}
+
+type TypedValue_StringValue struct {
+	StringValue string `protobuf:"bytes,2,opt,name=string_value,json=stringValue,proto3,oneof"`
+}
+
+type TypedValue_IntValue struct {
+	IntValue int64 `protobuf:"varint,3,opt,name=int_value,json=intValue,proto3,oneof"`
+}
+
+type TypedValue_DoubleValue struct {
+	DoubleValue float64 `protobuf:"fixed64,4,opt,name=double_value,json=doubleValue,proto3,oneof"`
+}
+
+type TypedValue_BoolValue struct {
+	BoolValue bool `protobuf:"varint,5,opt,name=bool_value,json=boolValue,proto3,oneof"`
+}
+
+type TypedValue_BytesValue struct {
+	BytesValue []byte `protobuf:"bytes,6,opt,name=bytes_value,json=bytesValue,proto3,oneof"`
+}
+
+type TypedValue_ArrayValue struct {
+	ArrayValue *TypedArray `protobuf:"bytes,7,opt,name=array_value,json=arrayValue,proto3,oneof"`
+}
+
+type TypedValue_MapValue struct {
+	MapValue *TypedMap `protobuf:"bytes,8,opt,name=map_value,json=mapValue,proto3,oneof"`
+}
+
+func (*TypedValue_NullValue) isTypedValue_Kind() {}
+
+func (*TypedValue_StringValue) isTypedValue_Kind() {}
+
+func (*TypedValue_IntValue) isTypedValue_Kind() {}
+
+func (*TypedValue_DoubleValue) isTypedValue_Kind() {}
+
+func (*TypedValue_BoolValue) isTypedValue_Kind() {}
+
+func (*TypedValue_BytesValue) isTypedValue_Kind() {}
+
+func (*TypedValue_ArrayValue) isTypedValue_Kind() {}
+
+func (*TypedValue_MapValue) isTypedValue_Kind() {}
+
+// TypedArray represents an array of TypedValues
+type TypedArray struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*TypedValue          `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TypedArray) Reset() {
+	*x = TypedArray{}
+	mi := &file_common_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TypedArray) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TypedArray) ProtoMessage() {}
+
+func (x *TypedArray) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TypedArray.ProtoReflect.Descriptor instead.
+func (*TypedArray) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TypedArray) GetItems() []*TypedValue {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// TypedMap represents a map of string keys to TypedValues
+type TypedMap struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       map[string]*TypedValue `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TypedMap) Reset() {
+	*x = TypedMap{}
+	mi := &file_common_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TypedMap) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TypedMap) ProtoMessage() {}
+
+func (x *TypedMap) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TypedMap.ProtoReflect.Descriptor instead.
+func (*TypedMap) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TypedMap) GetEntries() map[string]*TypedValue {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
 var File_common_proto protoreflect.FileDescriptor
 
 const file_common_proto_rawDesc = "" +
@@ -201,7 +686,66 @@ const file_common_proto_rawDesc = "" +
 	"\x05Error\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
-	"\tretryable\x18\x03 \x01(\bR\tretryableB*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
+	"\tretryable\x18\x03 \x01(\bR\tretryable\"\xf2\x02\n" +
+	"\n" +
+	"TypedValue\x129\n" +
+	"\n" +
+	"null_value\x18\x01 \x01(\x0e2\x18.gibson.common.NullValueH\x00R\tnullValue\x12#\n" +
+	"\fstring_value\x18\x02 \x01(\tH\x00R\vstringValue\x12\x1d\n" +
+	"\tint_value\x18\x03 \x01(\x03H\x00R\bintValue\x12#\n" +
+	"\fdouble_value\x18\x04 \x01(\x01H\x00R\vdoubleValue\x12\x1f\n" +
+	"\n" +
+	"bool_value\x18\x05 \x01(\bH\x00R\tboolValue\x12!\n" +
+	"\vbytes_value\x18\x06 \x01(\fH\x00R\n" +
+	"bytesValue\x12<\n" +
+	"\varray_value\x18\a \x01(\v2\x19.gibson.common.TypedArrayH\x00R\n" +
+	"arrayValue\x126\n" +
+	"\tmap_value\x18\b \x01(\v2\x17.gibson.common.TypedMapH\x00R\bmapValueB\x06\n" +
+	"\x04kind\"=\n" +
+	"\n" +
+	"TypedArray\x12/\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.gibson.common.TypedValueR\x05items\"\xa1\x01\n" +
+	"\bTypedMap\x12>\n" +
+	"\aentries\x18\x01 \x03(\v2$.gibson.common.TypedMap.EntriesEntryR\aentries\x1aU\n" +
+	"\fEntriesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.gibson.common.TypedValueR\x05value:\x028\x01*\x1b\n" +
+	"\tNullValue\x12\x0e\n" +
+	"\n" +
+	"NULL_VALUE\x10\x00*\xaa\x06\n" +
+	"\tErrorCode\x12\x1a\n" +
+	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13ERROR_CODE_INTERNAL\x10\x01\x12\x1f\n" +
+	"\x1bERROR_CODE_INVALID_ARGUMENT\x10\x02\x12\x18\n" +
+	"\x14ERROR_CODE_NOT_FOUND\x10\x03\x12\x16\n" +
+	"\x12ERROR_CODE_TIMEOUT\x10\x04\x12\x1a\n" +
+	"\x16ERROR_CODE_UNAVAILABLE\x10\x05\x12 \n" +
+	"\x1cERROR_CODE_PERMISSION_DENIED\x10\x06\x12\x1d\n" +
+	"\x19ERROR_CODE_ALREADY_EXISTS\x10\a\x12!\n" +
+	"\x1dERROR_CODE_RESOURCE_EXHAUSTED\x10\b\x12\x18\n" +
+	"\x14ERROR_CODE_CANCELLED\x10\t\x12\x1c\n" +
+	"\x18ERROR_CODE_AGENT_TIMEOUT\x10\n" +
+	"\x12\x1a\n" +
+	"\x16ERROR_CODE_AGENT_PANIC\x10\v\x12 \n" +
+	"\x1cERROR_CODE_AGENT_INIT_FAILED\x10\f\x12\x1f\n" +
+	"\x1bERROR_CODE_LLM_RATE_LIMITED\x10\r\x12#\n" +
+	"\x1fERROR_CODE_LLM_CONTEXT_EXCEEDED\x10\x0e\x12\x1c\n" +
+	"\x18ERROR_CODE_LLM_API_ERROR\x10\x0f\x12\x1e\n" +
+	"\x1aERROR_CODE_LLM_PARSE_ERROR\x10\x10\x12\x1d\n" +
+	"\x19ERROR_CODE_TOOL_NOT_FOUND\x10\x11\x12\x1b\n" +
+	"\x17ERROR_CODE_TOOL_TIMEOUT\x10\x12\x12\x1f\n" +
+	"\x1bERROR_CODE_TOOL_EXEC_FAILED\x10\x13\x12\x1e\n" +
+	"\x1aERROR_CODE_NETWORK_TIMEOUT\x10\x14\x12\"\n" +
+	"\x1eERROR_CODE_NETWORK_UNREACHABLE\x10\x15\x12\x18\n" +
+	"\x14ERROR_CODE_TLS_ERROR\x10\x16\x12 \n" +
+	"\x1cERROR_CODE_DELEGATION_FAILED\x10\x17\x12!\n" +
+	"\x1dERROR_CODE_CHILD_AGENT_FAILED\x10\x18\x12\x1b\n" +
+	"\x17ERROR_CODE_CONFIG_ERROR\x10\x19*|\n" +
+	"\vHealthState\x12\x1c\n" +
+	"\x18HEALTH_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14HEALTH_STATE_HEALTHY\x10\x01\x12\x19\n" +
+	"\x15HEALTH_STATE_DEGRADED\x10\x02\x12\x1a\n" +
+	"\x16HEALTH_STATE_UNHEALTHY\x10\x03B*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
 
 var (
 	file_common_proto_rawDescOnce sync.Once
@@ -215,18 +759,32 @@ func file_common_proto_rawDescGZIP() []byte {
 	return file_common_proto_rawDescData
 }
 
-var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_common_proto_goTypes = []any{
-	(*HealthStatus)(nil), // 0: gibson.common.HealthStatus
-	(*JSONSchema)(nil),   // 1: gibson.common.JSONSchema
-	(*Error)(nil),        // 2: gibson.common.Error
+	(NullValue)(0),       // 0: gibson.common.NullValue
+	(ErrorCode)(0),       // 1: gibson.common.ErrorCode
+	(HealthState)(0),     // 2: gibson.common.HealthState
+	(*HealthStatus)(nil), // 3: gibson.common.HealthStatus
+	(*JSONSchema)(nil),   // 4: gibson.common.JSONSchema
+	(*Error)(nil),        // 5: gibson.common.Error
+	(*TypedValue)(nil),   // 6: gibson.common.TypedValue
+	(*TypedArray)(nil),   // 7: gibson.common.TypedArray
+	(*TypedMap)(nil),     // 8: gibson.common.TypedMap
+	nil,                  // 9: gibson.common.TypedMap.EntriesEntry
 }
 var file_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: gibson.common.TypedValue.null_value:type_name -> gibson.common.NullValue
+	7, // 1: gibson.common.TypedValue.array_value:type_name -> gibson.common.TypedArray
+	8, // 2: gibson.common.TypedValue.map_value:type_name -> gibson.common.TypedMap
+	6, // 3: gibson.common.TypedArray.items:type_name -> gibson.common.TypedValue
+	9, // 4: gibson.common.TypedMap.entries:type_name -> gibson.common.TypedMap.EntriesEntry
+	6, // 5: gibson.common.TypedMap.EntriesEntry.value:type_name -> gibson.common.TypedValue
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_common_proto_init() }
@@ -234,18 +792,29 @@ func file_common_proto_init() {
 	if File_common_proto != nil {
 		return
 	}
+	file_common_proto_msgTypes[3].OneofWrappers = []any{
+		(*TypedValue_NullValue)(nil),
+		(*TypedValue_StringValue)(nil),
+		(*TypedValue_IntValue)(nil),
+		(*TypedValue_DoubleValue)(nil),
+		(*TypedValue_BoolValue)(nil),
+		(*TypedValue_BytesValue)(nil),
+		(*TypedValue_ArrayValue)(nil),
+		(*TypedValue_MapValue)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_proto_rawDesc), len(file_common_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   3,
+			NumEnums:      3,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_common_proto_goTypes,
 		DependencyIndexes: file_common_proto_depIdxs,
+		EnumInfos:         file_common_proto_enumTypes,
 		MessageInfos:      file_common_proto_msgTypes,
 	}.Build()
 	File_common_proto = out.File

@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"sync"
@@ -140,14 +139,7 @@ func (h *streamingHarness) EmitToolCall(toolName string, input map[string]any, c
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
-	// Serialize input to JSON
-	inputJSON, err := json.Marshal(input)
-	if err != nil {
-		h.logger.Error("failed to marshal tool input", "error", err, "tool", toolName)
-		return err
-	}
-
-	msg := BuildToolCallEvent(toolName, string(inputJSON), callID, h.nextSequence(), traceID, spanID)
+	msg := BuildToolCallEvent(toolName, input, callID, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
 }
 
@@ -157,17 +149,10 @@ func (h *streamingHarness) EmitToolResult(output map[string]any, err error, call
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
-	// Serialize output to JSON
-	outputJSON, jsonErr := json.Marshal(output)
-	if jsonErr != nil {
-		h.logger.Error("failed to marshal tool output", "error", jsonErr, "call_id", callID)
-		return jsonErr
-	}
-
 	// Determine success based on whether an error was provided
 	success := err == nil
 
-	msg := BuildToolResultEvent(callID, string(outputJSON), success, h.nextSequence(), traceID, spanID)
+	msg := BuildToolResultEvent(callID, output, success, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
 }
 
@@ -176,14 +161,10 @@ func (h *streamingHarness) EmitFinding(f *finding.Finding) error {
 	ctx := context.Background()
 	traceID, spanID := h.getTraceInfo(ctx)
 
-	// Serialize finding to JSON
-	findingJSON, err := json.Marshal(f)
-	if err != nil {
-		h.logger.Error("failed to marshal finding", "error", err, "finding_id", f.ID)
-		return err
-	}
+	// Convert SDK finding to proto finding
+	protoFinding := FindingToProto(f)
 
-	msg := BuildFindingEvent(string(findingJSON), h.nextSequence(), traceID, spanID)
+	msg := BuildFindingEvent(protoFinding, h.nextSequence(), traceID, spanID)
 	return h.send(msg)
 }
 

@@ -514,9 +514,9 @@ func TestEmitToolCall(t *testing.T) {
 		t.Errorf("callId = %q, want %q", toolCall.ToolCall.CallId, callID)
 	}
 
-	// Verify input was serialized to JSON
-	if toolCall.ToolCall.InputJson == "" {
-		t.Error("inputJson is empty")
+	// Verify input was serialized
+	if toolCall.ToolCall.Input == nil {
+		t.Error("input is nil")
 	}
 }
 
@@ -584,8 +584,8 @@ func TestEmitToolResult(t *testing.T) {
 				t.Errorf("success = %v, want %v", toolResult.ToolResult.Success, tt.success)
 			}
 
-			if toolResult.ToolResult.OutputJson == "" {
-				t.Error("outputJson is empty")
+			if toolResult.ToolResult.Output == nil {
+				t.Error("output is nil")
 			}
 		})
 	}
@@ -621,8 +621,8 @@ func TestEmitFinding(t *testing.T) {
 		t.Fatalf("payload type = %T, want *proto.AgentMessage_Finding", msg.Payload)
 	}
 
-	if findingMsg.Finding.FindingJson == "" {
-		t.Error("findingJson is empty")
+	if findingMsg.Finding.Finding == nil {
+		t.Error("finding is nil")
 	}
 }
 
@@ -884,8 +884,8 @@ func TestSubmitFindingInterception(t *testing.T) {
 		t.Fatalf("payload type = %T, want *proto.AgentMessage_Finding", msgs[0].Payload)
 	}
 
-	if findingMsg.Finding.FindingJson == "" {
-		t.Error("findingJson is empty")
+	if findingMsg.Finding.Finding == nil {
+		t.Error("finding is nil")
 	}
 }
 

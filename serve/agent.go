@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
-	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/sdk/trace"
 	otelTrace "go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -182,14 +180,11 @@ func (s *agentServiceServer) GetSlotSchema(ctx context.Context, req *proto.Agent
 }
 
 // Execute runs the agent with the provided task.
-// The task is serialized as JSON in the request and the result is
-// serialized as JSON in the response.
+// The task is provided as a typed proto message and the result is
+// returned as a typed proto message.
 func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecuteRequest) (*proto.AgentExecuteResponse, error) {
-	// Parse task from JSON
-	var task agent.Task
-	if err := json.Unmarshal([]byte(req.TaskJson), &task); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid task JSON: %v", err)
-	}
+	// Convert proto task to SDK task
+	task := ProtoToTask(req.Task)
 
 	// Apply timeout if specified
 	if req.TimeoutMs > 0 {
@@ -227,17 +222,14 @@ func (s *agentServiceServer) Execute(ctx context.Context, req *proto.AgentExecut
 	// Build response
 	resp := &proto.AgentExecuteResponse{}
 
-	// Serialize result as JSON
+	// Convert result to proto
 	if err == nil {
-		resultJSON, jsonErr := json.Marshal(result)
-		if jsonErr != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal result: %v", jsonErr)
-		}
-		resp.ResultJson = string(resultJSON)
+		resp.Result = ResultToProto(result)
 	} else {
-		// Map error to proto error
+		// Map error to proto error (convert error code to proto.ErrorCode)
+		errorCode := StringToProtoErrorCode(agent.ErrCodeInternalError)
 		resp.Error = &proto.Error{
-			Code:      "EXECUTION_ERROR",
+			Code:      errorCode.String(),
 			Message:   err.Error(),
 			Retryable: false,
 		}
@@ -264,14 +256,8 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 		return nil, nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
 	}
 
-	// Parse mission context if provided
-	var mission types.MissionContext
-	if req.MissionJson != "" {
-		if err := json.Unmarshal([]byte(req.MissionJson), &mission); err != nil {
-			client.Close()
-			return nil, nil, fmt.Errorf("failed to parse mission JSON: %w", err)
-		}
-	}
+	// Convert mission context from proto TypedMap
+	mission := ProtoToMissionContext(req.Mission)
 
 	// Set full task context for callback requests including mission-scoped storage fields
 	// Pass all context explicitly so the callback service can use them directly
@@ -287,14 +273,8 @@ func (s *agentServiceServer) createCallbackHarness(ctx context.Context, req *pro
 		RunNumber:    req.RunNumber,
 	})
 
-	// Parse target info if provided
-	var target types.TargetInfo
-	if req.TargetJson != "" {
-		if err := json.Unmarshal([]byte(req.TargetJson), &target); err != nil {
-			client.Close()
-			return nil, nil, fmt.Errorf("failed to parse target JSON: %w", err)
-		}
-	}
+	// Convert target info from proto TypedMap
+	target := ProtoToTargetInfo(req.Target)
 
 	// Create logger for this agent execution
 	logger := slog.Default().With(

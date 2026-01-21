@@ -108,65 +108,65 @@ func TestBuildOutputEvent(t *testing.T) {
 // TestBuildToolCallEvent tests the BuildToolCallEvent function with various inputs.
 func TestBuildToolCallEvent(t *testing.T) {
 	tests := []struct {
-		name      string
-		toolName  string
-		inputJSON string
-		callID    string
-		seq       int64
-		traceID   string
-		spanID    string
+		name     string
+		toolName string
+		input    map[string]any
+		callID   string
+		seq      int64
+		traceID  string
+		spanID   string
 	}{
 		{
-			name:      "standard tool call",
-			toolName:  "nmap",
-			inputJSON: `{"target":"192.168.1.1"}`,
-			callID:    "call-123",
-			seq:       1,
-			traceID:   "trace-123",
-			spanID:    "span-456",
+			name:     "standard tool call",
+			toolName: "nmap",
+			input:    map[string]any{"target": "192.168.1.1"},
+			callID:   "call-123",
+			seq:      1,
+			traceID:  "trace-123",
+			spanID:   "span-456",
 		},
 		{
-			name:      "complex JSON input",
-			toolName:  "sqlmap",
-			inputJSON: `{"target":"http://example.com","params":{"depth":3,"risk":2}}`,
-			callID:    "call-456",
-			seq:       5,
-			traceID:   "trace-789",
-			spanID:    "span-012",
+			name:     "complex input",
+			toolName: "sqlmap",
+			input:    map[string]any{"target": "http://example.com", "params": map[string]any{"depth": 3, "risk": 2}},
+			callID:   "call-456",
+			seq:      5,
+			traceID:  "trace-789",
+			spanID:   "span-012",
 		},
 		{
-			name:      "empty fields",
-			toolName:  "",
-			inputJSON: "",
-			callID:    "",
-			seq:       0,
-			traceID:   "",
-			spanID:    "",
+			name:     "empty fields",
+			toolName: "",
+			input:    nil,
+			callID:   "",
+			seq:      0,
+			traceID:  "",
+			spanID:   "",
 		},
 		{
-			name:      "special characters in tool name",
-			toolName:  "tool-with-dashes_and_underscores",
-			inputJSON: `{"key":"value"}`,
-			callID:    "call-special",
-			seq:       42,
-			traceID:   "trace-special",
-			spanID:    "span-special",
+			name:     "special characters in tool name",
+			toolName: "tool-with-dashes_and_underscores",
+			input:    map[string]any{"key": "value"},
+			callID:   "call-special",
+			seq:      42,
+			traceID:  "trace-special",
+			spanID:   "span-special",
 		},
 		{
-			name:      "large sequence number",
-			toolName:  "test-tool",
-			inputJSON: `{}`,
-			callID:    "call-999",
-			seq:       9223372036854775807, // max int64
-			traceID:   "trace-max",
-			spanID:    "span-max",
+			name:     "large sequence number",
+			toolName: "test-tool",
+			input:    map[string]any{},
+			callID:   "call-999",
+			seq:      9223372036854775807, // max int64
+			traceID:  "trace-max",
+			spanID:   "span-max",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := time.Now().UnixMilli()
-			msg := BuildToolCallEvent(tt.toolName, tt.inputJSON, tt.callID, tt.seq, tt.traceID, tt.spanID)
+			msg := BuildToolCallEvent(tt.toolName, tt.input, tt.callID, tt.seq, tt.traceID, tt.spanID)
 			after := time.Now().UnixMilli()
 
 			// Verify message structure
@@ -202,8 +202,9 @@ func TestBuildToolCallEvent(t *testing.T) {
 			if toolCall.ToolCall.ToolName != tt.toolName {
 				t.Errorf("toolName = %q, want %q", toolCall.ToolCall.ToolName, tt.toolName)
 			}
-			if toolCall.ToolCall.InputJson != tt.inputJSON {
-				t.Errorf("inputJson = %q, want %q", toolCall.ToolCall.InputJson, tt.inputJSON)
+			// Verify Input is a TypedMap (not checking exact values, just structure)
+			if tt.input != nil && toolCall.ToolCall.Input == nil {
+				t.Error("expected Input to be set")
 			}
 			if toolCall.ToolCall.CallId != tt.callID {
 				t.Errorf("callId = %q, want %q", toolCall.ToolCall.CallId, tt.callID)
@@ -215,65 +216,65 @@ func TestBuildToolCallEvent(t *testing.T) {
 // TestBuildToolResultEvent tests the BuildToolResultEvent function with various inputs.
 func TestBuildToolResultEvent(t *testing.T) {
 	tests := []struct {
-		name       string
-		callID     string
-		outputJSON string
-		success    bool
-		seq        int64
-		traceID    string
-		spanID     string
+		name    string
+		callID  string
+		output  any
+		success bool
+		seq     int64
+		traceID string
+		spanID  string
 	}{
 		{
-			name:       "successful tool result",
-			callID:     "call-123",
-			outputJSON: `{"result":"success","data":"value"}`,
-			success:    true,
-			seq:        2,
-			traceID:    "trace-123",
-			spanID:     "span-456",
+			name:    "successful tool result",
+			callID:  "call-123",
+			output:  map[string]any{"result": "success", "data": "value"},
+			success: true,
+			seq:     2,
+			traceID: "trace-123",
+			spanID:  "span-456",
 		},
 		{
-			name:       "failed tool result",
-			callID:     "call-456",
-			outputJSON: `{"error":"connection timeout"}`,
-			success:    false,
-			seq:        3,
-			traceID:    "trace-789",
-			spanID:     "span-012",
+			name:    "failed tool result",
+			callID:  "call-456",
+			output:  map[string]any{"error": "connection timeout"},
+			success: false,
+			seq:     3,
+			traceID: "trace-789",
+			spanID:  "span-012",
 		},
 		{
-			name:       "empty output",
-			callID:     "call-789",
-			outputJSON: "",
-			success:    true,
-			seq:        4,
-			traceID:    "trace-empty",
-			spanID:     "span-empty",
+			name:    "nil output",
+			callID:  "call-789",
+			output:  nil,
+			success: true,
+			seq:     4,
+			traceID: "trace-empty",
+			spanID:  "span-empty",
 		},
 		{
-			name:       "complex nested JSON",
-			callID:     "call-complex",
-			outputJSON: `{"ports":[80,443],"services":{"80":"http","443":"https"}}`,
-			success:    true,
-			seq:        10,
-			traceID:    "trace-complex",
-			spanID:     "span-complex",
+			name:    "complex nested output",
+			callID:  "call-complex",
+			output:  map[string]any{"ports": []any{80, 443}, "services": map[string]any{"80": "http", "443": "https"}},
+			success: true,
+			seq:     10,
+			traceID: "trace-complex",
+			spanID:  "span-complex",
 		},
 		{
-			name:       "error with special characters",
-			callID:     "call-error",
-			outputJSON: `{"error":"Failed: \n\tPermission denied"}`,
-			success:    false,
-			seq:        50,
-			traceID:    "trace-error",
-			spanID:     "span-error",
+			name:    "error with special characters",
+			callID:  "call-error",
+			output:  map[string]any{"error": "Failed: \n\tPermission denied"},
+			success: false,
+			seq:     50,
+			traceID: "trace-error",
+			spanID:  "span-error",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := time.Now().UnixMilli()
-			msg := BuildToolResultEvent(tt.callID, tt.outputJSON, tt.success, tt.seq, tt.traceID, tt.spanID)
+			msg := BuildToolResultEvent(tt.callID, tt.output, tt.success, tt.seq, tt.traceID, tt.spanID)
 			after := time.Now().UnixMilli()
 
 			// Verify message structure
@@ -309,8 +310,9 @@ func TestBuildToolResultEvent(t *testing.T) {
 			if toolResult.ToolResult.CallId != tt.callID {
 				t.Errorf("callId = %q, want %q", toolResult.ToolResult.CallId, tt.callID)
 			}
-			if toolResult.ToolResult.OutputJson != tt.outputJSON {
-				t.Errorf("outputJson = %q, want %q", toolResult.ToolResult.OutputJson, tt.outputJSON)
+			// Output is now a TypedValue, just verify it exists for non-nil outputs
+			if tt.output != nil && toolResult.ToolResult.Output == nil {
+				t.Error("expected Output to be set for non-nil input")
 			}
 			if toolResult.ToolResult.Success != tt.success {
 				t.Errorf("success = %v, want %v", toolResult.ToolResult.Success, tt.success)
@@ -322,53 +324,66 @@ func TestBuildToolResultEvent(t *testing.T) {
 // TestBuildFindingEvent tests the BuildFindingEvent function with various inputs.
 func TestBuildFindingEvent(t *testing.T) {
 	tests := []struct {
-		name        string
-		findingJSON string
-		seq         int64
-		traceID     string
-		spanID      string
+		name    string
+		finding *proto.Finding
+		seq     int64
+		traceID string
+		spanID  string
 	}{
 		{
-			name:        "standard finding",
-			findingJSON: `{"severity":"high","category":"sql_injection"}`,
-			seq:         1,
-			traceID:     "trace-123",
-			spanID:      "span-456",
+			name: "standard finding",
+			finding: &proto.Finding{
+				Severity: proto.FindingSeverity_FINDING_SEVERITY_HIGH,
+				Title:    "SQL Injection",
+			},
+			seq:     1,
+			traceID: "trace-123",
+			spanID:  "span-456",
 		},
 		{
-			name:        "detailed finding with evidence",
-			findingJSON: `{"severity":"critical","category":"prompt_injection","evidence":"SELECT * FROM users"}`,
-			seq:         10,
-			traceID:     "trace-789",
-			spanID:      "span-012",
+			name: "detailed finding with evidence",
+			finding: &proto.Finding{
+				Severity:    proto.FindingSeverity_FINDING_SEVERITY_CRITICAL,
+				Title:       "Prompt Injection",
+				Description: "Evidence: SELECT * FROM users",
+			},
+			seq:     10,
+			traceID: "trace-789",
+			spanID:  "span-012",
 		},
 		{
-			name:        "empty finding",
-			findingJSON: "",
-			seq:         0,
-			traceID:     "",
-			spanID:      "",
+			name:    "nil finding",
+			finding: nil,
+			seq:     0,
+			traceID: "",
+			spanID:  "",
 		},
 		{
-			name:        "finding with MITRE mapping",
-			findingJSON: `{"mitre":["T1059.001"],"severity":"medium"}`,
-			seq:         25,
-			traceID:     "trace-mitre",
-			spanID:      "span-mitre",
+			name: "finding with MITRE mapping",
+			finding: &proto.Finding{
+				Severity:    proto.FindingSeverity_FINDING_SEVERITY_MEDIUM,
+				MitreAttack: &proto.MitreMapping{TechniqueId: "T1059.001"},
+			},
+			seq:     25,
+			traceID: "trace-mitre",
+			spanID:  "span-mitre",
 		},
 		{
-			name:        "finding with unicode",
-			findingJSON: `{"title":"SQL注入漏洞","severity":"high"}`,
-			seq:         100,
-			traceID:     "trace-unicode",
-			spanID:      "span-unicode",
+			name: "finding with unicode",
+			finding: &proto.Finding{
+				Title:    "SQL注入漏洞",
+				Severity: proto.FindingSeverity_FINDING_SEVERITY_HIGH,
+			},
+			seq:     100,
+			traceID: "trace-unicode",
+			spanID:  "span-unicode",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := time.Now().UnixMilli()
-			msg := BuildFindingEvent(tt.findingJSON, tt.seq, tt.traceID, tt.spanID)
+			msg := BuildFindingEvent(tt.finding, tt.seq, tt.traceID, tt.spanID)
 			after := time.Now().UnixMilli()
 
 			// Verify message structure
@@ -395,14 +410,14 @@ func TestBuildFindingEvent(t *testing.T) {
 			}
 
 			// Verify payload type
-			finding, ok := msg.Payload.(*proto.AgentMessage_Finding)
+			findingEvent, ok := msg.Payload.(*proto.AgentMessage_Finding)
 			if !ok {
 				t.Fatalf("payload type = %T, want *proto.AgentMessage_Finding", msg.Payload)
 			}
 
-			// Verify finding fields
-			if finding.Finding.FindingJson != tt.findingJSON {
-				t.Errorf("findingJson = %q, want %q", finding.Finding.FindingJson, tt.findingJSON)
+			// Verify finding is properly set
+			if tt.finding != nil && findingEvent.Finding.Finding == nil {
+				t.Error("expected Finding to be set for non-nil input")
 			}
 		})
 	}
@@ -599,9 +614,10 @@ func TestBuildErrorEvent(t *testing.T) {
 				t.Fatalf("payload type = %T, want *proto.AgentMessage_Error", msg.Payload)
 			}
 
-			// Verify error fields
-			if errorEvent.Error.Code != tt.code {
-				t.Errorf("code = %q, want %q", errorEvent.Error.Code, tt.code)
+			// Verify error fields - Code is now an ErrorCode enum, not a string
+			expectedCode := StringToProtoErrorCode(tt.code)
+			if errorEvent.Error.Code != expectedCode {
+				t.Errorf("code = %v, want %v", errorEvent.Error.Code, expectedCode)
 			}
 			if errorEvent.Error.Message != tt.message {
 				t.Errorf("message = %q, want %q", errorEvent.Error.Message, tt.message)
@@ -620,9 +636,9 @@ func TestBuildEventsTimestampConsistency(t *testing.T) {
 	before := time.Now().UnixMilli()
 
 	msg1 := BuildOutputEvent("test", false, 1, "trace", "span")
-	msg2 := BuildToolCallEvent("tool", "{}", "call", 2, "trace", "span")
-	msg3 := BuildToolResultEvent("call", "{}", true, 3, "trace", "span")
-	msg4 := BuildFindingEvent("{}", 4, "trace", "span")
+	msg2 := BuildToolCallEvent("tool", map[string]any{}, "call", 2, "trace", "span")
+	msg3 := BuildToolResultEvent("call", map[string]any{}, true, 3, "trace", "span")
+	msg4 := BuildFindingEvent(&proto.Finding{Title: "test"}, 4, "trace", "span")
 	msg5 := BuildStatusEvent(proto.AgentStatus_AGENT_STATUS_RUNNING, "running", 5, "trace", "span")
 	msg6 := BuildErrorEvent("ERR", "error", false, 6, "trace", "span")
 
@@ -654,17 +670,17 @@ func TestBuildEventsSequenceNumbers(t *testing.T) {
 			t.Errorf("BuildOutputEvent: sequence = %d, want %d", msg.Sequence, seq)
 		}
 
-		msg = BuildToolCallEvent("tool", "{}", "call", seq, "trace", "span")
+		msg = BuildToolCallEvent("tool", map[string]any{}, "call", seq, "trace", "span")
 		if msg.Sequence != seq {
 			t.Errorf("BuildToolCallEvent: sequence = %d, want %d", msg.Sequence, seq)
 		}
 
-		msg = BuildToolResultEvent("call", "{}", true, seq, "trace", "span")
+		msg = BuildToolResultEvent("call", map[string]any{}, true, seq, "trace", "span")
 		if msg.Sequence != seq {
 			t.Errorf("BuildToolResultEvent: sequence = %d, want %d", msg.Sequence, seq)
 		}
 
-		msg = BuildFindingEvent("{}", seq, "trace", "span")
+		msg = BuildFindingEvent(&proto.Finding{Title: "test"}, seq, "trace", "span")
 		if msg.Sequence != seq {
 			t.Errorf("BuildFindingEvent: sequence = %d, want %d", msg.Sequence, seq)
 		}

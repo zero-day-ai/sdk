@@ -2,6 +2,9 @@ syntax = "proto3";
 package gibson.harness;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/proto";
 
+import "common.proto";
+import "types.proto";
+
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
 service HarnessCallbackService {
@@ -84,7 +87,7 @@ service HarnessCallbackService {
 
 // Error represents an error response from a callback operation.
 message HarnessError {
-    string code = 1;
+    gibson.common.ErrorCode code = 1;
     string message = 2;
     bool retryable = 3;
 }
@@ -146,7 +149,7 @@ message ToolResult {
 message ToolDef {
     string name = 1;
     string description = 2;
-    string parameters_json = 3;  // JSON schema
+    JSONSchemaNode parameters = 3;
 }
 
 // ============================================================================
@@ -176,13 +179,14 @@ message LLMCompleteStructuredRequest {
     ContextInfo context = 1;
     string slot = 2;
     repeated LLMMessage messages = 3;
-    string schema_json = 4;  // JSON-encoded schema (Go struct as JSON)
+    string schema_json = 4;  // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
 }
 
 message LLMCompleteStructuredResponse {
-    string result_json = 1;  // JSON-encoded structured result
-    TokenUsage usage = 2;
-    HarnessError error = 3;
+    gibson.common.TypedValue result = 1;
+    reserved 2;  // Previously result_json
+    TokenUsage usage = 3;
+    HarnessError error = 4;
 }
 
 message LLMCompleteResponse {
@@ -220,11 +224,11 @@ message LLMStreamChunk {
 message CallToolRequest {
     ContextInfo context = 1;
     string name = 2;
-    string input_json = 3;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> input = 3;
 }
 
 message CallToolResponse {
-    string output_json = 1;  // JSON-encoded map[string]any
+    gibson.common.TypedValue output = 1;
     HarnessError error = 2;
 }
 
@@ -240,9 +244,9 @@ message ListToolsResponse {
 message HarnessToolDescriptor {
     string name = 1;
     string description = 2;
-    string schema_json = 3;  // JSON-encoded input schema (legacy, use input_schema for structured)
-    string output_schema_json = 4;  // JSON-encoded output schema with taxonomy
-    // Structured schemas with full taxonomy support (preferred over JSON)
+    reserved 3;  // Previously schema_json (legacy)
+    reserved 4;  // Previously output_schema_json
+    // Structured schemas with full taxonomy support
     JSONSchemaNode input_schema = 5;
     JSONSchemaNode output_schema = 6;
 }
@@ -310,11 +314,11 @@ message QueryPluginRequest {
     ContextInfo context = 1;
     string name = 2;
     string method = 3;
-    string params_json = 4;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> params = 4;
 }
 
 message QueryPluginResponse {
-    string result_json = 1;  // JSON-encoded any
+    gibson.common.TypedValue result = 1;
     HarnessError error = 2;
 }
 
@@ -341,11 +345,11 @@ message HarnessPluginDescriptor {
 message DelegateToAgentRequest {
     ContextInfo context = 1;
     string name = 2;
-    string task_json = 3;  // JSON-encoded agent.Task
+    gibson.types.Task task = 3;
 }
 
 message DelegateToAgentResponse {
-    string result_json = 1;  // JSON-encoded agent.Result
+    gibson.types.Result result = 1;
     HarnessError error = 2;
 }
 
@@ -373,7 +377,7 @@ message HarnessAgentDescriptor {
 
 message SubmitFindingRequest {
     ContextInfo context = 1;
-    string finding_json = 2;  // JSON-encoded agent.Finding
+    gibson.types.Finding finding = 2;
 }
 
 message SubmitFindingResponse {
@@ -382,12 +386,21 @@ message SubmitFindingResponse {
 
 message GetFindingsRequest {
     ContextInfo context = 1;
-    string filter_json = 2;  // JSON-encoded agent.FindingFilter
+    FindingFilter filter = 2;
 }
 
 message GetFindingsResponse {
-    repeated string findings_json = 1;  // JSON-encoded []agent.Finding
+    repeated gibson.types.Finding findings = 1;
     HarnessError error = 2;
+}
+
+// FindingFilter represents filtering criteria for findings
+message FindingFilter {
+    string mission_id = 1;
+    string agent_name = 2;
+    gibson.types.FindingSeverity severity = 3;
+    gibson.types.FindingStatus status = 4;
+    repeated string tags = 5;
 }
 
 // ============================================================================
@@ -409,10 +422,10 @@ message MemoryGetRequest {
 }
 
 message MemoryGetResponse {
-    string value_json = 1;  // JSON-encoded any
+    gibson.common.TypedValue value = 1;
     bool found = 2;
     HarnessError error = 3;
-    string metadata_json = 4;
+    map<string, gibson.common.TypedValue> metadata = 4;
     string created_at = 5;
     string updated_at = 6;
 }
@@ -420,9 +433,9 @@ message MemoryGetResponse {
 message MemorySetRequest {
     ContextInfo context = 1;
     string key = 2;
-    string value_json = 3;  // JSON-encoded any
+    gibson.common.TypedValue value = 3;
     MemoryTier tier = 4;
-    string metadata_json = 5;
+    map<string, gibson.common.TypedValue> metadata = 5;
 }
 
 message MemorySetResponse {
@@ -467,8 +480,8 @@ message MissionMemorySearchResponse {
 
 message MissionMemoryResult {
     string key = 1;
-    string value_json = 2;
-    string metadata_json = 3;
+    gibson.common.TypedValue value = 2;
+    map<string, gibson.common.TypedValue> metadata = 3;
     double score = 4;
     string created_at = 5;
     string updated_at = 6;
@@ -486,8 +499,8 @@ message MissionMemoryHistoryResponse {
 
 message MissionMemoryItem {
     string key = 1;
-    string value_json = 2;
-    string metadata_json = 3;
+    gibson.common.TypedValue value = 2;
+    map<string, gibson.common.TypedValue> metadata = 3;
     string created_at = 4;
     string updated_at = 5;
 }
@@ -498,7 +511,7 @@ message MissionMemoryGetPreviousRunValueRequest {
 }
 
 message MissionMemoryGetPreviousRunValueResponse {
-    string value_json = 1;
+    gibson.common.TypedValue value = 1;
     bool found = 2;
     HarnessError error = 3;
 }
@@ -514,7 +527,7 @@ message MissionMemoryGetValueHistoryResponse {
 }
 
 message HistoricalValueItem {
-    string value_json = 1;
+    gibson.common.TypedValue value = 1;
     int32 run_number = 2;
     string mission_id = 3;
     string stored_at = 4;
@@ -536,7 +549,7 @@ message MissionMemoryContinuityModeResponse {
 message LongTermMemoryStoreRequest {
     ContextInfo context = 1;
     string content = 2;
-    string metadata_json = 3;
+    map<string, gibson.common.TypedValue> metadata = 3;
 }
 
 message LongTermMemoryStoreResponse {
@@ -548,7 +561,7 @@ message LongTermMemorySearchRequest {
     ContextInfo context = 1;
     string query = 2;
     int32 top_k = 3;
-    string filters_json = 4;
+    map<string, gibson.common.TypedValue> filters = 4;
 }
 
 message LongTermMemorySearchResponse {
@@ -559,7 +572,7 @@ message LongTermMemorySearchResponse {
 message LongTermMemoryResult {
     string id = 1;
     string content = 2;
-    string metadata_json = 3;
+    map<string, gibson.common.TypedValue> metadata = 3;
     double score = 4;
     string created_at = 5;
 }
@@ -579,7 +592,7 @@ message LongTermMemoryDeleteResponse {
 
 message GraphRAGQueryRequest {
     ContextInfo context = 1;
-    string query_json = 2;  // JSON-encoded graphrag.Query
+    gibson.types.GraphQuery query = 2;
 }
 
 message GraphRAGQueryResponse {
@@ -599,7 +612,7 @@ message GraphRAGResult {
 message GraphNode {
     string id = 1;
     string type = 2;
-    string properties_json = 3;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> properties = 3;
     string content = 4;
     string mission_id = 5;
     string agent_name = 6;
@@ -711,7 +724,7 @@ message Relationship {
     string from_id = 1;
     string to_id = 2;
     string type = 3;
-    string properties_json = 4;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> properties = 4;
     bool bidirectional = 5;
 }
 
@@ -900,9 +913,28 @@ message GetCredentialResponse {
 message Credential {
     string name = 1;
     CredentialType type = 2;
-    string secret = 3;           // The decrypted secret value
-    string username = 4;         // For BASIC auth credentials
-    string metadata_json = 5;    // JSON-encoded additional metadata
+    oneof secret_data {
+        string api_key = 3;           // For API_KEY type
+        string bearer_token = 4;      // For BEARER type
+        BasicAuth basic = 5;          // For BASIC type
+        OAuthCredential oauth = 6;    // For OAUTH type
+        string custom_secret = 7;     // For CUSTOM type
+    }
+    map<string, gibson.common.TypedValue> metadata = 8;
+}
+
+// BasicAuth represents username/password credentials
+message BasicAuth {
+    string username = 1;
+    string password = 2;
+}
+
+// OAuthCredential represents OAuth tokens
+message OAuthCredential {
+    string access_token = 1;
+    string refresh_token = 2;
+    string token_type = 3;
+    int64 expires_at = 4;  // Unix timestamp in milliseconds
 }
 
 // ============================================================================
@@ -996,7 +1028,7 @@ message TaxonomyProperty {
 message GenerateNodeIDRequest {
     ContextInfo context = 1;
     string node_type = 2;
-    string properties_json = 3;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> properties = 3;
 }
 
 message GenerateNodeIDResponse {
@@ -1006,13 +1038,13 @@ message GenerateNodeIDResponse {
 
 message ValidateFindingRequest {
     ContextInfo context = 1;
-    string finding_json = 2;  // JSON-encoded finding.Finding
+    gibson.types.Finding finding = 2;
 }
 
 message ValidateGraphNodeRequest {
     ContextInfo context = 1;
     string node_type = 2;
-    string properties_json = 3;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> properties = 3;
 }
 
 message ValidateRelationshipRequest {
@@ -1020,7 +1052,7 @@ message ValidateRelationshipRequest {
     string relationship_type = 2;
     string from_node_type = 3;
     string to_node_type = 4;
-    string properties_json = 5;  // JSON-encoded map[string]any
+    map<string, gibson.common.TypedValue> properties = 5;
 }
 
 message ValidationResponse {

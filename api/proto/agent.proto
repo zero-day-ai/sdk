@@ -3,6 +3,7 @@ package gibson.agent;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/proto";
 
 import "common.proto";
+import "types.proto";
 
 service AgentService {
     rpc GetDescriptor(AgentGetDescriptorRequest) returns (AgentDescriptor);
@@ -57,7 +58,7 @@ message AgentGetSlotSchemaResponse {
 }
 
 message AgentExecuteRequest {
-    string task_json = 1;
+    gibson.types.Task task = 1;
     int64 timeout_ms = 2;
     // Callback endpoint for the orchestrator's HarnessCallbackService.
     // When provided, the agent will connect to this endpoint to access
@@ -66,9 +67,9 @@ message AgentExecuteRequest {
     // Optional authentication token for the callback connection.
     string callback_token = 4;
     // Mission context for this execution.
-    string mission_json = 5;
+    gibson.common.TypedMap mission = 5;
     // Target information for this execution.
-    string target_json = 6;
+    gibson.common.TypedMap target = 6;
     // Trace ID for distributed tracing (propagated from orchestrator).
     string trace_id = 7;
     // Parent span ID for distributed tracing (propagated from orchestrator).
@@ -86,7 +87,7 @@ message AgentExecuteRequest {
 }
 
 message AgentExecuteResponse {
-    string result_json = 1;
+    gibson.types.Result result = 1;
     gibson.common.Error error = 2;
 }
 
@@ -104,7 +105,7 @@ message ClientMessage {
 }
 
 message StartExecutionRequest {
-    string task_json = 1;
+    gibson.types.Task task = 1;
     AgentMode initial_mode = 2;
     // Callback endpoint for the orchestrator's HarnessCallbackService.
     // When provided, the agent will connect to this endpoint to access
@@ -113,9 +114,9 @@ message StartExecutionRequest {
     // Optional authentication token for the callback connection.
     string callback_token = 4;
     // Mission context for this execution.
-    string mission_json = 5;
+    gibson.common.TypedMap mission = 5;
     // Target information for this execution.
-    string target_json = 6;
+    gibson.common.TypedMap target = 6;
     // Trace ID for distributed tracing (propagated from orchestrator).
     string trace_id = 7;
     // Parent span ID for distributed tracing (propagated from orchestrator).
@@ -175,18 +176,18 @@ message OutputChunk {
 
 message ToolCallEvent {
     string tool_name = 1;
-    string input_json = 2;
+    map<string, gibson.common.TypedValue> input = 2;
     string call_id = 3;
 }
 
 message ToolResultEvent {
     string call_id = 1;
-    string output_json = 2;
+    gibson.common.TypedValue output = 2;
     bool success = 3;
 }
 
 message FindingEvent {
-    string finding_json = 1;
+    gibson.types.Finding finding = 1;
 }
 
 message StatusChange {
@@ -200,7 +201,7 @@ message SteeringAck {
 }
 
 message ErrorEvent {
-    string code = 1;
+    gibson.common.ErrorCode code = 1;
     string message = 2;
     bool fatal = 3;
 }

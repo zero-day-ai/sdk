@@ -601,7 +601,7 @@ func (x *AgentGetSlotSchemaResponse) GetSlots() []*AgentSlotDefinition {
 
 type AgentExecuteRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	TaskJson  string                 `protobuf:"bytes,1,opt,name=task_json,json=taskJson,proto3" json:"task_json,omitempty"`
+	Task      *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	TimeoutMs int64                  `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
 	// Callback endpoint for the orchestrator's HarnessCallbackService.
 	// When provided, the agent will connect to this endpoint to access
@@ -610,9 +610,9 @@ type AgentExecuteRequest struct {
 	// Optional authentication token for the callback connection.
 	CallbackToken string `protobuf:"bytes,4,opt,name=callback_token,json=callbackToken,proto3" json:"callback_token,omitempty"`
 	// Mission context for this execution.
-	MissionJson string `protobuf:"bytes,5,opt,name=mission_json,json=missionJson,proto3" json:"mission_json,omitempty"`
+	Mission *TypedMap `protobuf:"bytes,5,opt,name=mission,proto3" json:"mission,omitempty"`
 	// Target information for this execution.
-	TargetJson string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
+	Target *TypedMap `protobuf:"bytes,6,opt,name=target,proto3" json:"target,omitempty"`
 	// Trace ID for distributed tracing (propagated from orchestrator).
 	TraceId string `protobuf:"bytes,7,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
 	// Parent span ID for distributed tracing (propagated from orchestrator).
@@ -661,11 +661,11 @@ func (*AgentExecuteRequest) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *AgentExecuteRequest) GetTaskJson() string {
+func (x *AgentExecuteRequest) GetTask() *Task {
 	if x != nil {
-		return x.TaskJson
+		return x.Task
 	}
-	return ""
+	return nil
 }
 
 func (x *AgentExecuteRequest) GetTimeoutMs() int64 {
@@ -689,18 +689,18 @@ func (x *AgentExecuteRequest) GetCallbackToken() string {
 	return ""
 }
 
-func (x *AgentExecuteRequest) GetMissionJson() string {
+func (x *AgentExecuteRequest) GetMission() *TypedMap {
 	if x != nil {
-		return x.MissionJson
+		return x.Mission
 	}
-	return ""
+	return nil
 }
 
-func (x *AgentExecuteRequest) GetTargetJson() string {
+func (x *AgentExecuteRequest) GetTarget() *TypedMap {
 	if x != nil {
-		return x.TargetJson
+		return x.Target
 	}
-	return ""
+	return nil
 }
 
 func (x *AgentExecuteRequest) GetTraceId() string {
@@ -740,7 +740,7 @@ func (x *AgentExecuteRequest) GetRunNumber() int32 {
 
 type AgentExecuteResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ResultJson    string                 `protobuf:"bytes,1,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
+	Result        *Result                `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	Error         *Error                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -776,11 +776,11 @@ func (*AgentExecuteResponse) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *AgentExecuteResponse) GetResultJson() string {
+func (x *AgentExecuteResponse) GetResult() *Result {
 	if x != nil {
-		return x.ResultJson
+		return x.Result
 	}
-	return ""
+	return nil
 }
 
 func (x *AgentExecuteResponse) GetError() *Error {
@@ -959,7 +959,7 @@ func (*ClientMessage_Resume) isClientMessage_Payload() {}
 
 type StartExecutionRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	TaskJson    string                 `protobuf:"bytes,1,opt,name=task_json,json=taskJson,proto3" json:"task_json,omitempty"`
+	Task        *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	InitialMode AgentMode              `protobuf:"varint,2,opt,name=initial_mode,json=initialMode,proto3,enum=gibson.agent.AgentMode" json:"initial_mode,omitempty"`
 	// Callback endpoint for the orchestrator's HarnessCallbackService.
 	// When provided, the agent will connect to this endpoint to access
@@ -968,9 +968,9 @@ type StartExecutionRequest struct {
 	// Optional authentication token for the callback connection.
 	CallbackToken string `protobuf:"bytes,4,opt,name=callback_token,json=callbackToken,proto3" json:"callback_token,omitempty"`
 	// Mission context for this execution.
-	MissionJson string `protobuf:"bytes,5,opt,name=mission_json,json=missionJson,proto3" json:"mission_json,omitempty"`
+	Mission *TypedMap `protobuf:"bytes,5,opt,name=mission,proto3" json:"mission,omitempty"`
 	// Target information for this execution.
-	TargetJson string `protobuf:"bytes,6,opt,name=target_json,json=targetJson,proto3" json:"target_json,omitempty"`
+	Target *TypedMap `protobuf:"bytes,6,opt,name=target,proto3" json:"target,omitempty"`
 	// Trace ID for distributed tracing (propagated from orchestrator).
 	TraceId string `protobuf:"bytes,7,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
 	// Parent span ID for distributed tracing (propagated from orchestrator).
@@ -1015,11 +1015,11 @@ func (*StartExecutionRequest) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *StartExecutionRequest) GetTaskJson() string {
+func (x *StartExecutionRequest) GetTask() *Task {
 	if x != nil {
-		return x.TaskJson
+		return x.Task
 	}
-	return ""
+	return nil
 }
 
 func (x *StartExecutionRequest) GetInitialMode() AgentMode {
@@ -1043,18 +1043,18 @@ func (x *StartExecutionRequest) GetCallbackToken() string {
 	return ""
 }
 
-func (x *StartExecutionRequest) GetMissionJson() string {
+func (x *StartExecutionRequest) GetMission() *TypedMap {
 	if x != nil {
-		return x.MissionJson
+		return x.Mission
 	}
-	return ""
+	return nil
 }
 
-func (x *StartExecutionRequest) GetTargetJson() string {
+func (x *StartExecutionRequest) GetTarget() *TypedMap {
 	if x != nil {
-		return x.TargetJson
+		return x.Target
 	}
-	return ""
+	return nil
 }
 
 func (x *StartExecutionRequest) GetTraceId() string {
@@ -1534,7 +1534,7 @@ func (x *OutputChunk) GetIsReasoning() bool {
 type ToolCallEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ToolName      string                 `protobuf:"bytes,1,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
-	InputJson     string                 `protobuf:"bytes,2,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	Input         map[string]*TypedValue `protobuf:"bytes,2,rep,name=input,proto3" json:"input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CallId        string                 `protobuf:"bytes,3,opt,name=call_id,json=callId,proto3" json:"call_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1577,11 +1577,11 @@ func (x *ToolCallEvent) GetToolName() string {
 	return ""
 }
 
-func (x *ToolCallEvent) GetInputJson() string {
+func (x *ToolCallEvent) GetInput() map[string]*TypedValue {
 	if x != nil {
-		return x.InputJson
+		return x.Input
 	}
-	return ""
+	return nil
 }
 
 func (x *ToolCallEvent) GetCallId() string {
@@ -1594,7 +1594,7 @@ func (x *ToolCallEvent) GetCallId() string {
 type ToolResultEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CallId        string                 `protobuf:"bytes,1,opt,name=call_id,json=callId,proto3" json:"call_id,omitempty"`
-	OutputJson    string                 `protobuf:"bytes,2,opt,name=output_json,json=outputJson,proto3" json:"output_json,omitempty"`
+	Output        *TypedValue            `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
 	Success       bool                   `protobuf:"varint,3,opt,name=success,proto3" json:"success,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1637,11 +1637,11 @@ func (x *ToolResultEvent) GetCallId() string {
 	return ""
 }
 
-func (x *ToolResultEvent) GetOutputJson() string {
+func (x *ToolResultEvent) GetOutput() *TypedValue {
 	if x != nil {
-		return x.OutputJson
+		return x.Output
 	}
-	return ""
+	return nil
 }
 
 func (x *ToolResultEvent) GetSuccess() bool {
@@ -1653,7 +1653,7 @@ func (x *ToolResultEvent) GetSuccess() bool {
 
 type FindingEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	FindingJson   string                 `protobuf:"bytes,1,opt,name=finding_json,json=findingJson,proto3" json:"finding_json,omitempty"`
+	Finding       *Finding               `protobuf:"bytes,1,opt,name=finding,proto3" json:"finding,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1688,11 +1688,11 @@ func (*FindingEvent) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *FindingEvent) GetFindingJson() string {
+func (x *FindingEvent) GetFinding() *Finding {
 	if x != nil {
-		return x.FindingJson
+		return x.Finding
 	}
-	return ""
+	return nil
 }
 
 type StatusChange struct {
@@ -1801,7 +1801,7 @@ func (x *SteeringAck) GetResponse() string {
 
 type ErrorEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Code          ErrorCode              `protobuf:"varint,1,opt,name=code,proto3,enum=gibson.common.ErrorCode" json:"code,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	Fatal         bool                   `protobuf:"varint,3,opt,name=fatal,proto3" json:"fatal,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1838,11 +1838,11 @@ func (*ErrorEvent) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{24}
 }
 
-func (x *ErrorEvent) GetCode() string {
+func (x *ErrorEvent) GetCode() ErrorCode {
 	if x != nil {
 		return x.Code
 	}
-	return ""
+	return ErrorCode_ERROR_CODE_UNSPECIFIED
 }
 
 func (x *ErrorEvent) GetMessage() string {
@@ -1863,7 +1863,7 @@ var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
 	"\n" +
-	"\vagent.proto\x12\fgibson.agent\x1a\fcommon.proto\"\x1b\n" +
+	"\vagent.proto\x12\fgibson.agent\x1a\fcommon.proto\x1a\vtypes.proto\"\x1b\n" +
 	"\x19AgentGetDescriptorRequest\"\x84\x01\n" +
 	"\x11TargetSchemaProto\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x18\n" +
@@ -1896,16 +1896,15 @@ const file_agent_proto_rawDesc = "" +
 	"\x11required_features\x18\x02 \x03(\tR\x10requiredFeatures\"\x1b\n" +
 	"\x19AgentGetSlotSchemaRequest\"U\n" +
 	"\x1aAgentGetSlotSchemaResponse\x127\n" +
-	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\x91\x03\n" +
-	"\x13AgentExecuteRequest\x12\x1b\n" +
-	"\ttask_json\x18\x01 \x01(\tR\btaskJson\x12\x1d\n" +
+	"\x05slots\x18\x01 \x03(\v2!.gibson.agent.AgentSlotDefinitionR\x05slots\"\xbc\x03\n" +
+	"\x13AgentExecuteRequest\x12&\n" +
+	"\x04task\x18\x01 \x01(\v2\x12.gibson.types.TaskR\x04task\x12\x1d\n" +
 	"\n" +
 	"timeout_ms\x18\x02 \x01(\x03R\ttimeoutMs\x12+\n" +
 	"\x11callback_endpoint\x18\x03 \x01(\tR\x10callbackEndpoint\x12%\n" +
-	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x12!\n" +
-	"\fmission_json\x18\x05 \x01(\tR\vmissionJson\x12\x1f\n" +
-	"\vtarget_json\x18\x06 \x01(\tR\n" +
-	"targetJson\x12\x19\n" +
+	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x121\n" +
+	"\amission\x18\x05 \x01(\v2\x17.gibson.common.TypedMapR\amission\x12/\n" +
+	"\x06target\x18\x06 \x01(\v2\x17.gibson.common.TypedMapR\x06target\x12\x19\n" +
 	"\btrace_id\x18\a \x01(\tR\atraceId\x12$\n" +
 	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\x12$\n" +
 	"\x0emission_run_id\x18\t \x01(\tR\fmissionRunId\x12 \n" +
@@ -1913,10 +1912,9 @@ const file_agent_proto_rawDesc = "" +
 	" \x01(\tR\n" +
 	"agentRunId\x12\x1d\n" +
 	"\n" +
-	"run_number\x18\v \x01(\x05R\trunNumber\"c\n" +
-	"\x14AgentExecuteResponse\x12\x1f\n" +
-	"\vresult_json\x18\x01 \x01(\tR\n" +
-	"resultJson\x12*\n" +
+	"run_number\x18\v \x01(\x05R\trunNumber\"p\n" +
+	"\x14AgentExecuteResponse\x12,\n" +
+	"\x06result\x18\x01 \x01(\v2\x14.gibson.types.ResultR\x06result\x12*\n" +
 	"\x05error\x18\x02 \x01(\v2\x14.gibson.common.ErrorR\x05error\"\x14\n" +
 	"\x12AgentHealthRequest\"\xc6\x02\n" +
 	"\rClientMessage\x12;\n" +
@@ -1925,15 +1923,14 @@ const file_agent_proto_rawDesc = "" +
 	"\tinterrupt\x18\x03 \x01(\v2\x1e.gibson.agent.InterruptRequestH\x00R\tinterrupt\x129\n" +
 	"\bset_mode\x18\x04 \x01(\v2\x1c.gibson.agent.SetModeRequestH\x00R\asetMode\x125\n" +
 	"\x06resume\x18\x05 \x01(\v2\x1b.gibson.agent.ResumeRequestH\x00R\x06resumeB\t\n" +
-	"\apayload\"\xb0\x03\n" +
-	"\x15StartExecutionRequest\x12\x1b\n" +
-	"\ttask_json\x18\x01 \x01(\tR\btaskJson\x12:\n" +
+	"\apayload\"\xdb\x03\n" +
+	"\x15StartExecutionRequest\x12&\n" +
+	"\x04task\x18\x01 \x01(\v2\x12.gibson.types.TaskR\x04task\x12:\n" +
 	"\finitial_mode\x18\x02 \x01(\x0e2\x17.gibson.agent.AgentModeR\vinitialMode\x12+\n" +
 	"\x11callback_endpoint\x18\x03 \x01(\tR\x10callbackEndpoint\x12%\n" +
-	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x12!\n" +
-	"\fmission_json\x18\x05 \x01(\tR\vmissionJson\x12\x1f\n" +
-	"\vtarget_json\x18\x06 \x01(\tR\n" +
-	"targetJson\x12\x19\n" +
+	"\x0ecallback_token\x18\x04 \x01(\tR\rcallbackToken\x121\n" +
+	"\amission\x18\x05 \x01(\v2\x17.gibson.common.TypedMapR\amission\x12/\n" +
+	"\x06target\x18\x06 \x01(\v2\x17.gibson.common.TypedMapR\x06target\x12\x19\n" +
 	"\btrace_id\x18\a \x01(\tR\atraceId\x12$\n" +
 	"\x0eparent_span_id\x18\b \x01(\tR\fparentSpanId\x12$\n" +
 	"\x0emission_run_id\x18\t \x01(\tR\fmissionRunId\x12 \n" +
@@ -1972,29 +1969,31 @@ const file_agent_proto_rawDesc = "" +
 	"\apayload\"J\n" +
 	"\vOutputChunk\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x12!\n" +
-	"\fis_reasoning\x18\x02 \x01(\bR\visReasoning\"d\n" +
+	"\fis_reasoning\x18\x02 \x01(\bR\visReasoning\"\xd8\x01\n" +
 	"\rToolCallEvent\x12\x1b\n" +
-	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12\x1d\n" +
+	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12<\n" +
+	"\x05input\x18\x02 \x03(\v2&.gibson.agent.ToolCallEvent.InputEntryR\x05input\x12\x17\n" +
+	"\acall_id\x18\x03 \x01(\tR\x06callId\x1aS\n" +
 	"\n" +
-	"input_json\x18\x02 \x01(\tR\tinputJson\x12\x17\n" +
-	"\acall_id\x18\x03 \x01(\tR\x06callId\"e\n" +
+	"InputEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.gibson.common.TypedValueR\x05value:\x028\x01\"w\n" +
 	"\x0fToolResultEvent\x12\x17\n" +
-	"\acall_id\x18\x01 \x01(\tR\x06callId\x12\x1f\n" +
-	"\voutput_json\x18\x02 \x01(\tR\n" +
-	"outputJson\x12\x18\n" +
-	"\asuccess\x18\x03 \x01(\bR\asuccess\"1\n" +
-	"\fFindingEvent\x12!\n" +
-	"\ffinding_json\x18\x01 \x01(\tR\vfindingJson\"[\n" +
+	"\acall_id\x18\x01 \x01(\tR\x06callId\x121\n" +
+	"\x06output\x18\x02 \x01(\v2\x19.gibson.common.TypedValueR\x06output\x12\x18\n" +
+	"\asuccess\x18\x03 \x01(\bR\asuccess\"?\n" +
+	"\fFindingEvent\x12/\n" +
+	"\afinding\x18\x01 \x01(\v2\x15.gibson.types.FindingR\afinding\"[\n" +
 	"\fStatusChange\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.gibson.agent.AgentStatusR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"H\n" +
 	"\vSteeringAck\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1a\n" +
-	"\bresponse\x18\x02 \x01(\tR\bresponse\"P\n" +
+	"\bresponse\x18\x02 \x01(\tR\bresponse\"j\n" +
 	"\n" +
-	"ErrorEvent\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
+	"ErrorEvent\x12,\n" +
+	"\x04code\x18\x01 \x01(\x0e2\x18.gibson.common.ErrorCodeR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
 	"\x05fatal\x18\x03 \x01(\bR\x05fatal*B\n" +
 	"\tAgentMode\x12\x19\n" +
@@ -2027,7 +2026,7 @@ func file_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_agent_proto_goTypes = []any{
 	(AgentMode)(0),                     // 0: gibson.agent.AgentMode
 	(AgentStatus)(0),                   // 1: gibson.agent.AgentStatus
@@ -2057,46 +2056,65 @@ var file_agent_proto_goTypes = []any{
 	(*SteeringAck)(nil),                // 25: gibson.agent.SteeringAck
 	(*ErrorEvent)(nil),                 // 26: gibson.agent.ErrorEvent
 	nil,                                // 27: gibson.agent.SteeringMessage.MetadataEntry
-	(*Error)(nil),                      // 28: gibson.common.Error
-	(*HealthStatus)(nil),               // 29: gibson.common.HealthStatus
+	nil,                                // 28: gibson.agent.ToolCallEvent.InputEntry
+	(*Task)(nil),                       // 29: gibson.types.Task
+	(*TypedMap)(nil),                   // 30: gibson.common.TypedMap
+	(*Result)(nil),                     // 31: gibson.types.Result
+	(*Error)(nil),                      // 32: gibson.common.Error
+	(*TypedValue)(nil),                 // 33: gibson.common.TypedValue
+	(*Finding)(nil),                    // 34: gibson.types.Finding
+	(ErrorCode)(0),                     // 35: gibson.common.ErrorCode
+	(*HealthStatus)(nil),               // 36: gibson.common.HealthStatus
 }
 var file_agent_proto_depIdxs = []int32{
 	3,  // 0: gibson.agent.AgentDescriptor.target_schemas:type_name -> gibson.agent.TargetSchemaProto
 	6,  // 1: gibson.agent.AgentSlotDefinition.default_config:type_name -> gibson.agent.AgentSlotConfig
 	7,  // 2: gibson.agent.AgentSlotDefinition.constraints:type_name -> gibson.agent.AgentSlotConstraints
 	5,  // 3: gibson.agent.AgentGetSlotSchemaResponse.slots:type_name -> gibson.agent.AgentSlotDefinition
-	28, // 4: gibson.agent.AgentExecuteResponse.error:type_name -> gibson.common.Error
-	14, // 5: gibson.agent.ClientMessage.start:type_name -> gibson.agent.StartExecutionRequest
-	15, // 6: gibson.agent.ClientMessage.steering:type_name -> gibson.agent.SteeringMessage
-	16, // 7: gibson.agent.ClientMessage.interrupt:type_name -> gibson.agent.InterruptRequest
-	17, // 8: gibson.agent.ClientMessage.set_mode:type_name -> gibson.agent.SetModeRequest
-	18, // 9: gibson.agent.ClientMessage.resume:type_name -> gibson.agent.ResumeRequest
-	0,  // 10: gibson.agent.StartExecutionRequest.initial_mode:type_name -> gibson.agent.AgentMode
-	27, // 11: gibson.agent.SteeringMessage.metadata:type_name -> gibson.agent.SteeringMessage.MetadataEntry
-	0,  // 12: gibson.agent.SetModeRequest.mode:type_name -> gibson.agent.AgentMode
-	20, // 13: gibson.agent.AgentMessage.output:type_name -> gibson.agent.OutputChunk
-	21, // 14: gibson.agent.AgentMessage.tool_call:type_name -> gibson.agent.ToolCallEvent
-	22, // 15: gibson.agent.AgentMessage.tool_result:type_name -> gibson.agent.ToolResultEvent
-	23, // 16: gibson.agent.AgentMessage.finding:type_name -> gibson.agent.FindingEvent
-	24, // 17: gibson.agent.AgentMessage.status:type_name -> gibson.agent.StatusChange
-	25, // 18: gibson.agent.AgentMessage.steering_ack:type_name -> gibson.agent.SteeringAck
-	26, // 19: gibson.agent.AgentMessage.error:type_name -> gibson.agent.ErrorEvent
-	1,  // 20: gibson.agent.StatusChange.status:type_name -> gibson.agent.AgentStatus
-	2,  // 21: gibson.agent.AgentService.GetDescriptor:input_type -> gibson.agent.AgentGetDescriptorRequest
-	8,  // 22: gibson.agent.AgentService.GetSlotSchema:input_type -> gibson.agent.AgentGetSlotSchemaRequest
-	10, // 23: gibson.agent.AgentService.Execute:input_type -> gibson.agent.AgentExecuteRequest
-	12, // 24: gibson.agent.AgentService.Health:input_type -> gibson.agent.AgentHealthRequest
-	13, // 25: gibson.agent.AgentService.StreamExecute:input_type -> gibson.agent.ClientMessage
-	4,  // 26: gibson.agent.AgentService.GetDescriptor:output_type -> gibson.agent.AgentDescriptor
-	9,  // 27: gibson.agent.AgentService.GetSlotSchema:output_type -> gibson.agent.AgentGetSlotSchemaResponse
-	11, // 28: gibson.agent.AgentService.Execute:output_type -> gibson.agent.AgentExecuteResponse
-	29, // 29: gibson.agent.AgentService.Health:output_type -> gibson.common.HealthStatus
-	19, // 30: gibson.agent.AgentService.StreamExecute:output_type -> gibson.agent.AgentMessage
-	26, // [26:31] is the sub-list for method output_type
-	21, // [21:26] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	29, // 4: gibson.agent.AgentExecuteRequest.task:type_name -> gibson.types.Task
+	30, // 5: gibson.agent.AgentExecuteRequest.mission:type_name -> gibson.common.TypedMap
+	30, // 6: gibson.agent.AgentExecuteRequest.target:type_name -> gibson.common.TypedMap
+	31, // 7: gibson.agent.AgentExecuteResponse.result:type_name -> gibson.types.Result
+	32, // 8: gibson.agent.AgentExecuteResponse.error:type_name -> gibson.common.Error
+	14, // 9: gibson.agent.ClientMessage.start:type_name -> gibson.agent.StartExecutionRequest
+	15, // 10: gibson.agent.ClientMessage.steering:type_name -> gibson.agent.SteeringMessage
+	16, // 11: gibson.agent.ClientMessage.interrupt:type_name -> gibson.agent.InterruptRequest
+	17, // 12: gibson.agent.ClientMessage.set_mode:type_name -> gibson.agent.SetModeRequest
+	18, // 13: gibson.agent.ClientMessage.resume:type_name -> gibson.agent.ResumeRequest
+	29, // 14: gibson.agent.StartExecutionRequest.task:type_name -> gibson.types.Task
+	0,  // 15: gibson.agent.StartExecutionRequest.initial_mode:type_name -> gibson.agent.AgentMode
+	30, // 16: gibson.agent.StartExecutionRequest.mission:type_name -> gibson.common.TypedMap
+	30, // 17: gibson.agent.StartExecutionRequest.target:type_name -> gibson.common.TypedMap
+	27, // 18: gibson.agent.SteeringMessage.metadata:type_name -> gibson.agent.SteeringMessage.MetadataEntry
+	0,  // 19: gibson.agent.SetModeRequest.mode:type_name -> gibson.agent.AgentMode
+	20, // 20: gibson.agent.AgentMessage.output:type_name -> gibson.agent.OutputChunk
+	21, // 21: gibson.agent.AgentMessage.tool_call:type_name -> gibson.agent.ToolCallEvent
+	22, // 22: gibson.agent.AgentMessage.tool_result:type_name -> gibson.agent.ToolResultEvent
+	23, // 23: gibson.agent.AgentMessage.finding:type_name -> gibson.agent.FindingEvent
+	24, // 24: gibson.agent.AgentMessage.status:type_name -> gibson.agent.StatusChange
+	25, // 25: gibson.agent.AgentMessage.steering_ack:type_name -> gibson.agent.SteeringAck
+	26, // 26: gibson.agent.AgentMessage.error:type_name -> gibson.agent.ErrorEvent
+	28, // 27: gibson.agent.ToolCallEvent.input:type_name -> gibson.agent.ToolCallEvent.InputEntry
+	33, // 28: gibson.agent.ToolResultEvent.output:type_name -> gibson.common.TypedValue
+	34, // 29: gibson.agent.FindingEvent.finding:type_name -> gibson.types.Finding
+	1,  // 30: gibson.agent.StatusChange.status:type_name -> gibson.agent.AgentStatus
+	35, // 31: gibson.agent.ErrorEvent.code:type_name -> gibson.common.ErrorCode
+	33, // 32: gibson.agent.ToolCallEvent.InputEntry.value:type_name -> gibson.common.TypedValue
+	2,  // 33: gibson.agent.AgentService.GetDescriptor:input_type -> gibson.agent.AgentGetDescriptorRequest
+	8,  // 34: gibson.agent.AgentService.GetSlotSchema:input_type -> gibson.agent.AgentGetSlotSchemaRequest
+	10, // 35: gibson.agent.AgentService.Execute:input_type -> gibson.agent.AgentExecuteRequest
+	12, // 36: gibson.agent.AgentService.Health:input_type -> gibson.agent.AgentHealthRequest
+	13, // 37: gibson.agent.AgentService.StreamExecute:input_type -> gibson.agent.ClientMessage
+	4,  // 38: gibson.agent.AgentService.GetDescriptor:output_type -> gibson.agent.AgentDescriptor
+	9,  // 39: gibson.agent.AgentService.GetSlotSchema:output_type -> gibson.agent.AgentGetSlotSchemaResponse
+	11, // 40: gibson.agent.AgentService.Execute:output_type -> gibson.agent.AgentExecuteResponse
+	36, // 41: gibson.agent.AgentService.Health:output_type -> gibson.common.HealthStatus
+	19, // 42: gibson.agent.AgentService.StreamExecute:output_type -> gibson.agent.AgentMessage
+	38, // [38:43] is the sub-list for method output_type
+	33, // [33:38] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -2105,6 +2123,7 @@ func file_agent_proto_init() {
 		return
 	}
 	file_common_proto_init()
+	file_types_proto_init()
 	file_agent_proto_msgTypes[11].OneofWrappers = []any{
 		(*ClientMessage_Start)(nil),
 		(*ClientMessage_Steering)(nil),
@@ -2127,7 +2146,7 @@ func file_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   26,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

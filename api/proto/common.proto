@@ -17,3 +17,70 @@ message Error {
     string message = 2;
     bool retryable = 3;
 }
+
+// NullValue represents a null value in TypedValue
+enum NullValue {
+    NULL_VALUE = 0;
+}
+
+// TypedValue represents a dynamically typed value
+message TypedValue {
+    oneof kind {
+        NullValue null_value = 1;
+        string string_value = 2;
+        int64 int_value = 3;
+        double double_value = 4;
+        bool bool_value = 5;
+        bytes bytes_value = 6;
+        TypedArray array_value = 7;
+        TypedMap map_value = 8;
+    }
+}
+
+// TypedArray represents an array of TypedValues
+message TypedArray {
+    repeated TypedValue items = 1;
+}
+
+// TypedMap represents a map of string keys to TypedValues
+message TypedMap {
+    map<string, TypedValue> entries = 1;
+}
+
+// ErrorCode defines standard error codes across the system
+enum ErrorCode {
+    ERROR_CODE_UNSPECIFIED = 0;
+    ERROR_CODE_INTERNAL = 1;
+    ERROR_CODE_INVALID_ARGUMENT = 2;
+    ERROR_CODE_NOT_FOUND = 3;
+    ERROR_CODE_TIMEOUT = 4;
+    ERROR_CODE_UNAVAILABLE = 5;
+    ERROR_CODE_PERMISSION_DENIED = 6;
+    ERROR_CODE_ALREADY_EXISTS = 7;
+    ERROR_CODE_RESOURCE_EXHAUSTED = 8;
+    ERROR_CODE_CANCELLED = 9;
+    ERROR_CODE_AGENT_TIMEOUT = 10;
+    ERROR_CODE_AGENT_PANIC = 11;
+    ERROR_CODE_AGENT_INIT_FAILED = 12;
+    ERROR_CODE_LLM_RATE_LIMITED = 13;
+    ERROR_CODE_LLM_CONTEXT_EXCEEDED = 14;
+    ERROR_CODE_LLM_API_ERROR = 15;
+    ERROR_CODE_LLM_PARSE_ERROR = 16;
+    ERROR_CODE_TOOL_NOT_FOUND = 17;
+    ERROR_CODE_TOOL_TIMEOUT = 18;
+    ERROR_CODE_TOOL_EXEC_FAILED = 19;
+    ERROR_CODE_NETWORK_TIMEOUT = 20;
+    ERROR_CODE_NETWORK_UNREACHABLE = 21;
+    ERROR_CODE_TLS_ERROR = 22;
+    ERROR_CODE_DELEGATION_FAILED = 23;
+    ERROR_CODE_CHILD_AGENT_FAILED = 24;
+    ERROR_CODE_CONFIG_ERROR = 25;
+}
+
+// HealthState defines standard health states
+enum HealthState {
+    HEALTH_STATE_UNSPECIFIED = 0;
+    HEALTH_STATE_HEALTHY = 1;
+    HEALTH_STATE_DEGRADED = 2;
+    HEALTH_STATE_UNHEALTHY = 3;
+}

@@ -349,11 +349,8 @@ func (h *CallbackHarness) CompleteStructured(ctx context.Context, slot string, m
 		return nil, fmt.Errorf("LLM complete structured error: %s", resp.Error.Message)
 	}
 
-	// Deserialize the result
-	var result any
-	if err := json.Unmarshal([]byte(resp.ResultJson), &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal structured result: %w", err)
-	}
+	// Convert TypedValue result to Go value
+	result := FromTypedValue(resp.Result)
 
 	// Track token usage if available
 	if resp.Usage != nil {
@@ -477,17 +474,10 @@ func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[s
 	)
 	defer span.End()
 
-	// Serialize input
-	inputJSON, err := json.Marshal(input)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to marshal tool input: %w", err)
-	}
-
+	// Convert input to TypedValue map
 	protoReq := &proto.CallToolRequest{
-		Name:      name,
-		InputJson: string(inputJSON),
+		Name:  name,
+		Input: ToTypedMap(input),
 	}
 
 	resp, err := h.client.CallTool(ctx, protoReq)
@@ -504,12 +494,11 @@ func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[s
 		return nil, err
 	}
 
-	// Deserialize output
-	var output map[string]any
-	if err := json.Unmarshal([]byte(resp.OutputJson), &output); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to unmarshal tool output: %w", err)
+	// Convert output TypedValue to map[string]any
+	outputAny := FromTypedValue(resp.Output)
+	output, ok := outputAny.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("tool output is not a map: got %T", outputAny)
 	}
 
 	return output, nil
@@ -623,16 +612,10 @@ func (h *CallbackHarness) ListTools(ctx context.Context) ([]tool.Descriptor, err
 
 // QueryPlugin sends a query to a plugin and returns the result.
 func (h *CallbackHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
-	// Serialize params
-	paramsJSON, err := json.Marshal(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal plugin params: %w", err)
-	}
-
 	protoReq := &proto.QueryPluginRequest{
-		Name:       name,
-		Method:     method,
-		ParamsJson: string(paramsJSON),
+		Name:   name,
+		Method: method,
+		Params: ToTypedMap(params),
 	}
 
 	resp, err := h.client.QueryPlugin(ctx, protoReq)
@@ -644,13 +627,8 @@ func (h *CallbackHarness) QueryPlugin(ctx context.Context, name string, method s
 		return nil, fmt.Errorf("query plugin error: %s", resp.Error.Message)
 	}
 
-	// Deserialize result
-	var result any
-	if err := json.Unmarshal([]byte(resp.ResultJson), &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal plugin result: %w", err)
-	}
-
-	return result, nil
+	// Convert result TypedValue to any
+	return FromTypedValue(resp.Result), nil
 }
 
 // ListPlugins returns descriptors for all available plugins.
@@ -710,15 +688,23 @@ func (h *CallbackHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor,
 
 // DelegateToAgent assigns a task to another agent for execution.
 func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
-	// Serialize task
-	taskJSON, err := json.Marshal(task)
-	if err != nil {
-		return agent.Result{}, fmt.Errorf("failed to marshal task: %w", err)
+	// Convert task to proto
+	protoTask := &proto.Task{
+		Id:       task.ID,
+		Goal:     task.Goal,
+		Context:  ToTypedMap(task.Context),
+		Metadata: ToTypedMap(task.Metadata),
+		Constraints: &proto.TaskConstraints{
+			MaxTurns:     int32(task.Constraints.MaxTurns),
+			MaxTokens:    int32(task.Constraints.MaxTokens),
+			AllowedTools: task.Constraints.AllowedTools,
+			BlockedTools: task.Constraints.BlockedTools,
+		},
 	}
 
 	protoReq := &proto.DelegateToAgentRequest{
-		Name:     name,
-		TaskJson: string(taskJSON),
+		Name: name,
+		Task: protoTask,
 	}
 
 	resp, err := h.client.DelegateToAgent(ctx, protoReq)
@@ -730,10 +716,23 @@ func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task
 		return agent.Result{}, fmt.Errorf("delegate to agent error: %s", resp.Error.Message)
 	}
 
-	// Deserialize result
-	var result agent.Result
-	if err := json.Unmarshal([]byte(resp.ResultJson), &result); err != nil {
-		return agent.Result{}, fmt.Errorf("failed to unmarshal agent result: %w", err)
+	// Convert proto result to SDK result using the helper function
+	result := ProtoToResult(resp.Result)
+
+	// Convert error if present
+	if resp.Result.Error != nil {
+		// Convert map[string]string to map[string]any
+		details := make(map[string]any)
+		for k, v := range resp.Result.Error.Details {
+			details[k] = v
+		}
+
+		result.Error = &agent.ResultError{
+			Code:      resp.Result.Error.Code.String(),
+			Message:   resp.Result.Error.Message,
+			Details:   details,
+			Retryable: resp.Result.Error.Retryable,
+		}
 	}
 
 	return result, nil
@@ -799,16 +798,9 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 	)
 	defer span.End()
 
-	// Serialize finding
-	findingJSON, err := json.Marshal(f)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("failed to marshal finding: %w", err)
-	}
-
+	// Convert finding to proto
 	protoReq := &proto.SubmitFindingRequest{
-		FindingJson: string(findingJSON),
+		Finding: FindingToProto(f),
 	}
 
 	resp, err := h.client.SubmitFinding(ctx, protoReq)
@@ -830,14 +822,25 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 // GetFindings retrieves findings matching the given filter criteria.
 func (h *CallbackHarness) GetFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
-	// Serialize filter
-	filterJSON, err := json.Marshal(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal filter: %w", err)
+	// Convert filter to proto
+	protoFilter := &proto.FindingFilter{
+		MissionId: filter.MissionID,
+		AgentName: filter.AgentName,
+		Tags:      filter.Tags,
+	}
+
+	// Convert severity if present - use first severity as filter
+	if len(filter.Severities) > 0 {
+		protoFilter.Severity = severityToProto(filter.Severities[0])
+	}
+
+	// Convert status if present
+	if filter.Status != "" {
+		protoFilter.Status = findingStatusToProto(filter.Status)
 	}
 
 	protoReq := &proto.GetFindingsRequest{
-		FilterJson: string(filterJSON),
+		Filter: protoFilter,
 	}
 
 	resp, err := h.client.GetFindings(ctx, protoReq)
@@ -849,14 +852,10 @@ func (h *CallbackHarness) GetFindings(ctx context.Context, filter finding.Filter
 		return nil, fmt.Errorf("get findings error: %s", resp.Error.Message)
 	}
 
-	// Deserialize findings
-	findings := make([]*finding.Finding, 0)
-	for _, findingJSON := range resp.FindingsJson {
-		var finding *finding.Finding
-		if err := json.Unmarshal([]byte(findingJSON), &finding); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal finding: %w", err)
-		}
-		findings = append(findings, finding)
+	// Convert proto findings to SDK findings
+	findings := make([]*finding.Finding, len(resp.Findings))
+	for i, protoFinding := range resp.Findings {
+		findings[i] = FindingFromProto(protoFinding)
 	}
 
 	return findings, nil
@@ -879,16 +878,12 @@ func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Quer
 	)
 	defer span.End()
 
-	// Serialize query
-	queryJSON, err := json.Marshal(query)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to marshal query: %w", err)
-	}
+	// Convert query to proto
+	protoQuery := GraphQueryToProto(query)
 
 	protoReq := &proto.GraphRAGQueryRequest{
-		QueryJson: string(queryJSON),
+		Context: h.client.contextInfo(),
+		Query:   protoQuery,
 	}
 
 	resp, err := h.client.GraphRAGQuery(ctx, protoReq)
@@ -1373,51 +1368,35 @@ func (h *CallbackHarness) toolResultsToProto(results []llm.ToolResult) []*proto.
 func (h *CallbackHarness) toolDefsToProto(tools []llm.ToolDef) []*proto.ToolDef {
 	protoTools := make([]*proto.ToolDef, len(tools))
 	for i, tool := range tools {
-		paramsJSON, err := json.Marshal(tool.Parameters)
-		if err != nil {
-			h.logger.Error("failed to marshal tool parameters", "error", err, "tool", tool.Name)
-			paramsJSON = []byte("{}")
-		}
+		// Convert parameters to JSONSchemaNode
+		// Parameters is map[string]any representing a JSON schema
 		protoTools[i] = &proto.ToolDef{
-			Name:           tool.Name,
-			Description:    tool.Description,
-			ParametersJson: string(paramsJSON),
+			Name:        tool.Name,
+			Description: tool.Description,
+			Parameters:  JSONSchemaToProtoNode(tool.Parameters),
 		}
 	}
 	return protoTools
 }
 
 func (h *CallbackHarness) graphNodeToProto(node graphrag.GraphNode) *proto.GraphNode {
-	propsJSON, err := json.Marshal(node.Properties)
-	if err != nil {
-		h.logger.Error("failed to marshal graph node properties", "error", err, "node_id", node.ID)
-		propsJSON = []byte("{}")
-	}
 	return &proto.GraphNode{
-		Id:             node.ID,
-		Type:           node.Type,
-		PropertiesJson: string(propsJSON),
-		Content:        node.Content,
-		MissionId:      node.MissionID,
-		AgentName:      node.AgentName,
-		CreatedAt:      node.CreatedAt.Unix(),
-		UpdatedAt:      node.UpdatedAt.Unix(),
+		Id:         node.ID,
+		Type:       node.Type,
+		Properties: ToTypedMap(node.Properties),
+		Content:    node.Content,
+		MissionId:  node.MissionID,
+		AgentName:  node.AgentName,
+		CreatedAt:  node.CreatedAt.Unix(),
+		UpdatedAt:  node.UpdatedAt.Unix(),
 	}
 }
 
 func (h *CallbackHarness) graphNodeFromProto(protoNode *proto.GraphNode) graphrag.GraphNode {
-	var props map[string]any
-	if protoNode.PropertiesJson != "" {
-		if err := json.Unmarshal([]byte(protoNode.PropertiesJson), &props); err != nil {
-			h.logger.Error("failed to unmarshal graph node properties", "error", err, "node_id", protoNode.Id)
-			// Continue with empty props
-		}
-	}
-
 	return graphrag.GraphNode{
 		ID:         protoNode.Id,
 		Type:       protoNode.Type,
-		Properties: props,
+		Properties: FromTypedMap(protoNode.Properties),
 		Content:    protoNode.Content,
 		MissionID:  protoNode.MissionId,
 		AgentName:  protoNode.AgentName,
@@ -1425,17 +1404,12 @@ func (h *CallbackHarness) graphNodeFromProto(protoNode *proto.GraphNode) graphra
 }
 
 func (h *CallbackHarness) relationshipToProto(rel graphrag.Relationship) *proto.Relationship {
-	propsJSON, err := json.Marshal(rel.Properties)
-	if err != nil {
-		h.logger.Error("failed to marshal relationship properties", "error", err, "from", rel.FromID, "to", rel.ToID)
-		propsJSON = []byte("{}")
-	}
 	return &proto.Relationship{
-		FromId:         rel.FromID,
-		ToId:           rel.ToID,
-		Type:           rel.Type,
-		PropertiesJson: string(propsJSON),
-		Bidirectional:  rel.Bidirectional,
+		FromId:        rel.FromID,
+		ToId:          rel.ToID,
+		Type:          rel.Type,
+		Properties:    ToTypedMap(rel.Properties),
+		Bidirectional: rel.Bidirectional,
 	}
 }
 
@@ -1544,20 +1518,30 @@ func (h *CallbackHarness) GetCredential(ctx context.Context, name string) (*type
 		credType = types.CredentialTypeAPIKey // Default
 	}
 
-	// Parse metadata if present
-	var metadata map[string]any
-	if resp.Credential.MetadataJson != "" {
-		if err := json.Unmarshal([]byte(resp.Credential.MetadataJson), &metadata); err != nil {
-			h.logger.Warn("failed to parse credential metadata", "error", err, "name", name)
-		}
+	// Extract secret value based on credential type
+	var secret string
+	var username string
+
+	switch data := resp.Credential.SecretData.(type) {
+	case *proto.Credential_ApiKey:
+		secret = data.ApiKey
+	case *proto.Credential_BearerToken:
+		secret = data.BearerToken
+	case *proto.Credential_Basic:
+		username = data.Basic.Username
+		secret = data.Basic.Password
+	case *proto.Credential_Oauth:
+		secret = data.Oauth.AccessToken
+	case *proto.Credential_CustomSecret:
+		secret = data.CustomSecret
 	}
 
 	return &types.Credential{
 		Name:     resp.Credential.Name,
 		Type:     credType,
-		Secret:   resp.Credential.Secret,
-		Username: resp.Credential.Username,
-		Metadata: metadata,
+		Secret:   secret,
+		Username: username,
+		Metadata: FromTypedMap(resp.Credential.Metadata),
 	}, nil
 }
 
@@ -1649,14 +1633,9 @@ func (h *CallbackHarness) HasTaxonomy() bool {
 // GenerateNodeID generates a deterministic node ID using taxonomy templates.
 // Calls the orchestrator's GenerateNodeID RPC method.
 func (h *CallbackHarness) GenerateNodeID(ctx context.Context, nodeType string, properties map[string]any) (string, error) {
-	propsJSON, err := json.Marshal(properties)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal properties: %w", err)
-	}
-
 	req := &proto.GenerateNodeIDRequest{
-		NodeType:       nodeType,
-		PropertiesJson: string(propsJSON),
+		NodeType:   nodeType,
+		Properties: ToTypedMap(properties),
 	}
 
 	resp, err := h.client.GenerateNodeID(ctx, req)
@@ -1687,13 +1666,8 @@ type ValidationError struct {
 
 // ValidateFinding validates a finding against the taxonomy schema.
 func (h *CallbackHarness) ValidateFinding(ctx context.Context, f *finding.Finding) (*ValidationResult, error) {
-	findingJSON, err := json.Marshal(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal finding: %w", err)
-	}
-
 	req := &proto.ValidateFindingRequest{
-		FindingJson: string(findingJSON),
+		Finding: FindingToProto(f),
 	}
 
 	resp, err := h.client.ValidateFinding(ctx, req)
@@ -1710,14 +1684,9 @@ func (h *CallbackHarness) ValidateFinding(ctx context.Context, f *finding.Findin
 
 // ValidateGraphNode validates a graph node against the taxonomy schema.
 func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string, properties map[string]any) (*ValidationResult, error) {
-	propsJSON, err := json.Marshal(properties)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal properties: %w", err)
-	}
-
 	req := &proto.ValidateGraphNodeRequest{
-		NodeType:       nodeType,
-		PropertiesJson: string(propsJSON),
+		NodeType:   nodeType,
+		Properties: ToTypedMap(properties),
 	}
 
 	resp, err := h.client.ValidateGraphNode(ctx, req)
@@ -1734,20 +1703,11 @@ func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string
 
 // ValidateRelationship validates a relationship against the taxonomy schema.
 func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType string, fromNodeType string, toNodeType string, properties map[string]any) (*ValidationResult, error) {
-	var propsJSON string
-	if properties != nil {
-		data, err := json.Marshal(properties)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal properties: %w", err)
-		}
-		propsJSON = string(data)
-	}
-
 	req := &proto.ValidateRelationshipRequest{
 		RelationshipType: relType,
 		FromNodeType:     fromNodeType,
 		ToNodeType:       toNodeType,
-		PropertiesJson:   propsJSON,
+		Properties:       ToTypedMap(properties),
 	}
 
 	resp, err := h.client.ValidateRelationship(ctx, req)

@@ -25,16 +25,16 @@ func BuildOutputEvent(content string, isReasoning bool, seq int64, traceID, span
 }
 
 // BuildToolCallEvent constructs an AgentMessage containing a ToolCallEvent.
-// toolName is the name of the tool being called, inputJSON is the serialized input,
+// toolName is the name of the tool being called, input is the map of input parameters,
 // callID is a unique identifier for this call, seq is the sequence number,
 // and traceID/spanID are for distributed tracing.
-func BuildToolCallEvent(toolName, inputJSON, callID string, seq int64, traceID, spanID string) *proto.AgentMessage {
+func BuildToolCallEvent(toolName string, input map[string]any, callID string, seq int64, traceID, spanID string) *proto.AgentMessage {
 	return &proto.AgentMessage{
 		Payload: &proto.AgentMessage_ToolCall{
 			ToolCall: &proto.ToolCallEvent{
-				ToolName:  toolName,
-				InputJson: inputJSON,
-				CallId:    callID,
+				ToolName: toolName,
+				Input:    ToTypedMap(input),
+				CallId:   callID,
 			},
 		},
 		TraceId:     traceID,
@@ -45,16 +45,16 @@ func BuildToolCallEvent(toolName, inputJSON, callID string, seq int64, traceID, 
 }
 
 // BuildToolResultEvent constructs an AgentMessage containing a ToolResultEvent.
-// callID matches the call_id from the corresponding ToolCallEvent, outputJSON
-// is the serialized tool output, success indicates if the tool call succeeded,
+// callID matches the call_id from the corresponding ToolCallEvent, output
+// is the tool output value, success indicates if the tool call succeeded,
 // seq is the sequence number, and traceID/spanID are for distributed tracing.
-func BuildToolResultEvent(callID, outputJSON string, success bool, seq int64, traceID, spanID string) *proto.AgentMessage {
+func BuildToolResultEvent(callID string, output any, success bool, seq int64, traceID, spanID string) *proto.AgentMessage {
 	return &proto.AgentMessage{
 		Payload: &proto.AgentMessage_ToolResult{
 			ToolResult: &proto.ToolResultEvent{
-				CallId:     callID,
-				OutputJson: outputJSON,
-				Success:    success,
+				CallId:  callID,
+				Output:  ToTypedValue(output),
+				Success: success,
 			},
 		},
 		TraceId:     traceID,
@@ -65,13 +65,13 @@ func BuildToolResultEvent(callID, outputJSON string, success bool, seq int64, tr
 }
 
 // BuildFindingEvent constructs an AgentMessage containing a FindingEvent.
-// findingJSON is the serialized finding data, seq is the sequence number,
+// finding is the security finding data, seq is the sequence number,
 // and traceID/spanID are for distributed tracing.
-func BuildFindingEvent(findingJSON string, seq int64, traceID, spanID string) *proto.AgentMessage {
+func BuildFindingEvent(finding *proto.Finding, seq int64, traceID, spanID string) *proto.AgentMessage {
 	return &proto.AgentMessage{
 		Payload: &proto.AgentMessage_Finding{
 			Finding: &proto.FindingEvent{
-				FindingJson: findingJSON,
+				Finding: finding,
 			},
 		},
 		TraceId:     traceID,
@@ -100,14 +100,14 @@ func BuildStatusEvent(status proto.AgentStatus, message string, seq int64, trace
 }
 
 // BuildErrorEvent constructs an AgentMessage containing an ErrorEvent.
-// code is the error code, message describes the error, fatal indicates if
+// code is the error code string, message describes the error, fatal indicates if
 // this error should terminate execution, seq is the sequence number,
 // and traceID/spanID are for distributed tracing.
-func BuildErrorEvent(code, message string, fatal bool, seq int64, traceID, spanID string) *proto.AgentMessage {
+func BuildErrorEvent(code string, message string, fatal bool, seq int64, traceID, spanID string) *proto.AgentMessage {
 	return &proto.AgentMessage{
 		Payload: &proto.AgentMessage_Error{
 			Error: &proto.ErrorEvent{
-				Code:    code,
+				Code:    StringToProtoErrorCode(code),
 				Message: message,
 				Fatal:   fatal,
 			},

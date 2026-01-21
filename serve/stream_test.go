@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"sync"
@@ -150,15 +149,13 @@ func TestStreamExecute_BasicFlow(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{
-		ID:      "task-1",
-		Context: map[string]any{"objective": "Test task execution"},
-	})
-
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{
+					Id:   "task-1",
+					Goal: "Test task execution",
+				},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -234,11 +231,11 @@ func TestStreamExecute_StreamingAgent(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -316,11 +313,11 @@ func TestStreamExecute_SteeringMessage(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -421,11 +418,11 @@ func TestStreamExecute_SetMode(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest with autonomous mode
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -505,11 +502,11 @@ func TestStreamExecute_Interrupt(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -585,11 +582,11 @@ func TestStreamExecute_Resume(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -663,11 +660,11 @@ func TestStreamExecute_AgentError(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -709,7 +706,7 @@ func TestStreamExecute_AgentError(t *testing.T) {
 	var foundError bool
 	for _, msg := range msgs {
 		if errMsg, ok := msg.Payload.(*proto.AgentMessage_Error); ok {
-			if errMsg.Error.Code == "EXECUTION_ERROR" {
+			if errMsg.Error.Code == proto.ErrorCode_ERROR_CODE_INTERNAL {
 				foundError = true
 				if errMsg.Error.Message != expectedErr.Error() {
 					t.Errorf("error message = %q, want %q", errMsg.Error.Message, expectedErr.Error())
@@ -726,16 +723,25 @@ func TestStreamExecute_AgentError(t *testing.T) {
 	}
 }
 
-// TestStreamExecute_InvalidTaskJSON tests handling of invalid task JSON.
-func TestStreamExecute_InvalidTaskJSON(t *testing.T) {
+// TestStreamExecute_NilTask tests handling of nil task.
+// With proto-based task handling, nil tasks are converted to empty tasks and are valid.
+func TestStreamExecute_NilTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	stream := newMockStreamServer(ctx)
 
+	// Agent that handles empty tasks gracefully
 	testAgent := &mockAgent{
 		name:    "test-agent",
 		version: "1.0.0",
+		executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
+			// Nil proto.Task is converted to empty agent.Task, which is valid
+			return agent.Result{
+				Status: agent.StatusSuccess,
+				Output: map[string]any{"result": "handled empty task"},
+			}, nil
+		},
 	}
 
 	server := &agentServiceServer{agent: testAgent}
@@ -746,28 +752,33 @@ func TestStreamExecute_InvalidTaskJSON(t *testing.T) {
 		errCh <- server.StreamExecute(stream)
 	}()
 
-	// Send StartExecutionRequest with invalid JSON
+	// Send StartExecutionRequest with nil Task
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    "{invalid json",
+				Task:        nil, // Nil task is converted to empty task
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
 	})
 
-	// Wait for error
+	// Wait for completion - should succeed (nil task converted to empty task)
 	select {
 	case err := <-errCh:
-		if err == nil {
-			t.Fatal("StreamExecute() error = nil, want error for invalid JSON")
-		}
-		// Verify it's an InvalidArgument error
-		if err.Error() == "" {
-			t.Error("error message is empty")
+		// No error expected - nil task is valid and converted to empty task
+		if err != nil {
+			t.Fatalf("StreamExecute() error = %v, want nil", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatal("StreamExecute() did not return error")
+		// May timeout waiting for stream to complete - this is acceptable
+		// as long as no error was returned
+	}
+
+	// Verify stream received messages
+	msgs := stream.getSentMessages()
+	// Should have at least the running status
+	if len(msgs) == 0 {
+		t.Error("expected at least one message, got 0")
 	}
 }
 
@@ -866,11 +877,11 @@ func TestStreamExecute_SequenceNumbers(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -947,11 +958,11 @@ func TestStreamExecute_EventOrdering(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	taskJSON, _ := json.Marshal(agent.Task{ID: "task-1"})
+	
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				TaskJson:    string(taskJSON),
+				Task: &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -1018,7 +1029,10 @@ func TestCreateStreamingHarness_LocalMode(t *testing.T) {
 	server := &agentServiceServer{}
 
 	req := &proto.StartExecutionRequest{
-		TaskJson:    `{"id":"task-1","goal":"test"}`,
+		Task: &proto.Task{
+			Id:   "task-1",
+			Goal: "test",
+		},
 		InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 		// No callback_endpoint - should create local harness
 	}

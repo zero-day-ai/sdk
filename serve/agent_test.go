@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"testing"
 
@@ -187,11 +186,9 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 			wantErr: false,
 			checkResult: func(t *testing.T, resp *proto.AgentExecuteResponse) {
 				assert.Nil(t, resp.Error)
-				assert.NotEmpty(t, resp.ResultJson)
+				assert.NotNil(t, resp.Result)
 
-				var result agent.Result
-				err := json.Unmarshal([]byte(resp.ResultJson), &result)
-				require.NoError(t, err)
+				result := ProtoToResult(resp.Result)
 				assert.Equal(t, agent.StatusSuccess, result.Status)
 			},
 		},
@@ -207,7 +204,8 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 			wantErr: false,
 			checkResult: func(t *testing.T, resp *proto.AgentExecuteResponse) {
 				assert.NotNil(t, resp.Error)
-				assert.Equal(t, "EXECUTION_ERROR", resp.Error.Code)
+				// Error.Code is a string containing the ErrorCode enum name
+				assert.Equal(t, proto.ErrorCode_ERROR_CODE_INTERNAL.String(), resp.Error.Code)
 			},
 		},
 	}
@@ -225,11 +223,8 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 
 			client := proto.NewAgentServiceClient(conn)
 
-			taskJSON, err := json.Marshal(tt.task)
-			require.NoError(t, err)
-
 			resp, err := client.Execute(context.Background(), &proto.AgentExecuteRequest{
-				TaskJson: string(taskJSON),
+				Task: TaskToProto(tt.task),
 			})
 
 			if tt.wantErr {
@@ -245,10 +240,17 @@ func TestAgentServiceServer_Execute(t *testing.T) {
 	}
 }
 
-func TestAgentServiceServer_Execute_InvalidJSON(t *testing.T) {
+func TestAgentServiceServer_Execute_NilTask(t *testing.T) {
 	mockA := &mockAgent{
 		name:    "test-agent",
 		version: "1.0.0",
+		executeFunc: func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
+			// With nil proto.Task, ProtoToTask returns an empty agent.Task
+			return agent.Result{
+				Status: agent.StatusSuccess,
+				Output: map[string]any{"handled": "empty task"},
+			}, nil
+		},
 	}
 
 	conn, cleanup := setupAgentTestServer(t, mockA)
@@ -256,11 +258,15 @@ func TestAgentServiceServer_Execute_InvalidJSON(t *testing.T) {
 
 	client := proto.NewAgentServiceClient(conn)
 
-	_, err := client.Execute(context.Background(), &proto.AgentExecuteRequest{
-		TaskJson: "invalid json",
+	// Test with a nil task - should be handled gracefully (converted to empty task)
+	resp, err := client.Execute(context.Background(), &proto.AgentExecuteRequest{
+		Task: nil,
 	})
 
-	assert.Error(t, err)
+	// No gRPC error - nil task is valid and converted to empty task
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.NotNil(t, resp.Result)
 }
 
 func TestAgentServiceServer_Health(t *testing.T) {

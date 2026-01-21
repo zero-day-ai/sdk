@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -69,11 +68,8 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 		return status.Error(codes.InvalidArgument, "first message must be StartExecutionRequest")
 	}
 
-	// Parse task from JSON
-	var task agent.Task
-	if err := json.Unmarshal([]byte(startReq.Start.TaskJson), &task); err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid task JSON: %v", err)
-	}
+	// Parse task from proto
+	task := ProtoToTask(startReq.Start.Task)
 
 	// Get initial mode (default to autonomous if not specified)
 	initialMode := startReq.Start.InitialMode
@@ -308,20 +304,14 @@ func (s *agentServiceServer) createStreamingHarness(ctx context.Context, req *pr
 
 		// Parse mission context if provided
 		var mission types.MissionContext
-		if req.MissionJson != "" {
-			if err := json.Unmarshal([]byte(req.MissionJson), &mission); err != nil {
-				client.Close()
-				return nil, nil, fmt.Errorf("failed to parse mission context: %w", err)
-			}
+		if req.Mission != nil {
+			mission = ProtoToMissionContext(req.Mission)
 		}
 
 		// Parse target info if provided
 		var target types.TargetInfo
-		if req.TargetJson != "" {
-			if err := json.Unmarshal([]byte(req.TargetJson), &target); err != nil {
-				client.Close()
-				return nil, nil, fmt.Errorf("failed to parse target info: %w", err)
-			}
+		if req.Target != nil {
+			target = ProtoToTargetInfo(req.Target)
 		}
 
 		// Create logger and tracer

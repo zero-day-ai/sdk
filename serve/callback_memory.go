@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -98,13 +97,8 @@ func (m *callbackWorkingMemory) Get(ctx context.Context, key string) (any, error
 
 	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
 
-	// Deserialize the value from JSON
-	var value any
-	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
+	// Convert the value from TypedValue
+	value := FromTypedValue(resp.Value)
 
 	return value, nil
 }
@@ -127,17 +121,11 @@ func (m *callbackWorkingMemory) Set(ctx context.Context, key string, value any) 
 		return err
 	}
 
-	// Serialize the value to JSON
-	valueJSON, err := json.Marshal(value)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("failed to marshal value: %w", err)
-	}
-
+	// Convert value to TypedValue
 	req := &proto.MemorySetRequest{
-		Key:       key,
-		ValueJson: string(valueJSON),
+		Context: m.client.contextInfo(),
+		Key:     key,
+		Value:   ToTypedValue(value),
 	}
 
 	resp, err := m.client.MemorySet(ctx, req)
@@ -266,7 +254,7 @@ func (m *callbackMissionMemory) Get(ctx context.Context, key string) (*memory.It
 	}
 
 	if resp.Error != nil {
-		if resp.Error.Code == "NOT_FOUND" {
+		if resp.Error.Code == proto.ErrorCode_ERROR_CODE_NOT_FOUND {
 			span.SetAttributes(attribute.Bool("gibson.memory.found", false))
 			return nil, memory.ErrNotFound
 		}
@@ -283,23 +271,11 @@ func (m *callbackMissionMemory) Get(ctx context.Context, key string) (*memory.It
 
 	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
 
-	// Deserialize the value from JSON
-	var value any
-	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
+	// Convert the value from TypedValue
+	value := FromTypedValue(resp.Value)
 
-	// Deserialize metadata from JSON
-	var metadata map[string]any
-	if resp.MetadataJson != "" {
-		if err := json.Unmarshal([]byte(resp.MetadataJson), &metadata); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
-		}
-	}
+	// Convert metadata from TypedMap
+	metadata := FromTypedMap(resp.Metadata)
 
 	// Parse timestamps
 	var createdAt, updatedAt time.Time
@@ -336,31 +312,11 @@ func (m *callbackMissionMemory) Set(ctx context.Context, key string, value any, 
 		return err
 	}
 
-	// Serialize the value to JSON
-	valueJSON, err := json.Marshal(value)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return fmt.Errorf("failed to marshal value: %w", err)
-	}
-
-	// Serialize metadata to JSON
-	var metadataJSON string
-	if metadata != nil {
-		metaBytes, err := json.Marshal(metadata)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return fmt.Errorf("failed to marshal metadata: %w", err)
-		}
-		metadataJSON = string(metaBytes)
-	}
-
 	req := &proto.MemorySetRequest{
-		Key:          key,
-		ValueJson:    string(valueJSON),
-		MetadataJson: metadataJSON,
-		Tier:         proto.MemoryTier_MEMORY_TIER_MISSION,
+		Key:      key,
+		Value:    ToTypedValue(value),
+		Metadata: ToTypedMap(metadata),
+		Tier:     proto.MemoryTier_MEMORY_TIER_MISSION,
 	}
 
 	resp, err := m.client.MemorySet(ctx, req)
@@ -410,7 +366,7 @@ func (m *callbackMissionMemory) Delete(ctx context.Context, key string) error {
 	}
 
 	if resp.Error != nil {
-		if resp.Error.Code == "NOT_FOUND" {
+		if resp.Error.Code == proto.ErrorCode_ERROR_CODE_NOT_FOUND {
 			return memory.ErrNotFound
 		}
 		err := fmt.Errorf("mission memory delete error: %s", resp.Error.Message)
@@ -461,17 +417,11 @@ func (m *callbackMissionMemory) Search(ctx context.Context, query string, limit 
 
 	results := make([]memory.Result, 0, len(resp.Results))
 	for _, r := range resp.Results {
-		// Deserialize value
-		var value any
-		if err := json.Unmarshal([]byte(r.ValueJson), &value); err != nil {
-			continue // Skip items with invalid JSON
-		}
+		// Convert value from TypedValue
+		value := FromTypedValue(r.Value)
 
-		// Deserialize metadata
-		var metadata map[string]any
-		if r.MetadataJson != "" {
-			json.Unmarshal([]byte(r.MetadataJson), &metadata)
-		}
+		// Convert metadata from TypedMap
+		metadata := FromTypedMap(r.Metadata)
 
 		// Parse timestamps
 		var createdAt, updatedAt time.Time
@@ -535,17 +485,11 @@ func (m *callbackMissionMemory) History(ctx context.Context, limit int) ([]memor
 
 	items := make([]memory.Item, 0, len(resp.Items))
 	for _, item := range resp.Items {
-		// Deserialize value
-		var value any
-		if err := json.Unmarshal([]byte(item.ValueJson), &value); err != nil {
-			continue // Skip items with invalid JSON
-		}
+		// Convert value from TypedValue
+		value := FromTypedValue(item.Value)
 
-		// Deserialize metadata
-		var metadata map[string]any
-		if item.MetadataJson != "" {
-			json.Unmarshal([]byte(item.MetadataJson), &metadata)
-		}
+		// Convert metadata from TypedMap
+		metadata := FromTypedMap(item.Metadata)
 
 		// Parse timestamps
 		var createdAt, updatedAt time.Time
@@ -598,20 +542,22 @@ func (m *callbackMissionMemory) GetPreviousRunValue(ctx context.Context, key str
 	}
 
 	if resp.Error != nil {
-		switch resp.Error.Code {
-		case "NO_PREVIOUS_RUN":
+		// Use custom string codes for mission memory continuity errors
+		// These aren't standardized error codes in proto.ErrorCode
+		if resp.Error.Message == "NO_PREVIOUS_RUN" {
 			return nil, memory.ErrNoPreviousRun
-		case "CONTINUITY_NOT_SUPPORTED":
+		}
+		if resp.Error.Message == "CONTINUITY_NOT_SUPPORTED" {
 			return nil, memory.ErrContinuityNotSupported
-		case "NOT_FOUND":
+		}
+		if resp.Error.Code == proto.ErrorCode_ERROR_CODE_NOT_FOUND {
 			span.SetAttributes(attribute.Bool("gibson.memory.found", false))
 			return nil, memory.ErrNotFound
-		default:
-			err := fmt.Errorf("mission memory get previous run value error: %s", resp.Error.Message)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, resp.Error.Message)
-			return nil, err
 		}
+		err := fmt.Errorf("mission memory get previous run value error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
 	}
 
 	if !resp.Found {
@@ -621,13 +567,8 @@ func (m *callbackMissionMemory) GetPreviousRunValue(ctx context.Context, key str
 
 	span.SetAttributes(attribute.Bool("gibson.memory.found", true))
 
-	// Deserialize the value from JSON
-	var value any
-	if err := json.Unmarshal([]byte(resp.ValueJson), &value); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
+	// Convert the value from TypedValue
+	value := FromTypedValue(resp.Value)
 
 	return value, nil
 }
@@ -661,7 +602,8 @@ func (m *callbackMissionMemory) GetValueHistory(ctx context.Context, key string)
 	}
 
 	if resp.Error != nil {
-		if resp.Error.Code == "CONTINUITY_NOT_SUPPORTED" {
+		// Use custom string codes for mission memory continuity errors
+		if resp.Error.Message == "CONTINUITY_NOT_SUPPORTED" {
 			return nil, memory.ErrContinuityNotSupported
 		}
 		err := fmt.Errorf("mission memory get value history error: %s", resp.Error.Message)
@@ -672,11 +614,8 @@ func (m *callbackMissionMemory) GetValueHistory(ctx context.Context, key string)
 
 	values := make([]memory.HistoricalValue, 0, len(resp.Values))
 	for _, v := range resp.Values {
-		// Deserialize value
-		var value any
-		if err := json.Unmarshal([]byte(v.ValueJson), &value); err != nil {
-			continue // Skip items with invalid JSON
-		}
+		// Convert value from TypedValue
+		value := FromTypedValue(v.Value)
 
 		// Parse timestamp
 		var storedAt time.Time
@@ -756,21 +695,9 @@ func (m *callbackLongTermMemory) Store(ctx context.Context, content string, meta
 		return "", err
 	}
 
-	// Serialize metadata to JSON
-	var metadataJSON string
-	if metadata != nil {
-		metaBytes, err := json.Marshal(metadata)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return "", fmt.Errorf("failed to marshal metadata: %w", err)
-		}
-		metadataJSON = string(metaBytes)
-	}
-
 	req := &proto.LongTermMemoryStoreRequest{
-		Content:      content,
-		MetadataJson: metadataJSON,
+		Content:  content,
+		Metadata: ToTypedMap(metadata),
 	}
 
 	resp, err := m.client.LongTermMemoryStore(ctx, req)
@@ -809,22 +736,10 @@ func (m *callbackLongTermMemory) Search(ctx context.Context, query string, topK 
 		return nil, err
 	}
 
-	// Serialize filters to JSON
-	var filtersJSON string
-	if filters != nil {
-		filterBytes, err := json.Marshal(filters)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return nil, fmt.Errorf("failed to marshal filters: %w", err)
-		}
-		filtersJSON = string(filterBytes)
-	}
-
 	req := &proto.LongTermMemorySearchRequest{
-		Query:       query,
-		TopK:        int32(topK),
-		FiltersJson: filtersJSON,
+		Query:   query,
+		TopK:    int32(topK),
+		Filters: ToTypedMap(filters),
 	}
 
 	resp, err := m.client.LongTermMemorySearch(ctx, req)
@@ -843,11 +758,8 @@ func (m *callbackLongTermMemory) Search(ctx context.Context, query string, topK 
 
 	results := make([]memory.Result, 0, len(resp.Results))
 	for _, r := range resp.Results {
-		// Deserialize metadata
-		var metadata map[string]any
-		if r.MetadataJson != "" {
-			json.Unmarshal([]byte(r.MetadataJson), &metadata)
-		}
+		// Convert metadata from TypedMap
+		metadata := FromTypedMap(r.Metadata)
 
 		// Parse timestamps
 		var createdAt time.Time
@@ -900,7 +812,7 @@ func (m *callbackLongTermMemory) Delete(ctx context.Context, id string) error {
 	}
 
 	if resp.Error != nil {
-		if resp.Error.Code == "NOT_FOUND" {
+		if resp.Error.Code == proto.ErrorCode_ERROR_CODE_NOT_FOUND {
 			return memory.ErrNotFound
 		}
 		err := fmt.Errorf("longterm memory delete error: %s", resp.Error.Message)
