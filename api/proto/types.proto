@@ -154,4 +154,7 @@ message GraphQuery {
   string mission_run_id = 8;
   QueryScope scope = 9;
   map<string, string> filters = 10;
+  // Weights for hybrid scoring (must sum to 1.0)
+  double vector_weight = 11;
+  double graph_weight = 12;
 }

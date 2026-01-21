@@ -1056,17 +1056,20 @@ func (x *ReproStep) GetOutput() string {
 
 // GraphQuery represents a query against the knowledge graph.
 type GraphQuery struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	Embedding     []float32              `protobuf:"fixed32,2,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`
-	TopK          int32                  `protobuf:"varint,3,opt,name=top_k,json=topK,proto3" json:"top_k,omitempty"`
-	NodeTypes     []string               `protobuf:"bytes,4,rep,name=node_types,json=nodeTypes,proto3" json:"node_types,omitempty"`
-	MinScore      float64                `protobuf:"fixed64,5,opt,name=min_score,json=minScore,proto3" json:"min_score,omitempty"`
-	MaxScore      float64                `protobuf:"fixed64,6,opt,name=max_score,json=maxScore,proto3" json:"max_score,omitempty"`
-	MissionId     string                 `protobuf:"bytes,7,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
-	MissionRunId  string                 `protobuf:"bytes,8,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
-	Scope         QueryScope             `protobuf:"varint,9,opt,name=scope,proto3,enum=gibson.types.QueryScope" json:"scope,omitempty"`
-	Filters       map[string]string      `protobuf:"bytes,10,rep,name=filters,proto3" json:"filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Text         string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	Embedding    []float32              `protobuf:"fixed32,2,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`
+	TopK         int32                  `protobuf:"varint,3,opt,name=top_k,json=topK,proto3" json:"top_k,omitempty"`
+	NodeTypes    []string               `protobuf:"bytes,4,rep,name=node_types,json=nodeTypes,proto3" json:"node_types,omitempty"`
+	MinScore     float64                `protobuf:"fixed64,5,opt,name=min_score,json=minScore,proto3" json:"min_score,omitempty"`
+	MaxScore     float64                `protobuf:"fixed64,6,opt,name=max_score,json=maxScore,proto3" json:"max_score,omitempty"`
+	MissionId    string                 `protobuf:"bytes,7,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
+	MissionRunId string                 `protobuf:"bytes,8,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
+	Scope        QueryScope             `protobuf:"varint,9,opt,name=scope,proto3,enum=gibson.types.QueryScope" json:"scope,omitempty"`
+	Filters      map[string]string      `protobuf:"bytes,10,rep,name=filters,proto3" json:"filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Weights for hybrid scoring (must sum to 1.0)
+	VectorWeight  float64 `protobuf:"fixed64,11,opt,name=vector_weight,json=vectorWeight,proto3" json:"vector_weight,omitempty"`
+	GraphWeight   float64 `protobuf:"fixed64,12,opt,name=graph_weight,json=graphWeight,proto3" json:"graph_weight,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1171,6 +1174,20 @@ func (x *GraphQuery) GetFilters() map[string]string {
 	return nil
 }
 
+func (x *GraphQuery) GetVectorWeight() float64 {
+	if x != nil {
+		return x.VectorWeight
+	}
+	return 0
+}
+
+func (x *GraphQuery) GetGraphWeight() float64 {
+	if x != nil {
+		return x.GraphWeight
+	}
+	return 0
+}
+
 var File_types_proto protoreflect.FileDescriptor
 
 const file_types_proto_rawDesc = "" +
@@ -1269,7 +1286,7 @@ const file_types_proto_rawDesc = "" +
 	"\x05order\x18\x01 \x01(\x05R\x05order\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x14\n" +
 	"\x05input\x18\x03 \x01(\tR\x05input\x12\x16\n" +
-	"\x06output\x18\x04 \x01(\tR\x06output\"\x9e\x03\n" +
+	"\x06output\x18\x04 \x01(\tR\x06output\"\xe6\x03\n" +
 	"\n" +
 	"GraphQuery\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1c\n" +
@@ -1284,7 +1301,9 @@ const file_types_proto_rawDesc = "" +
 	"\x0emission_run_id\x18\b \x01(\tR\fmissionRunId\x12.\n" +
 	"\x05scope\x18\t \x01(\x0e2\x18.gibson.types.QueryScopeR\x05scope\x12?\n" +
 	"\afilters\x18\n" +
-	" \x03(\v2%.gibson.types.GraphQuery.FiltersEntryR\afilters\x1a:\n" +
+	" \x03(\v2%.gibson.types.GraphQuery.FiltersEntryR\afilters\x12#\n" +
+	"\rvector_weight\x18\v \x01(\x01R\fvectorWeight\x12!\n" +
+	"\fgraph_weight\x18\f \x01(\x01R\vgraphWeight\x1a:\n" +
 	"\fFiltersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xb5\x01\n" +

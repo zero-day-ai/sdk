@@ -880,14 +880,16 @@ func TargetInfoToProto(ti types.TargetInfo) *proto.TypedMap {
 // GraphQueryToProto converts SDK graphrag.Query to proto GraphQuery.
 func GraphQueryToProto(q graphrag.Query) *proto.GraphQuery {
 	protoQuery := &proto.GraphQuery{
-		Text:       q.Text,
-		Embedding:  convertFloat64ToFloat32(q.Embedding),
-		TopK:       int32(q.TopK),
-		NodeTypes:  q.NodeTypes,
-		MinScore:   q.MinScore,
-		MaxScore:   1.0, // Default max score
-		MissionId:  q.MissionID,
+		Text:         q.Text,
+		Embedding:    convertFloat64ToFloat32(q.Embedding),
+		TopK:         int32(q.TopK),
+		NodeTypes:    q.NodeTypes,
+		MinScore:     q.MinScore,
+		MaxScore:     1.0, // Default max score
+		MissionId:    q.MissionID,
 		MissionRunId: q.MissionRunID,
+		VectorWeight: q.VectorWeight,
+		GraphWeight:  q.GraphWeight,
 	}
 
 	// Convert scope
@@ -925,6 +927,8 @@ func ProtoToGraphQuery(pq *proto.GraphQuery) graphrag.Query {
 		MinScore:     pq.GetMinScore(),
 		MissionID:    pq.GetMissionId(),
 		MissionRunID: pq.GetMissionRunId(),
+		VectorWeight: pq.GetVectorWeight(),
+		GraphWeight:  pq.GetGraphWeight(),
 	}
 
 	// Convert scope
