@@ -1,0 +1,258 @@
+syntax = "proto3";
+package gibson.workflow;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/workflowpb";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "types.proto";
+
+// WorkflowDefinition represents a mission template/definition loaded from YAML.
+// This is the installable, shareable mission specification that can be stored
+// in git repositories and managed through the mission install/uninstall commands.
+message WorkflowDefinition {
+    // ID is the unique identifier for this workflow definition
+    string id = 1;
+
+    // Name is a human-readable name for the workflow
+    string name = 2;
+
+    // Description provides additional context about what this workflow does
+    string description = 3;
+
+    // Version is the semantic version of the workflow definition
+    string version = 4;
+
+    // TargetRef is a reference to the target (name or ID) from the YAML
+    // This needs to be resolved to a TargetID when creating a mission instance
+    string target_ref = 5;
+
+    // Nodes contains all the nodes in the workflow, indexed by node ID
+    map<string, WorkflowNode> nodes = 6;
+
+    // Edges contains all the directed edges connecting nodes in the workflow
+    repeated WorkflowEdge edges = 7;
+
+    // EntryPoints contains the IDs of nodes that can serve as entry points to the workflow
+    // These are nodes with no incoming edges
+    repeated string entry_points = 8;
+
+    // ExitPoints contains the IDs of nodes that can serve as exit points from the workflow
+    // These are nodes with no outgoing edges
+    repeated string exit_points = 9;
+
+    // Metadata contains additional custom metadata for the workflow
+    map<string, string> metadata = 10;
+
+    // Dependencies specifies required agents and tools for this workflow
+    WorkflowDependencies dependencies = 11;
+
+    // Source is the git URL this workflow was installed from (if applicable)
+    string source = 12;
+
+    // InstalledAt is the timestamp when this workflow was installed
+    google.protobuf.Timestamp installed_at = 13;
+
+    // CreatedAt is the timestamp when the workflow definition was created
+    google.protobuf.Timestamp created_at = 14;
+}
+
+// WorkflowDependencies specifies required components for a workflow
+message WorkflowDependencies {
+    // Agents lists required agent components by name or URL
+    repeated string agents = 1;
+
+    // Tools lists required tool components by name or URL
+    repeated string tools = 2;
+
+    // Plugins lists required plugin components by name or URL
+    repeated string plugins = 3;
+}
+
+// NodeType defines the type of workflow node
+enum NodeType {
+    // Sentinel value - must be first
+    NODE_TYPE_UNSPECIFIED = 0;
+
+    // Agent node executes an agent
+    NODE_TYPE_AGENT = 1;
+
+    // Tool node executes a tool
+    NODE_TYPE_TOOL = 2;
+
+    // Plugin node queries a plugin
+    NODE_TYPE_PLUGIN = 3;
+
+    // Condition node performs conditional branching
+    NODE_TYPE_CONDITION = 4;
+
+    // Parallel node executes sub-nodes in parallel
+    NODE_TYPE_PARALLEL = 5;
+
+    // Join node waits for multiple branches to complete
+    NODE_TYPE_JOIN = 6;
+}
+
+// WorkflowNode represents a single node in a workflow DAG
+message WorkflowNode {
+    // ID is the unique identifier for this node within the workflow
+    string id = 1;
+
+    // Type is the node type
+    NodeType type = 2;
+
+    // Name is a human-readable name for the node
+    string name = 3;
+
+    // Description provides additional context about this node
+    string description = 4;
+
+    // Config contains the type-specific configuration (oneof)
+    oneof config {
+        // AgentConfig for agent nodes
+        AgentNodeConfig agent_config = 5;
+
+        // ToolConfig for tool nodes
+        ToolNodeConfig tool_config = 6;
+
+        // PluginConfig for plugin nodes
+        PluginNodeConfig plugin_config = 7;
+
+        // ConditionConfig for condition nodes
+        ConditionNodeConfig condition_config = 8;
+
+        // ParallelConfig for parallel nodes
+        ParallelNodeConfig parallel_config = 9;
+    }
+
+    // Dependencies lists node IDs that must complete before this node executes
+    repeated string dependencies = 10;
+
+    // Timeout is the maximum execution time for this node
+    google.protobuf.Duration timeout = 11;
+
+    // RetryPolicy defines retry behavior for this node
+    RetryPolicy retry_policy = 12;
+
+    // DataPolicy defines data handling policy for this node
+    DataPolicy data_policy = 13;
+
+    // Metadata contains additional custom metadata for this node
+    map<string, string> metadata = 14;
+}
+
+// AgentNodeConfig contains configuration for agent nodes
+message AgentNodeConfig {
+    // AgentName is the name of the agent to execute
+    string agent_name = 1;
+
+    // Task is the agent task configuration
+    gibson.types.Task task = 2;
+}
+
+// ToolNodeConfig contains configuration for tool nodes
+message ToolNodeConfig {
+    // ToolName is the name of the tool to execute
+    string tool_name = 1;
+
+    // Input contains the tool input parameters
+    map<string, string> input = 2;
+}
+
+// PluginNodeConfig contains configuration for plugin nodes
+message PluginNodeConfig {
+    // PluginName is the name of the plugin to query
+    string plugin_name = 1;
+
+    // Method is the plugin method to call
+    string method = 2;
+
+    // Params contains the method parameters
+    map<string, string> params = 3;
+}
+
+// ConditionNodeConfig contains configuration for condition nodes
+message ConditionNodeConfig {
+    // Expression to evaluate (e.g., "result.status == 'success'")
+    string expression = 1;
+
+    // TrueBranch contains node IDs to execute if condition is true
+    repeated string true_branch = 2;
+
+    // FalseBranch contains node IDs to execute if condition is false
+    repeated string false_branch = 3;
+}
+
+// ParallelNodeConfig contains configuration for parallel nodes
+message ParallelNodeConfig {
+    // SubNodes contains the nodes to execute in parallel
+    repeated WorkflowNode sub_nodes = 1;
+
+    // MaxConcurrency limits the number of concurrent executions (0 = unlimited)
+    int32 max_concurrency = 2;
+}
+
+// BackoffStrategy defines the strategy for calculating retry delays
+enum BackoffStrategy {
+    // Sentinel value - must be first
+    BACKOFF_STRATEGY_UNSPECIFIED = 0;
+
+    // Constant returns a constant delay for all retry attempts
+    BACKOFF_STRATEGY_CONSTANT = 1;
+
+    // Linear increases the delay linearly with each retry attempt
+    BACKOFF_STRATEGY_LINEAR = 2;
+
+    // Exponential increases the delay exponentially with each retry attempt
+    BACKOFF_STRATEGY_EXPONENTIAL = 3;
+}
+
+// RetryPolicy defines the retry behavior for a workflow node
+message RetryPolicy {
+    // MaxRetries is the maximum number of retry attempts
+    int32 max_retries = 1;
+
+    // BackoffStrategy determines how delays are calculated between retries
+    BackoffStrategy backoff_strategy = 2;
+
+    // InitialDelay is the delay before the first retry attempt
+    google.protobuf.Duration initial_delay = 3;
+
+    // MaxDelay is the maximum delay between retry attempts (used for exponential backoff)
+    google.protobuf.Duration max_delay = 4;
+
+    // Multiplier is the factor by which the delay increases (used for exponential backoff)
+    double multiplier = 5;
+}
+
+// DataPolicy defines how data is handled for a node
+message DataPolicy {
+    // StoreInput determines whether to store input data in GraphRAG
+    bool store_input = 1;
+
+    // StoreOutput determines whether to store output data in GraphRAG
+    bool store_output = 2;
+
+    // Retention specifies how long to retain data (0 = forever)
+    google.protobuf.Duration retention = 3;
+
+    // Encryption determines whether data should be encrypted at rest
+    bool encryption = 4;
+
+    // AccessControl specifies who can access this data
+    repeated string access_control = 5;
+}
+
+// WorkflowEdge represents a directed edge in the workflow DAG
+message WorkflowEdge {
+    // From is the source node ID
+    string from = 1;
+
+    // To is the destination node ID
+    string to = 2;
+
+    // Condition is an optional condition that must be satisfied for the edge to be traversed
+    string condition = 3;
+
+    // Metadata contains additional metadata for the edge
+    map<string, string> metadata = 4;
+}

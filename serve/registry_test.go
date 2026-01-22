@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -126,14 +125,9 @@ func TestToolRegistrationWithMockRegistry(t *testing.T) {
 		metadata["tags"] = fmt.Sprintf("%v", mockTl.Tags())
 	}
 
-	// Serialize schemas
-	if inputSchemaBytes, err := json.Marshal(mockTl.InputSchema()); err == nil {
-		metadata["input_schema"] = string(inputSchemaBytes)
-	}
-
-	if outputSchemaBytes, err := json.Marshal(mockTl.OutputSchema()); err == nil {
-		metadata["output_schema"] = string(outputSchemaBytes)
-	}
+	// Add proto message types
+	metadata["input_message_type"] = mockTl.InputMessageType()
+	metadata["output_message_type"] = mockTl.OutputMessageType()
 
 	serviceInfo := map[string]interface{}{
 		"kind":        "tool",
@@ -162,17 +156,12 @@ func TestToolRegistrationWithMockRegistry(t *testing.T) {
 	regMetadata := registered["metadata"].(map[string]string)
 	assert.Equal(t, "Test tool for unit tests", regMetadata["description"])
 	assert.Contains(t, regMetadata, "tags")
-	assert.Contains(t, regMetadata, "input_schema")
-	assert.Contains(t, regMetadata, "output_schema")
+	assert.Contains(t, regMetadata, "input_message_type")
+	assert.Contains(t, regMetadata, "output_message_type")
 
-	// Verify schemas are valid JSON
-	var inputSchema map[string]interface{}
-	err = json.Unmarshal([]byte(regMetadata["input_schema"]), &inputSchema)
-	assert.NoError(t, err)
-
-	var outputSchema map[string]interface{}
-	err = json.Unmarshal([]byte(regMetadata["output_schema"]), &outputSchema)
-	assert.NoError(t, err)
+	// Verify proto message types
+	assert.Equal(t, "gibson.common.TypedMap", regMetadata["input_message_type"])
+	assert.Equal(t, "gibson.common.TypedMap", regMetadata["output_message_type"])
 
 	// Deregister
 	err = mockReg.Deregister(ctx, serviceInfo)
@@ -398,8 +387,8 @@ func TestMetadataExtractionCorrectness(t *testing.T) {
 			expectedFields: []string{
 				"description",
 				"tags",
-				"input_schema",
-				"output_schema",
+				"input_message_type",
+				"output_message_type",
 			},
 		},
 		{
@@ -465,14 +454,10 @@ func TestMetadataExtractionCorrectness(t *testing.T) {
 					tags:        []string{"test", "mock"},
 				}
 				metadata = map[string]string{
-					"description": mockTl.Description(),
-					"tags":        fmt.Sprintf("%v", mockTl.Tags()),
-				}
-				if inputSchemaBytes, err := json.Marshal(mockTl.InputSchema()); err == nil {
-					metadata["input_schema"] = string(inputSchemaBytes)
-				}
-				if outputSchemaBytes, err := json.Marshal(mockTl.OutputSchema()); err == nil {
-					metadata["output_schema"] = string(outputSchemaBytes)
+					"description":         mockTl.Description(),
+					"tags":                fmt.Sprintf("%v", mockTl.Tags()),
+					"input_message_type":  mockTl.InputMessageType(),
+					"output_message_type": mockTl.OutputMessageType(),
 				}
 
 			case "plugin":

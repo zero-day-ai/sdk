@@ -4,31 +4,26 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/types"
+	"google.golang.org/protobuf/proto"
 )
-
-// ExecuteFunc is a function that implements the tool's execution logic.
-type ExecuteFunc func(ctx context.Context, input map[string]any) (map[string]any, error)
 
 // Config holds the configuration for building a Tool.
 type Config struct {
-	name         string
-	version      string
-	description  string
-	tags         []string
-	inputSchema  schema.JSON
-	outputSchema schema.JSON
-	executeFunc  ExecuteFunc
+	name              string
+	version           string
+	description       string
+	tags              []string
+	inputMessageType  string
+	outputMessageType string
+	executeProtoFunc  func(ctx context.Context, input proto.Message) (proto.Message, error)
 }
 
 // NewConfig creates a new Config with default values.
 func NewConfig() *Config {
 	return &Config{
-		version:      "1.0.0",
-		tags:         []string{},
-		inputSchema:  schema.Object(map[string]schema.JSON{}, nil...),
-		outputSchema: schema.Object(map[string]schema.JSON{}, nil...),
+		version: "1.0.0",
+		tags:    []string{},
 	}
 }
 
@@ -56,37 +51,37 @@ func (c *Config) SetTags(tags []string) *Config {
 	return c
 }
 
-// SetInputSchema sets the input schema.
-func (c *Config) SetInputSchema(s schema.JSON) *Config {
-	c.inputSchema = s
+// SetInputMessageType sets the proto input message type.
+func (c *Config) SetInputMessageType(messageType string) *Config {
+	c.inputMessageType = messageType
 	return c
 }
 
-// SetOutputSchema sets the output schema.
-func (c *Config) SetOutputSchema(s schema.JSON) *Config {
-	c.outputSchema = s
+// SetOutputMessageType sets the proto output message type.
+func (c *Config) SetOutputMessageType(messageType string) *Config {
+	c.outputMessageType = messageType
 	return c
 }
 
-// SetExecuteFunc sets the execution function.
-func (c *Config) SetExecuteFunc(fn ExecuteFunc) *Config {
-	c.executeFunc = fn
+// SetExecuteProtoFunc sets the proto execution function.
+func (c *Config) SetExecuteProtoFunc(fn func(ctx context.Context, input proto.Message) (proto.Message, error)) *Config {
+	c.executeProtoFunc = fn
 	return c
 }
 
 // sdkTool is the internal implementation of the Tool interface.
 type sdkTool struct {
-	name         string
-	version      string
-	description  string
-	tags         []string
-	inputSchema  schema.JSON
-	outputSchema schema.JSON
-	executeFunc  ExecuteFunc
+	name              string
+	version           string
+	description       string
+	tags              []string
+	inputMessageType  string
+	outputMessageType string
+	executeProtoFunc  func(ctx context.Context, input proto.Message) (proto.Message, error)
 }
 
 // New creates a new Tool from the provided Config.
-// Returns an error if required fields (name, executeFunc) are missing.
+// Returns an error if required fields (name) are missing.
 func New(cfg *Config) (Tool, error) {
 	if cfg == nil {
 		return nil, errors.New("config cannot be nil")
@@ -96,18 +91,14 @@ func New(cfg *Config) (Tool, error) {
 		return nil, errors.New("tool name is required")
 	}
 
-	if cfg.executeFunc == nil {
-		return nil, errors.New("execute function is required")
-	}
-
 	return &sdkTool{
-		name:         cfg.name,
-		version:      cfg.version,
-		description:  cfg.description,
-		tags:         cfg.tags,
-		inputSchema:  cfg.inputSchema,
-		outputSchema: cfg.outputSchema,
-		executeFunc:  cfg.executeFunc,
+		name:              cfg.name,
+		version:           cfg.version,
+		description:       cfg.description,
+		tags:              cfg.tags,
+		inputMessageType:  cfg.inputMessageType,
+		outputMessageType: cfg.outputMessageType,
+		executeProtoFunc:  cfg.executeProtoFunc,
 	}, nil
 }
 
@@ -131,35 +122,22 @@ func (t *sdkTool) Tags() []string {
 	return t.tags
 }
 
-// InputSchema returns the input schema.
-func (t *sdkTool) InputSchema() schema.JSON {
-	return t.inputSchema
+// InputMessageType returns the proto message type name for input.
+func (t *sdkTool) InputMessageType() string {
+	return t.inputMessageType
 }
 
-// OutputSchema returns the output schema.
-func (t *sdkTool) OutputSchema() schema.JSON {
-	return t.outputSchema
+// OutputMessageType returns the proto message type name for output.
+func (t *sdkTool) OutputMessageType() string {
+	return t.outputMessageType
 }
 
-// Execute runs the tool's execution function.
-func (t *sdkTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
-	// Validate input against schema
-	if err := t.inputSchema.Validate(input); err != nil {
-		return nil, err
+// ExecuteProto runs the tool with proto message input/output.
+func (t *sdkTool) ExecuteProto(ctx context.Context, input proto.Message) (proto.Message, error) {
+	if t.executeProtoFunc == nil {
+		return nil, errors.New("proto execution not configured for this tool")
 	}
-
-	// Execute the tool
-	output, err := t.executeFunc(ctx, input)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate output against schema
-	if err := t.outputSchema.Validate(output); err != nil {
-		return nil, err
-	}
-
-	return output, nil
+	return t.executeProtoFunc(ctx, input)
 }
 
 // Health returns the health status of the tool.

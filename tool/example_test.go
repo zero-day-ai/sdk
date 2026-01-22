@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/tool"
+	protolib "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Example demonstrates creating and using a simple calculator tool.
+// Example demonstrates creating and using a simple calculator tool with proto messages.
 func Example() {
 	// Create a calculator tool configuration
 	cfg := tool.NewConfig().
@@ -17,18 +18,13 @@ func Example() {
 		SetVersion("1.0.0").
 		SetDescription("Performs basic arithmetic operations").
 		SetTags([]string{"math", "utility"}).
-		SetInputSchema(schema.Object(map[string]schema.JSON{
-			"operation": schema.StringWithDesc("The operation to perform: add, subtract, multiply, divide"),
-			"a":         schema.Number(),
-			"b":         schema.Number(),
-		}, "operation", "a", "b")).
-		SetOutputSchema(schema.Object(map[string]schema.JSON{
-			"result": schema.Number(),
-		}, "result")).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			op := input["operation"].(string)
-			a := input["a"].(float64)
-			b := input["b"].(float64)
+		SetInputMessageType("google.protobuf.Struct").
+		SetOutputMessageType("google.protobuf.Struct").
+		SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+			st := input.(*structpb.Struct)
+			op := st.Fields["operation"].GetStringValue()
+			a := st.Fields["a"].GetNumberValue()
+			b := st.Fields["b"].GetNumberValue()
 
 			var result float64
 			switch op {
@@ -47,7 +43,8 @@ func Example() {
 				return nil, fmt.Errorf("unknown operation: %s", op)
 			}
 
-			return map[string]any{"result": result}, nil
+			output, _ := structpb.NewStruct(map[string]any{"result": result})
+			return output, nil
 		})
 
 	// Create the tool
@@ -57,16 +54,18 @@ func Example() {
 	}
 
 	// Execute the tool
-	result, err := calculator.Execute(context.Background(), map[string]any{
+	inputMsg, _ := structpb.NewStruct(map[string]any{
 		"operation": "add",
 		"a":         5.0,
 		"b":         3.0,
 	})
+	result, err := calculator.ExecuteProto(context.Background(), inputMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Result: %.0f\n", result["result"])
+	resultStruct := result.(*structpb.Struct)
+	fmt.Printf("Result: %.0f\n", resultStruct.Fields["result"].GetNumberValue())
 
 	// Output:
 	// Result: 8
@@ -79,17 +78,7 @@ func ExampleToDescriptor() {
 		SetName("greeter").
 		SetVersion("1.0.0").
 		SetDescription("Greets users by name").
-		SetTags([]string{"greeting", "example"}).
-		SetInputSchema(schema.Object(map[string]schema.JSON{
-			"name": schema.String(),
-		}, "name")).
-		SetOutputSchema(schema.Object(map[string]schema.JSON{
-			"message": schema.String(),
-		}, "message")).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			name := input["name"].(string)
-			return map[string]any{"message": fmt.Sprintf("Hello, %s!", name)}, nil
-		})
+		SetTags([]string{"greeting", "example"})
 
 	greeter, err := tool.New(cfg)
 	if err != nil {
@@ -111,11 +100,7 @@ func ExampleToDescriptor() {
 
 // ExampleTool_Health demonstrates checking tool health.
 func ExampleTool_Health() {
-	cfg := tool.NewConfig().
-		SetName("health-check-example").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return map[string]any{}, nil
-		})
+	cfg := tool.NewConfig().SetName("health-check-example")
 
 	t, err := tool.New(cfg)
 	if err != nil {
@@ -131,26 +116,24 @@ func ExampleTool_Health() {
 	// Tool is operational
 }
 
-// ExampleNew demonstrates creating a tool with validation.
+// ExampleNew demonstrates creating a tool with proto execution.
 func ExampleNew() {
-	// Create a tool with input and output validation
+	// Create a tool with proto-based execution
 	cfg := tool.NewConfig().
 		SetName("string-reverser").
 		SetVersion("1.0.0").
 		SetDescription("Reverses a string").
-		SetInputSchema(schema.Object(map[string]schema.JSON{
-			"text": schema.String(),
-		}, "text")).
-		SetOutputSchema(schema.Object(map[string]schema.JSON{
-			"reversed": schema.String(),
-		}, "reversed")).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			text := input["text"].(string)
+		SetInputMessageType("google.protobuf.Struct").
+		SetOutputMessageType("google.protobuf.Struct").
+		SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+			st := input.(*structpb.Struct)
+			text := st.Fields["text"].GetStringValue()
 			runes := []rune(text)
 			for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 				runes[i], runes[j] = runes[j], runes[i]
 			}
-			return map[string]any{"reversed": string(runes)}, nil
+			output, _ := structpb.NewStruct(map[string]any{"reversed": string(runes)})
+			return output, nil
 		})
 
 	reverser, err := tool.New(cfg)
@@ -158,14 +141,14 @@ func ExampleNew() {
 		log.Fatal(err)
 	}
 
-	result, err := reverser.Execute(context.Background(), map[string]any{
-		"text": "hello",
-	})
+	inputMsg, _ := structpb.NewStruct(map[string]any{"text": "hello"})
+	result, err := reverser.ExecuteProto(context.Background(), inputMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(result["reversed"])
+	resultStruct := result.(*structpb.Struct)
+	fmt.Println(resultStruct.Fields["reversed"].GetStringValue())
 
 	// Output:
 	// olleh
@@ -175,10 +158,7 @@ func ExampleNew() {
 func ExampleConfig_SetTags() {
 	cfg := tool.NewConfig().
 		SetName("tagged-tool").
-		SetTags([]string{"data", "transformation", "utility"}).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return map[string]any{}, nil
-		})
+		SetTags([]string{"data", "transformation", "utility"})
 
 	t, err := tool.New(cfg)
 	if err != nil {

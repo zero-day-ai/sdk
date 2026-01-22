@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/types"
+	protolib "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -57,31 +58,26 @@ func TestConfig_Setters(t *testing.T) {
 		t.Errorf("SetTags() tags length = %v, want %v", len(cfg.tags), len(tags))
 	}
 
-	// Test SetInputSchema
-	inputSchema := schema.Object(map[string]schema.JSON{
-		"message": schema.String(),
-	})
-	cfg.SetInputSchema(inputSchema)
-	if cfg.inputSchema.Type != "object" {
-		t.Errorf("SetInputSchema() type = %v, want %v", cfg.inputSchema.Type, "object")
+	// Test SetInputMessageType
+	cfg.SetInputMessageType("test.v1.TestRequest")
+	if cfg.inputMessageType != "test.v1.TestRequest" {
+		t.Errorf("SetInputMessageType() type = %v, want %v", cfg.inputMessageType, "test.v1.TestRequest")
 	}
 
-	// Test SetOutputSchema
-	outputSchema := schema.Object(map[string]schema.JSON{
-		"result": schema.String(),
-	})
-	cfg.SetOutputSchema(outputSchema)
-	if cfg.outputSchema.Type != "object" {
-		t.Errorf("SetOutputSchema() type = %v, want %v", cfg.outputSchema.Type, "object")
+	// Test SetOutputMessageType
+	cfg.SetOutputMessageType("test.v1.TestResponse")
+	if cfg.outputMessageType != "test.v1.TestResponse" {
+		t.Errorf("SetOutputMessageType() type = %v, want %v", cfg.outputMessageType, "test.v1.TestResponse")
 	}
 
-	// Test SetExecuteFunc
-	executeFunc := func(ctx context.Context, input map[string]any) (map[string]any, error) {
-		return map[string]any{"result": "success"}, nil
+	// Test SetExecuteProtoFunc
+	executeProtoFunc := func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+		result, _ := structpb.NewStruct(map[string]any{"result": "success"})
+		return result, nil
 	}
-	cfg.SetExecuteFunc(executeFunc)
-	if cfg.executeFunc == nil {
-		t.Error("SetExecuteFunc() executeFunc should not be nil")
+	cfg.SetExecuteProtoFunc(executeProtoFunc)
+	if cfg.executeProtoFunc == nil {
+		t.Error("SetExecuteProtoFunc() executeProtoFunc should not be nil")
 	}
 }
 
@@ -123,25 +119,25 @@ func TestNew(t *testing.T) {
 			errMsg:  "config cannot be nil",
 		},
 		{
-			name: "missing name",
-			config: NewConfig().SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return nil, nil
-			}),
+			name:    "missing name",
+			config:  NewConfig().SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) { return nil, nil }),
 			wantErr: true,
 			errMsg:  "tool name is required",
 		},
 		{
-			name:    "missing execute function",
+			name:    "valid config with name only",
 			config:  NewConfig().SetName("test-tool"),
-			wantErr: true,
-			errMsg:  "execute function is required",
+			wantErr: false,
 		},
 		{
-			name: "valid config",
+			name: "valid config with proto execution",
 			config: NewConfig().
 				SetName("valid-tool").
-				SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-					return map[string]any{"result": "ok"}, nil
+				SetInputMessageType("google.protobuf.Struct").
+				SetOutputMessageType("google.protobuf.Struct").
+				SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+					result, _ := structpb.NewStruct(map[string]any{"result": "ok"})
+					return result, nil
 				}),
 			wantErr: false,
 		},
@@ -175,11 +171,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestSdkTool_Name(t *testing.T) {
-	cfg := NewConfig().
-		SetName("test-tool").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+	cfg := NewConfig().SetName("test-tool")
 
 	tool, err := New(cfg)
 	if err != nil {
@@ -194,10 +186,7 @@ func TestSdkTool_Name(t *testing.T) {
 func TestSdkTool_Version(t *testing.T) {
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetVersion("2.5.1").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+		SetVersion("2.5.1")
 
 	tool, err := New(cfg)
 	if err != nil {
@@ -212,10 +201,7 @@ func TestSdkTool_Version(t *testing.T) {
 func TestSdkTool_Description(t *testing.T) {
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetDescription("Test description").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+		SetDescription("Test description")
 
 	tool, err := New(cfg)
 	if err != nil {
@@ -231,10 +217,7 @@ func TestSdkTool_Tags(t *testing.T) {
 	tags := []string{"test", "mock", "utility"}
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetTags(tags).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+		SetTags(tags)
 
 	tool, err := New(cfg)
 	if err != nil {
@@ -253,132 +236,80 @@ func TestSdkTool_Tags(t *testing.T) {
 	}
 }
 
-func TestSdkTool_InputSchema(t *testing.T) {
-	inputSchema := schema.Object(map[string]schema.JSON{
-		"name":  schema.String(),
-		"age":   schema.Int(),
-		"email": schema.String(),
-	}, "name", "email")
-
+func TestSdkTool_InputMessageType(t *testing.T) {
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetInputSchema(inputSchema).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+		SetInputMessageType("test.v1.TestRequest")
 
 	tool, err := New(cfg)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got := tool.InputSchema()
-	if got.Type != "object" {
-		t.Errorf("InputSchema().Type = %v, want object", got.Type)
-	}
-
-	if len(got.Required) != 2 {
-		t.Errorf("InputSchema().Required length = %v, want 2", len(got.Required))
+	got := tool.InputMessageType()
+	if got != "test.v1.TestRequest" {
+		t.Errorf("InputMessageType() = %v, want %v", got, "test.v1.TestRequest")
 	}
 }
 
-func TestSdkTool_OutputSchema(t *testing.T) {
-	outputSchema := schema.Object(map[string]schema.JSON{
-		"status":  schema.String(),
-		"message": schema.String(),
-	}, "status")
-
+func TestSdkTool_OutputMessageType(t *testing.T) {
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetOutputSchema(outputSchema).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+		SetOutputMessageType("test.v1.TestResponse")
 
 	tool, err := New(cfg)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got := tool.OutputSchema()
-	if got.Type != "object" {
-		t.Errorf("OutputSchema().Type = %v, want object", got.Type)
-	}
-
-	if len(got.Required) != 1 {
-		t.Errorf("OutputSchema().Required length = %v, want 1", len(got.Required))
+	got := tool.OutputMessageType()
+	if got != "test.v1.TestResponse" {
+		t.Errorf("OutputMessageType() = %v, want %v", got, "test.v1.TestResponse")
 	}
 }
 
-func TestSdkTool_Execute(t *testing.T) {
+func TestSdkTool_ExecuteProto(t *testing.T) {
 	tests := []struct {
-		name           string
-		inputSchema    schema.JSON
-		outputSchema   schema.JSON
-		executeFunc    ExecuteFunc
-		input          map[string]any
-		wantOutput     map[string]any
-		wantErr        bool
-		checkOutputVal bool
+		name             string
+		executeProtoFunc func(ctx context.Context, input protolib.Message) (protolib.Message, error)
+		input            protolib.Message
+		wantErr          bool
+		checkOutput      func(t *testing.T, output protolib.Message)
 	}{
 		{
 			name: "successful execution",
-			inputSchema: schema.Object(map[string]schema.JSON{
-				"value": schema.Int(),
-			}, "value"),
-			outputSchema: schema.Object(map[string]schema.JSON{
-				"doubled": schema.Int(),
-			}, "doubled"),
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				value := input["value"].(int)
-				return map[string]any{"doubled": value * 2}, nil
+			executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+				st := input.(*structpb.Struct)
+				value := st.Fields["value"].GetNumberValue()
+				result, _ := structpb.NewStruct(map[string]any{"doubled": value * 2})
+				return result, nil
 			},
-			input:          map[string]any{"value": 5},
-			wantOutput:     map[string]any{"doubled": 10},
-			wantErr:        false,
-			checkOutputVal: true,
-		},
-		{
-			name: "invalid input",
-			inputSchema: schema.Object(map[string]schema.JSON{
-				"value": schema.Int(),
-			}, "value"),
-			outputSchema: schema.Object(map[string]schema.JSON{
-				"result": schema.String(),
-			}),
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return map[string]any{"result": "ok"}, nil
+			input: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"value": structpb.NewNumberValue(5),
+				},
 			},
-			input:   map[string]any{"wrong": "field"},
-			wantErr: true,
+			wantErr: false,
+			checkOutput: func(t *testing.T, output protolib.Message) {
+				st := output.(*structpb.Struct)
+				if st.Fields["doubled"].GetNumberValue() != 10 {
+					t.Errorf("ExecuteProto() doubled = %v, want 10", st.Fields["doubled"].GetNumberValue())
+				}
+			},
 		},
 		{
 			name: "execution error",
-			inputSchema: schema.Object(map[string]schema.JSON{
-				"value": schema.Int(),
-			}),
-			outputSchema: schema.Object(map[string]schema.JSON{
-				"result": schema.String(),
-			}),
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
+			executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
 				return nil, errors.New("execution failed")
 			},
-			input:   map[string]any{"value": 5},
+			input:   &structpb.Struct{},
 			wantErr: true,
 		},
 		{
-			name: "invalid output",
-			inputSchema: schema.Object(map[string]schema.JSON{
-				"value": schema.Int(),
-			}),
-			outputSchema: schema.Object(map[string]schema.JSON{
-				"result": schema.String(),
-			}, "result"),
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return map[string]any{"wrong": "field"}, nil
-			},
-			input:   map[string]any{"value": 5},
-			wantErr: true,
+			name:             "no execution function configured",
+			executeProtoFunc: nil,
+			input:            &structpb.Struct{},
+			wantErr:          true,
 		},
 	}
 
@@ -386,53 +317,48 @@ func TestSdkTool_Execute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewConfig().
 				SetName("test-tool").
-				SetInputSchema(tt.inputSchema).
-				SetOutputSchema(tt.outputSchema).
-				SetExecuteFunc(tt.executeFunc)
+				SetInputMessageType("google.protobuf.Struct").
+				SetOutputMessageType("google.protobuf.Struct").
+				SetExecuteProtoFunc(tt.executeProtoFunc)
 
 			tool, err := New(cfg)
 			if err != nil {
 				t.Fatalf("New() error = %v", err)
 			}
 
-			got, err := tool.Execute(context.Background(), tt.input)
+			got, err := tool.ExecuteProto(context.Background(), tt.input)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Execute() error = nil, wantErr %v", tt.wantErr)
+					t.Errorf("ExecuteProto() error = nil, wantErr %v", tt.wantErr)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("Execute() unexpected error = %v", err)
+				t.Errorf("ExecuteProto() unexpected error = %v", err)
 				return
 			}
 
-			if tt.checkOutputVal {
-				if got == nil {
-					t.Error("Execute() returned nil output")
-					return
-				}
-				if got["doubled"] != tt.wantOutput["doubled"] {
-					t.Errorf("Execute() output = %v, want %v", got, tt.wantOutput)
-				}
+			if tt.checkOutput != nil {
+				tt.checkOutput(t, got)
 			}
 		})
 	}
 }
 
-func TestSdkTool_Execute_ContextCancellation(t *testing.T) {
+func TestSdkTool_ExecuteProto_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cfg := NewConfig().
 		SetName("test-tool").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
+		SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			default:
-				return map[string]any{"result": "ok"}, nil
+				result, _ := structpb.NewStruct(map[string]any{"result": "ok"})
+				return result, nil
 			}
 		})
 
@@ -443,18 +369,14 @@ func TestSdkTool_Execute_ContextCancellation(t *testing.T) {
 
 	cancel() // Cancel context before execution
 
-	_, err = tool.Execute(ctx, map[string]any{})
+	_, err = tool.ExecuteProto(ctx, &structpb.Struct{})
 	if err != context.Canceled {
-		t.Errorf("Execute() with canceled context error = %v, want %v", err, context.Canceled)
+		t.Errorf("ExecuteProto() with canceled context error = %v, want %v", err, context.Canceled)
 	}
 }
 
 func TestSdkTool_Health(t *testing.T) {
-	cfg := NewConfig().
-		SetName("test-tool").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return nil, nil
-		})
+	cfg := NewConfig().SetName("test-tool")
 
 	tool, err := New(cfg)
 	if err != nil {

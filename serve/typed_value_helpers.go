@@ -563,6 +563,7 @@ func findingStatusToProto(s finding.Status) proto.FindingStatus {
 func findingStatusFromProto(s proto.FindingStatus) finding.Status {
 	return statusFromProto(s)
 }
+
 // ProtoToTask converts a proto Task to SDK agent.Task.
 func ProtoToTask(pt *proto.Task) agent.Task {
 	if pt == nil {
@@ -892,18 +893,6 @@ func GraphQueryToProto(q graphrag.Query) *proto.GraphQuery {
 		GraphWeight:  q.GraphWeight,
 	}
 
-	// Convert scope
-	switch q.Scope {
-	case graphrag.ScopeMissionRun:
-		protoQuery.Scope = proto.QueryScope_QUERY_SCOPE_MISSION_RUN
-	case graphrag.ScopeMission:
-		protoQuery.Scope = proto.QueryScope_QUERY_SCOPE_MISSION
-	case graphrag.ScopeGlobal:
-		protoQuery.Scope = proto.QueryScope_QUERY_SCOPE_GLOBAL
-	default:
-		protoQuery.Scope = proto.QueryScope_QUERY_SCOPE_MISSION_RUN // Default
-	}
-
 	// Convert filters map
 	if len(q.NodeTypes) > 0 {
 		protoQuery.Filters = make(map[string]string)
@@ -929,18 +918,6 @@ func ProtoToGraphQuery(pq *proto.GraphQuery) graphrag.Query {
 		MissionRunID: pq.GetMissionRunId(),
 		VectorWeight: pq.GetVectorWeight(),
 		GraphWeight:  pq.GetGraphWeight(),
-	}
-
-	// Convert scope
-	switch pq.GetScope() {
-	case proto.QueryScope_QUERY_SCOPE_MISSION_RUN:
-		query.Scope = graphrag.ScopeMissionRun
-	case proto.QueryScope_QUERY_SCOPE_MISSION:
-		query.Scope = graphrag.ScopeMission
-	case proto.QueryScope_QUERY_SCOPE_GLOBAL:
-		query.Scope = graphrag.ScopeGlobal
-	default:
-		query.Scope = graphrag.ScopeMissionRun // Default
 	}
 
 	return query

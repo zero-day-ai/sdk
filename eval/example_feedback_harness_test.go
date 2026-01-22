@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/eval"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
@@ -20,6 +22,7 @@ import (
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // ExampleNewFeedbackHarness demonstrates basic usage of FeedbackHarness
@@ -51,7 +54,7 @@ func ExampleNewFeedbackHarness() {
 	// Perform some agent operations
 	messages := []llm.Message{{Role: "user", Content: "Analyze target"}}
 	_, _ = fh.Complete(ctx, "primary", messages)
-	_, _ = fh.CallTool(ctx, "nmap", map[string]any{"target": "example.com"})
+	_ = fh.CallToolProto(ctx, "nmap", &toolspb.NmapRequest{Targets: []string{"example.com"}}, &toolspb.NmapResponse{})
 
 	// Wait for async evaluation
 	time.Sleep(500 * time.Millisecond)
@@ -154,21 +157,12 @@ func (e *exampleHarness) Stream(ctx context.Context, slot string, messages []llm
 	return ch, nil
 }
 
-func (e *exampleHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	return map[string]any{"result": "success"}, nil
+func (e *exampleHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	return nil
 }
 
 func (e *exampleHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	return nil, nil
-}
-
-func (e *exampleHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	results := make([]agent.ToolResult, len(calls))
-	for i, call := range calls {
-		output, err := e.CallTool(ctx, call.Name, call.Input)
-		results[i] = agent.ToolResult{Name: call.Name, Output: output, Error: err}
-	}
-	return results, nil
 }
 
 func (e *exampleHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
@@ -227,6 +221,10 @@ func (e *exampleHarness) TokenUsage() llm.TokenTracker {
 	return nil
 }
 
+func (e *exampleHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	return nil, nil
+}
+
 func (e *exampleHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return nil, nil
 }
@@ -253,6 +251,10 @@ func (e *exampleHarness) GetAttackChains(ctx context.Context, techniqueID string
 
 func (e *exampleHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return nil, nil
+}
+
+func (e *exampleHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	return "node-id", nil
 }
 
 func (e *exampleHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
@@ -297,10 +299,6 @@ func (e *exampleHarness) GetPreviousRunFindings(ctx context.Context, filter find
 
 func (e *exampleHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return []*finding.Finding{}, nil
-}
-
-func (e *exampleHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
 }
 
 // MissionManager methods - stubs for testing

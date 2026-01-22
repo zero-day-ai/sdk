@@ -4,6 +4,7 @@ option go_package = "github.com/zero-day-ai/sdk/api/gen/proto";
 
 import "common.proto";
 import "types.proto";
+import "graphrag.proto";
 
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
@@ -61,6 +62,10 @@ service HarnessCallbackService {
     rpc StoreGraphBatch(StoreGraphBatchRequest) returns (StoreGraphBatchResponse);
     rpc TraverseGraph(TraverseGraphRequest) returns (TraverseGraphResponse);
     rpc GraphRAGHealth(GraphRAGHealthRequest) returns (GraphRAGHealthResponse);
+
+    // Proto-canonical GraphRAG Operations (uses graphragpb types)
+    rpc StoreNode(StoreNodeRequest) returns (StoreNodeResponse);
+    rpc QueryNodes(QueryNodesRequest) returns (QueryNodesResponse);
 
     // Planning Operations
     rpc GetPlanContext(GetPlanContextRequest) returns (GetPlanContextResponse);
@@ -769,6 +774,34 @@ message GraphRAGHealthRequest {
 
 message GraphRAGHealthResponse {
     HarnessHealthStatus status = 1;
+}
+
+// ============================================================================
+// Proto-Canonical GraphRAG Operations (uses graphragpb types)
+// ============================================================================
+
+// StoreNodeRequest stores a graph node using the canonical graphragpb.GraphNode type.
+message StoreNodeRequest {
+    ContextInfo context = 1;
+    gibson.graphrag.GraphNode node = 2;
+}
+
+// StoreNodeResponse returns the stored node ID.
+message StoreNodeResponse {
+    string node_id = 1;
+    HarnessError error = 2;
+}
+
+// QueryNodesRequest queries graph nodes using the canonical graphragpb.GraphQuery type.
+message QueryNodesRequest {
+    ContextInfo context = 1;
+    gibson.graphrag.GraphQuery query = 2;
+}
+
+// QueryNodesResponse returns query results using the canonical graphragpb.QueryResult type.
+message QueryNodesResponse {
+    repeated gibson.graphrag.QueryResult results = 1;
+    HarnessError error = 2;
 }
 
 // ============================================================================

@@ -4,21 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zero-day-ai/sdk/schema"
+	protolib "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestToDescriptor(t *testing.T) {
 	// Create a test tool
-	inputSchema := schema.Object(map[string]schema.JSON{
-		"message": schema.String(),
-		"count":   schema.Int(),
-	}, "message")
-
-	outputSchema := schema.Object(map[string]schema.JSON{
-		"result": schema.String(),
-		"total":  schema.Int(),
-	}, "result")
-
 	tags := []string{"test", "mock", "utility"}
 
 	cfg := NewConfig().
@@ -26,10 +17,11 @@ func TestToDescriptor(t *testing.T) {
 		SetVersion("1.2.3").
 		SetDescription("A test tool for demonstration").
 		SetTags(tags).
-		SetInputSchema(inputSchema).
-		SetOutputSchema(outputSchema).
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return map[string]any{"result": "ok", "total": 42}, nil
+		SetInputMessageType("test.v1.TestRequest").
+		SetOutputMessageType("test.v1.TestResponse").
+		SetExecuteProtoFunc(func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+			result, _ := structpb.NewStruct(map[string]any{"result": "ok", "total": 42})
+			return result, nil
 		})
 
 	tool, err := New(cfg)
@@ -62,31 +54,11 @@ func TestToDescriptor(t *testing.T) {
 			t.Errorf("ToDescriptor() Tags[%d] = %v, want %v", i, tag, tags[i])
 		}
 	}
-
-	if desc.InputSchema.Type != "object" {
-		t.Errorf("ToDescriptor() InputSchema.Type = %v, want object", desc.InputSchema.Type)
-	}
-
-	if len(desc.InputSchema.Properties) != 2 {
-		t.Errorf("ToDescriptor() InputSchema properties count = %v, want 2", len(desc.InputSchema.Properties))
-	}
-
-	if desc.OutputSchema.Type != "object" {
-		t.Errorf("ToDescriptor() OutputSchema.Type = %v, want object", desc.OutputSchema.Type)
-	}
-
-	if len(desc.OutputSchema.Properties) != 2 {
-		t.Errorf("ToDescriptor() OutputSchema properties count = %v, want 2", len(desc.OutputSchema.Properties))
-	}
 }
 
 func TestToDescriptor_EmptyFields(t *testing.T) {
 	// Create a minimal tool
-	cfg := NewConfig().
-		SetName("minimal-tool").
-		SetExecuteFunc(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-			return map[string]any{}, nil
-		})
+	cfg := NewConfig().SetName("minimal-tool")
 
 	tool, err := New(cfg)
 	if err != nil {
@@ -114,21 +86,13 @@ func TestToDescriptor_EmptyFields(t *testing.T) {
 
 func TestToDescriptor_WithMockTool(t *testing.T) {
 	// Test with mock tool implementation
-	mockInputSchema := schema.Object(map[string]schema.JSON{
-		"id": schema.String(),
-	})
-
-	mockOutputSchema := schema.Object(map[string]schema.JSON{
-		"status": schema.String(),
-	})
-
 	mock := &mockTool{
-		name:         "mock-tool",
-		version:      "2.0.0",
-		description:  "Mock tool description",
-		tags:         []string{"mock"},
-		inputSchema:  mockInputSchema,
-		outputSchema: mockOutputSchema,
+		name:              "mock-tool",
+		version:           "2.0.0",
+		description:       "Mock tool description",
+		tags:              []string{"mock"},
+		inputMessageType:  "test.v1.MockRequest",
+		outputMessageType: "test.v1.MockResponse",
 	}
 
 	desc := ToDescriptor(mock)
@@ -148,14 +112,6 @@ func TestToDescriptor_WithMockTool(t *testing.T) {
 	if len(desc.Tags) != 1 || desc.Tags[0] != "mock" {
 		t.Errorf("ToDescriptor() Tags = %v, want [mock]", desc.Tags)
 	}
-
-	if desc.InputSchema.Type != "object" {
-		t.Errorf("ToDescriptor() InputSchema.Type = %v, want object", desc.InputSchema.Type)
-	}
-
-	if desc.OutputSchema.Type != "object" {
-		t.Errorf("ToDescriptor() OutputSchema.Type = %v, want object", desc.OutputSchema.Type)
-	}
 }
 
 func TestDescriptor_Serialization(t *testing.T) {
@@ -165,12 +121,6 @@ func TestDescriptor_Serialization(t *testing.T) {
 		Version:     "1.0.0",
 		Description: "Test serialization",
 		Tags:        []string{"test"},
-		InputSchema: schema.Object(map[string]schema.JSON{
-			"input": schema.String(),
-		}),
-		OutputSchema: schema.Object(map[string]schema.JSON{
-			"output": schema.String(),
-		}),
 	}
 
 	// Verify struct tags are properly defined for JSON serialization

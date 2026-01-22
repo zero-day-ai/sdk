@@ -5,74 +5,6 @@ import (
 	"fmt"
 )
 
-// MissionScope defines the scope for GraphRAG queries
-type MissionScope int
-
-const (
-	// ScopeMissionRun queries only the current mission run (default)
-	ScopeMissionRun MissionScope = iota
-
-	// ScopeMission queries all runs of the current mission
-	ScopeMission
-
-	// ScopeGlobal queries all missions (no filtering)
-	ScopeGlobal
-
-	// Legacy aliases for backward compatibility
-	ScopeCurrentRun  = ScopeMissionRun
-	ScopeSameMission = ScopeMission
-	ScopeAll         = ScopeGlobal
-)
-
-// DefaultMissionScope is the default scope for queries
-const DefaultMissionScope = ScopeMissionRun
-
-// String returns the string representation of the MissionScope
-func (s MissionScope) String() string {
-	switch s {
-	case ScopeMissionRun:
-		return "mission_run"
-	case ScopeMission:
-		return "mission"
-	case ScopeGlobal:
-		return "global"
-	default:
-		return fmt.Sprintf("MissionScope(%d)", s)
-	}
-}
-
-// IsValid returns true if the scope is a valid value
-func (s MissionScope) IsValid() bool {
-	return s >= ScopeMissionRun && s <= ScopeGlobal
-}
-
-// ParseMissionScope parses a string into a MissionScope value
-func ParseMissionScope(s string) (MissionScope, error) {
-	switch s {
-	case "mission_run", "current_run":
-		return ScopeMissionRun, nil
-	case "mission", "same_mission":
-		return ScopeMission, nil
-	case "global", "all":
-		return ScopeGlobal, nil
-	default:
-		return 0, fmt.Errorf("invalid mission scope: %s", s)
-	}
-}
-
-// Validate returns an error if the mission scope is invalid
-func (s MissionScope) Validate() error {
-	if !s.IsValid() {
-		return fmt.Errorf("invalid mission scope value: %d", s)
-	}
-	return nil
-}
-
-// AllMissionScopes returns all valid mission scope values
-func AllMissionScopes() []MissionScope {
-	return []MissionScope{ScopeMissionRun, ScopeMission, ScopeGlobal}
-}
-
 // Query represents a GraphRAG query with fluent builder pattern.
 // It supports both natural language text queries (which will be embedded)
 // and pre-computed embeddings, along with various filtering and scoring options.
@@ -103,10 +35,6 @@ type Query struct {
 
 	// GraphWeight is the weight for graph structure scoring
 	GraphWeight float64 `json:"graph_weight"`
-
-	// Scope determines what data is visible (default: ScopeMissionRun)
-	// This is the new mission-scoped storage scope system
-	Scope MissionScope `json:"scope,omitempty"`
 
 	// MissionRunID is set by harness (not agent) for mission-run scoped queries
 	MissionRunID string `json:"-"`
@@ -225,13 +153,6 @@ func (q *Query) WithWeights(vector, graph float64) *Query {
 	return q
 }
 
-// WithScope sets the query scope for mission-scoped storage.
-// Returns the Query for method chaining.
-func (q *Query) WithScope(scope MissionScope) *Query {
-	q.Scope = scope
-	return q
-}
-
 // WithMissionRun queries a specific mission run by ID.
 // Returns the Query for method chaining.
 func (q *Query) WithMissionRun(runID string) *Query {
@@ -317,9 +238,6 @@ func (q *Query) Validate() error {
 	if weightSum < 1.0-epsilon || weightSum > 1.0+epsilon {
 		return fmt.Errorf("VectorWeight + GraphWeight must equal 1.0, got %f", weightSum)
 	}
-
-	// Note: Scope validation not implemented yet - will be added in Phase 2
-	// when the int-based MissionScope type is fully integrated
 
 	// Validate RunNumber if set (nil is valid - means all runs)
 	if q.RunNumber != nil && *q.RunNumber < 1 {

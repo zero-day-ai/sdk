@@ -53,6 +53,8 @@ const (
 	HarnessCallbackService_StoreGraphBatch_FullMethodName                  = "/gibson.harness.HarnessCallbackService/StoreGraphBatch"
 	HarnessCallbackService_TraverseGraph_FullMethodName                    = "/gibson.harness.HarnessCallbackService/TraverseGraph"
 	HarnessCallbackService_GraphRAGHealth_FullMethodName                   = "/gibson.harness.HarnessCallbackService/GraphRAGHealth"
+	HarnessCallbackService_StoreNode_FullMethodName                        = "/gibson.harness.HarnessCallbackService/StoreNode"
+	HarnessCallbackService_QueryNodes_FullMethodName                       = "/gibson.harness.HarnessCallbackService/QueryNodes"
 	HarnessCallbackService_GetPlanContext_FullMethodName                   = "/gibson.harness.HarnessCallbackService/GetPlanContext"
 	HarnessCallbackService_ReportStepHints_FullMethodName                  = "/gibson.harness.HarnessCallbackService/ReportStepHints"
 	HarnessCallbackService_RecordSpan_FullMethodName                       = "/gibson.harness.HarnessCallbackService/RecordSpan"
@@ -116,6 +118,9 @@ type HarnessCallbackServiceClient interface {
 	StoreGraphBatch(ctx context.Context, in *StoreGraphBatchRequest, opts ...grpc.CallOption) (*StoreGraphBatchResponse, error)
 	TraverseGraph(ctx context.Context, in *TraverseGraphRequest, opts ...grpc.CallOption) (*TraverseGraphResponse, error)
 	GraphRAGHealth(ctx context.Context, in *GraphRAGHealthRequest, opts ...grpc.CallOption) (*GraphRAGHealthResponse, error)
+	// Proto-canonical GraphRAG Operations (uses graphragpb types)
+	StoreNode(ctx context.Context, in *StoreNodeRequest, opts ...grpc.CallOption) (*StoreNodeResponse, error)
+	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
 	// Planning Operations
 	GetPlanContext(ctx context.Context, in *GetPlanContextRequest, opts ...grpc.CallOption) (*GetPlanContextResponse, error)
 	ReportStepHints(ctx context.Context, in *ReportStepHintsRequest, opts ...grpc.CallOption) (*ReportStepHintsResponse, error)
@@ -489,6 +494,26 @@ func (c *harnessCallbackServiceClient) GraphRAGHealth(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) StoreNode(ctx context.Context, in *StoreNodeRequest, opts ...grpc.CallOption) (*StoreNodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StoreNodeResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_StoreNode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryNodesResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_QueryNodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *harnessCallbackServiceClient) GetPlanContext(ctx context.Context, in *GetPlanContextRequest, opts ...grpc.CallOption) (*GetPlanContextResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPlanContextResponse)
@@ -640,6 +665,9 @@ type HarnessCallbackServiceServer interface {
 	StoreGraphBatch(context.Context, *StoreGraphBatchRequest) (*StoreGraphBatchResponse, error)
 	TraverseGraph(context.Context, *TraverseGraphRequest) (*TraverseGraphResponse, error)
 	GraphRAGHealth(context.Context, *GraphRAGHealthRequest) (*GraphRAGHealthResponse, error)
+	// Proto-canonical GraphRAG Operations (uses graphragpb types)
+	StoreNode(context.Context, *StoreNodeRequest) (*StoreNodeResponse, error)
+	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
 	// Planning Operations
 	GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error)
 	ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error)
@@ -765,6 +793,12 @@ func (UnimplementedHarnessCallbackServiceServer) TraverseGraph(context.Context, 
 }
 func (UnimplementedHarnessCallbackServiceServer) GraphRAGHealth(context.Context, *GraphRAGHealthRequest) (*GraphRAGHealthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GraphRAGHealth not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) StoreNode(context.Context, *StoreNodeRequest) (*StoreNodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreNode not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QueryNodes not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPlanContext not implemented")
@@ -1423,6 +1457,42 @@ func _HarnessCallbackService_GraphRAGHealth_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_StoreNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreNodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).StoreNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_StoreNode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).StoreNode(ctx, req.(*StoreNodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_QueryNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryNodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).QueryNodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_QueryNodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).QueryNodes(ctx, req.(*QueryNodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HarnessCallbackService_GetPlanContext_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPlanContextRequest)
 	if err := dec(in); err != nil {
@@ -1741,6 +1811,14 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GraphRAGHealth",
 			Handler:    _HarnessCallbackService_GraphRAGHealth_Handler,
+		},
+		{
+			MethodName: "StoreNode",
+			Handler:    _HarnessCallbackService_StoreNode_Handler,
+		},
+		{
+			MethodName: "QueryNodes",
+			Handler:    _HarnessCallbackService_QueryNodes_Handler,
 		},
 		{
 			MethodName: "GetPlanContext",

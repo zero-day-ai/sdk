@@ -1,0 +1,264 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// TestsslRequest represents input for the testssl.sh tool
+message TestsslRequest {
+    // Targets is the list of hosts or URLs to test (required)
+    repeated string targets = 1;
+
+    // Port is the target port (default: 443)
+    int32 port = 2;
+
+    // Protocols tests SSL/TLS protocols
+    bool protocols = 3;
+
+    // Ciphers tests cipher suites
+    bool ciphers = 4;
+
+    // ServerDefaults tests server defaults
+    bool server_defaults = 5;
+
+    // ServerPreference tests server cipher preference
+    bool server_preference = 6;
+
+    // Headers tests security headers
+    bool headers = 7;
+
+    // Vulnerabilities tests known vulnerabilities
+    bool vulnerabilities = 8;
+
+    // HeartbleedTest tests for Heartbleed vulnerability
+    bool heartbleed_test = 9;
+
+    // CCSInjection tests for CCS injection vulnerability
+    bool ccs_injection = 10;
+
+    // Ticketbleed tests for Ticketbleed vulnerability
+    bool ticketbleed = 11;
+
+    // Robot tests for ROBOT attack vulnerability
+    bool robot = 12;
+
+    // SecureRenegotiation tests for secure renegotiation
+    bool secure_renegotiation = 13;
+
+    // SecureClientRenegotiation tests for secure client-initiated renegotiation
+    bool secure_client_renegotiation = 14;
+
+    // Crime tests for CRIME vulnerability
+    bool crime = 15;
+
+    // Breach tests for BREACH vulnerability
+    bool breach = 16;
+
+    // Poodle tests for POODLE vulnerability
+    bool poodle = 17;
+
+    // TLS_FALLBACK_SCSV tests for TLS_FALLBACK_SCSV support
+    bool tls_fallback_scsv = 18;
+
+    // Sweet32 tests for SWEET32 vulnerability
+    bool sweet32 = 19;
+
+    // Freak tests for FREAK vulnerability
+    bool freak = 20;
+
+    // Drown tests for DROWN vulnerability
+    bool drown = 21;
+
+    // Logjam tests for Logjam vulnerability
+    bool logjam = 22;
+
+    // Beast tests for BEAST vulnerability
+    bool beast = 23;
+
+    // Lucky13 tests for Lucky13 vulnerability
+    bool lucky13 = 24;
+
+    // RC4 tests for RC4 cipher vulnerabilities
+    bool rc4 = 25;
+
+    // PFS tests for Perfect Forward Secrecy
+    bool pfs = 26;
+
+    // ServerName specifies SNI hostname
+    string server_name = 27;
+
+    // Timeout is the timeout in seconds for each test
+    int32 timeout = 28;
+
+    // Quiet suppresses informational output
+    bool quiet = 29;
+}
+
+// TestsslResponse represents output from the testssl.sh tool
+message TestsslResponse {
+    // Results contains the test results
+    repeated TestsslResult results = 1;
+
+    // TotalTargets is the total number of targets tested
+    int32 total_targets = 2;
+
+    // Duration is the test duration in seconds
+    double duration = 3;
+}
+
+// TestsslResult represents a single testssl.sh test result
+message TestsslResult {
+    // Target is the tested target
+    string target = 1;
+
+    // IP is the target IP address
+    string ip = 2;
+
+    // Port is the target port
+    int32 port = 3;
+
+    // SSLInfo contains SSL/TLS information
+    SSLInfo ssl_info = 4;
+
+    // Protocols contains protocol test results
+    repeated ProtocolResult protocols = 5;
+
+    // Ciphers contains cipher suite test results
+    repeated CipherResult ciphers = 6;
+
+    // Vulnerabilities contains vulnerability test results
+    repeated VulnerabilityResult vulnerabilities = 7;
+
+    // Headers contains security header results
+    map<string, string> headers = 8;
+
+    // Certificate contains certificate information
+    CertificateInfo certificate = 9;
+
+    // Error contains the error message if test failed
+    string error = 10;
+}
+
+// SSLInfo contains SSL/TLS information
+message SSLInfo {
+    // ServerCipherOrder indicates if server determines cipher order
+    string server_cipher_order = 1;
+
+    // TLSExtensions contains supported TLS extensions
+    repeated string tls_extensions = 2;
+
+    // SessionResumption indicates session resumption support
+    string session_resumption = 3;
+
+    // TLSTickets indicates TLS tickets support
+    string tls_tickets = 4;
+
+    // OCSP indicates OCSP stapling support
+    string ocsp = 5;
+
+    // HSTS indicates HTTP Strict Transport Security
+    string hsts = 6;
+
+    // HPKP indicates HTTP Public Key Pinning
+    string hpkp = 7;
+}
+
+// ProtocolResult contains protocol test result
+message ProtocolResult {
+    // Protocol is the protocol name (SSLv2, SSLv3, TLS1.0, TLS1.1, TLS1.2, TLS1.3)
+    string protocol = 1;
+
+    // Supported indicates if the protocol is supported
+    bool supported = 2;
+
+    // Severity indicates the severity level if protocol has issues
+    string severity = 3;
+
+    // Finding contains the finding description
+    string finding = 4;
+}
+
+// CipherResult contains cipher suite test result
+message CipherResult {
+    // Cipher is the cipher suite name
+    string cipher = 1;
+
+    // Protocol is the protocol version
+    string protocol = 2;
+
+    // KeyExchange is the key exchange algorithm
+    string key_exchange = 3;
+
+    // Encryption is the encryption algorithm
+    string encryption = 4;
+
+    // Bits is the cipher strength in bits
+    int32 bits = 5;
+
+    // Severity indicates the severity level
+    string severity = 6;
+}
+
+// VulnerabilityResult contains vulnerability test result
+message VulnerabilityResult {
+    // ID is the vulnerability identifier
+    string id = 1;
+
+    // Name is the vulnerability name
+    string name = 2;
+
+    // Vulnerable indicates if target is vulnerable
+    bool vulnerable = 3;
+
+    // Severity is the severity level (OK, LOW, MEDIUM, HIGH, CRITICAL)
+    string severity = 4;
+
+    // Finding contains the finding description
+    string finding = 5;
+
+    // CVE contains related CVE identifiers
+    repeated string cve = 6;
+}
+
+// CertificateInfo contains certificate information
+message CertificateInfo {
+    // SubjectDN is the certificate subject
+    string subject_dn = 1;
+
+    // IssuerDN is the certificate issuer
+    string issuer_dn = 2;
+
+    // NotBefore is the validity start date
+    string not_before = 3;
+
+    // NotAfter is the validity end date
+    string not_after = 4;
+
+    // SANs contains Subject Alternative Names
+    repeated string sans = 5;
+
+    // SerialNumber is the certificate serial number
+    string serial_number = 6;
+
+    // SignatureAlgorithm is the signature algorithm
+    string signature_algorithm = 7;
+
+    // PublicKeyAlgorithm is the public key algorithm
+    string public_key_algorithm = 8;
+
+    // PublicKeySize is the public key size in bits
+    int32 public_key_size = 9;
+
+    // FingerprintSHA1 is the SHA1 fingerprint
+    string fingerprint_sha1 = 10;
+
+    // FingerprintSHA256 is the SHA256 fingerprint
+    string fingerprint_sha256 = 11;
+
+    // Expired indicates if certificate is expired
+    bool expired = 12;
+
+    // SelfSigned indicates if certificate is self-signed
+    bool self_signed = 13;
+
+    // TrustChain contains the certificate trust chain
+    repeated string trust_chain = 14;
+}

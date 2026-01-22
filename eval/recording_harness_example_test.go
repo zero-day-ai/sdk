@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/eval"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
@@ -19,6 +21,7 @@ import (
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // This example demonstrates how to use RecordingHarness to capture
@@ -40,11 +43,7 @@ func ExampleRecordingHarness() {
 	})
 
 	// Tool invocation
-	_, _ = recorder.CallTool(ctx, "calculator", map[string]any{
-		"operation": "add",
-		"a":         2,
-		"b":         2,
-	})
+	_ = recorder.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"example.com"}}, &toolspb.HttpxResponse{})
 
 	// Memory operation
 	_ = recorder.Memory().Working().Set(ctx, "result", 4)
@@ -63,7 +62,7 @@ func ExampleRecordingHarness() {
 	// Output:
 	// Recorded 3 operations
 	// 1. llm: primary (took 0s)
-	// 2. tool: calculator (took 0s)
+	// 2. tool: httpx (took 0s)
 	// 3. memory.working: set (took 0s)
 }
 
@@ -74,8 +73,8 @@ func (m *minimalMockHarness) Complete(ctx context.Context, slot string, messages
 	return &llm.CompletionResponse{Content: "4"}, nil
 }
 
-func (m *minimalMockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	return map[string]any{"result": 4}, nil
+func (m *minimalMockHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	return nil
 }
 
 func (m *minimalMockHarness) Memory() memory.Store {
@@ -91,14 +90,6 @@ func (m *minimalMockHarness) Stream(ctx context.Context, slot string, messages [
 }
 func (m *minimalMockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	return nil, nil
-}
-func (m *minimalMockHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	results := make([]agent.ToolResult, len(calls))
-	for i, call := range calls {
-		output, err := m.CallTool(ctx, call.Name, call.Input)
-		results[i] = agent.ToolResult{Name: call.Name, Output: output, Error: err}
-	}
-	return results, nil
 }
 func (m *minimalMockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
 	return nil, nil
@@ -125,13 +116,7 @@ func (m *minimalMockHarness) Target() types.TargetInfo      { return types.Targe
 func (m *minimalMockHarness) Tracer() trace.Tracer          { return nil }
 func (m *minimalMockHarness) Logger() *slog.Logger          { return nil }
 func (m *minimalMockHarness) TokenUsage() llm.TokenTracker  { return nil }
-func (m *minimalMockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
-	return nil, nil
-}
-func (m *minimalMockHarness) QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
-	return nil, nil
-}
-func (m *minimalMockHarness) QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+func (m *minimalMockHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
 	return nil, nil
 }
 func (m *minimalMockHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]graphrag.AttackPattern, error) {
@@ -146,23 +131,8 @@ func (m *minimalMockHarness) GetAttackChains(ctx context.Context, techniqueID st
 func (m *minimalMockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return nil, nil
 }
-func (m *minimalMockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+func (m *minimalMockHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
 	return "", nil
-}
-func (m *minimalMockHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error) {
-	return "", nil
-}
-func (m *minimalMockHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
-	return "", nil
-}
-func (m *minimalMockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
-	return nil
-}
-func (m *minimalMockHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
-	return nil, nil
-}
-func (m *minimalMockHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
-	return nil, nil
 }
 func (m *minimalMockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
 	return types.HealthStatus{}
@@ -182,10 +152,6 @@ func (m *minimalMockHarness) GetPreviousRunFindings(ctx context.Context, filter 
 
 func (m *minimalMockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return []*finding.Finding{}, nil
-}
-
-func (m *minimalMockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
 }
 
 // MissionManager methods - stubs for testing

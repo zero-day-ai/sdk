@@ -1,0 +1,210 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// PayloadSearchRequest represents input for the payload_search tool
+message PayloadSearchRequest {
+    // Query is the search query for full-text search across payload names and descriptions
+    string query = 1;
+
+    // Categories filters by payload categories (jailbreak, prompt_injection, etc.)
+    repeated string categories = 2;
+
+    // Tags filters by tags
+    repeated string tags = 3;
+
+    // TargetType filters by target type (llm_chat, llm_api, etc.)
+    string target_type = 4;
+
+    // Severity filters by minimum severity (critical, high, medium, low, info)
+    string severity = 5;
+
+    // Limit is the maximum number of results to return (default: 10, max: 50)
+    int32 limit = 6;
+}
+
+// PayloadSearchResponse represents output from the payload_search tool
+message PayloadSearchResponse {
+    // Results contains the matching payloads
+    repeated Payload results = 1;
+
+    // Count is the number of results returned
+    int32 count = 2;
+}
+
+// Payload represents a single payload summary
+message Payload {
+    // ID is the payload identifier for execution
+    string id = 1;
+
+    // Name is the payload name
+    string name = 2;
+
+    // Description describes what this payload does
+    string description = 3;
+
+    // Categories contains the payload categories
+    repeated string categories = 4;
+
+    // Severity is the severity level
+    string severity = 5;
+
+    // Reliability is the reliability score 0.0-1.0
+    double reliability = 6;
+
+    // TargetTypes contains compatible target types
+    repeated string target_types = 7;
+}
+
+// PayloadExecuteRequest represents input for the payload_execute tool
+message PayloadExecuteRequest {
+    // PayloadID is the ID of the payload to execute (from payload_search)
+    string payload_id = 1;
+
+    // Target is the target ID or identifier
+    string target = 2;
+
+    // Parameters contains parameter overrides for payload template
+    map<string, string> parameters = 3;
+
+    // Timeout is the execution timeout in seconds (default: 30)
+    int32 timeout = 4;
+}
+
+// PayloadExecuteResponse represents output from the payload_execute tool
+message PayloadExecuteResponse {
+    // Success indicates whether the payload execution succeeded
+    bool success = 1;
+
+    // Confidence is the confidence score 0.0-1.0 based on indicator matches
+    double confidence = 2;
+
+    // Execution contains execution details
+    PayloadExecution execution = 3;
+
+    // IndicatorsMatched contains the indicators that matched
+    repeated IndicatorMatch indicators_matched = 4;
+
+    // SuggestedFinding contains pre-filled finding details if attack succeeded
+    SuggestedFinding suggested_finding = 5;
+
+    // SuggestedNext contains related payload IDs to try next
+    repeated string suggested_next = 6;
+}
+
+// PayloadExecution contains execution details
+message PayloadExecution {
+    // DurationMs is the execution duration in milliseconds
+    int64 duration_ms = 1;
+
+    // Response contains the response from the target
+    string response = 2;
+
+    // ExitCode is the exit code if applicable
+    int32 exit_code = 3;
+
+    // Stdout is the standard output if applicable
+    string stdout = 4;
+
+    // Stderr is the standard error if applicable
+    string stderr = 5;
+}
+
+// IndicatorMatch represents a matched success indicator
+message IndicatorMatch {
+    // Indicator is the indicator that was matched
+    string indicator = 1;
+
+    // Matched indicates if this indicator matched
+    bool matched = 2;
+
+    // Type is the indicator type (pattern, status_code, etc.)
+    string type = 3;
+
+    // Pattern is the pattern that was matched
+    string pattern = 4;
+}
+
+// SuggestedFinding contains pre-filled finding details
+message SuggestedFinding {
+    // Title is the finding title
+    string title = 1;
+
+    // Description is the finding description
+    string description = 2;
+
+    // Severity is the finding severity
+    string severity = 3;
+
+    // Category is the finding category
+    string category = 4;
+}
+
+// KnowledgeSearchRequest represents input for the knowledge_search tool
+message KnowledgeSearchRequest {
+    // Query is the search query to find relevant knowledge
+    string query = 1;
+
+    // Limit is the maximum number of results to return (default: 10, max: 100)
+    int32 limit = 2;
+
+    // Threshold is the minimum similarity threshold 0.0-1.0 (default: 0.7)
+    double threshold = 3;
+
+    // Source filters results by source file/URL
+    string source = 4;
+
+    // Filters contains additional filter parameters
+    map<string, string> filters = 5;
+}
+
+// KnowledgeSearchResponse represents output from the knowledge_search tool
+message KnowledgeSearchResponse {
+    // Results contains the matching knowledge chunks
+    repeated KnowledgeResult results = 1;
+
+    // Count is the number of results returned
+    int32 count = 2;
+}
+
+// KnowledgeResult represents a single knowledge search result
+message KnowledgeResult {
+    // ID is the unique identifier for this chunk
+    string id = 1;
+
+    // Title is the title of the knowledge chunk or document
+    string title = 2;
+
+    // Content is the text content of the knowledge chunk
+    string content = 3;
+
+    // Score is the similarity score 0.0-1.0
+    double score = 4;
+
+    // Source is the source file path or URL
+    string source = 5;
+
+    // Metadata contains additional metadata about the chunk
+    KnowledgeMetadata metadata = 6;
+}
+
+// KnowledgeMetadata contains metadata about a knowledge chunk
+message KnowledgeMetadata {
+    // Section is the section name or heading
+    string section = 1;
+
+    // PageNumber is the page number (for PDFs)
+    int32 page_number = 2;
+
+    // HasCode indicates if the chunk contains code
+    bool has_code = 3;
+
+    // Language is the content language
+    string language = 4;
+
+    // ChunkIndex is the index of this chunk in the document
+    int32 chunk_index = 5;
+
+    // TotalChunks is the total number of chunks in the document
+    int32 total_chunks = 6;
+}

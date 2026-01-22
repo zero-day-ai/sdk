@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
@@ -23,6 +24,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/encoding/protojson"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // CallbackHarness implements agent.Harness by forwarding all operations
@@ -504,6 +507,71 @@ func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[s
 	return output, nil
 }
 
+// CallToolProto invokes a tool using proto messages.
+// It serializes the proto request to JSON, calls the tool via CallTool,
+// and deserializes the response back into the proto response message.
+func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	// Start span for proto tool call
+	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.tool.name", name),
+			attribute.String("gibson.tool.request_type", string(request.ProtoReflect().Descriptor().FullName())),
+		),
+	)
+	defer span.End()
+
+	// Use protojson marshaler with snake_case field names to match tool schemas
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames: true, // Use snake_case (proto field names) instead of camelCase
+	}
+
+	// Serialize proto request to JSON
+	requestJSON, err := marshaler.Marshal(request)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal proto request to JSON")
+		return fmt.Errorf("failed to marshal proto request to JSON: %w", err)
+	}
+
+	// Convert JSON to map[string]any for CallTool
+	var inputMap map[string]any
+	if err := json.Unmarshal(requestJSON, &inputMap); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to convert proto JSON to map")
+		return fmt.Errorf("failed to convert proto JSON to map: %w", err)
+	}
+
+	// Call the underlying CallTool with the map input
+	output, err := h.CallTool(ctx, name, inputMap)
+	if err != nil {
+		// Error already recorded in CallTool span
+		return err
+	}
+
+	// Convert output map back to JSON
+	outputJSON, err := json.Marshal(output)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal output to JSON")
+		return fmt.Errorf("failed to marshal tool output to JSON: %w", err)
+	}
+
+	// Use protojson unmarshaler for proper proto field mapping
+	unmarshaler := protojson.UnmarshalOptions{
+		DiscardUnknown: true, // Ignore fields not in proto (tools may return extra data)
+	}
+
+	// Unmarshal JSON into proto response
+	if err := unmarshaler.Unmarshal(outputJSON, response); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to unmarshal into proto response")
+		return fmt.Errorf("failed to unmarshal tool output into proto response: %w", err)
+	}
+
+	return nil
+}
+
 // CallToolsParallel executes multiple tool calls concurrently.
 func (h *CallbackHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
 	if len(calls) == 0 {
@@ -580,21 +648,16 @@ func (h *CallbackHarness) ListTools(ctx context.Context) ([]tool.Descriptor, err
 		return nil, fmt.Errorf("list tools error: %s", resp.Error.Message)
 	}
 
-	// Convert to tool.Descriptor with full schema support including taxonomy
+	// Convert to tool.Descriptor
 	tools := make([]tool.Descriptor, len(resp.Tools))
 	for i, protoTool := range resp.Tools {
 		tools[i] = tool.Descriptor{
 			Name:        protoTool.Name,
 			Description: protoTool.Description,
 			Version:     "unknown", // Proto doesn't include version yet
-		}
-
-		// Prefer structured schemas (with taxonomy) over JSON strings
-		if protoTool.InputSchema != nil {
-			tools[i].InputSchema = protoToSchema(protoTool.InputSchema)
-		}
-		if protoTool.OutputSchema != nil {
-			tools[i].OutputSchema = protoToSchema(protoTool.OutputSchema)
+			// TODO: Update proto to include InputMessageType and OutputMessageType
+			// InputMessageType:  protoTool.InputMessageType,
+			// OutputMessageType: protoTool.OutputMessageType,
 		}
 	}
 
@@ -865,8 +928,48 @@ func (h *CallbackHarness) GetFindings(ctx context.Context, filter finding.Filter
 // GraphRAG Query Operations
 // ============================================================================
 
+// QueryNodes performs a query against the knowledge graph using proto-canonical types.
+func (h *CallbackHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	// Start span for QueryNodes
+	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.query_nodes",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.graphrag.query_text", query.Text),
+			attribute.Int("gibson.graphrag.top_k", int(query.TopK)),
+		),
+	)
+	defer span.End()
+
+	protoReq := &proto.QueryNodesRequest{
+		Context: h.client.contextInfo(),
+		Query:   query,
+	}
+
+	resp, err := h.client.QueryNodes(ctx, protoReq)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("QueryNodes callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("QueryNodes error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return nil, err
+	}
+
+	// Record result count in span
+	span.SetAttributes(
+		attribute.Int("gibson.graphrag.result_count", len(resp.Results)),
+	)
+
+	return resp.Results, nil
+}
+
 // QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
 // Uses auto-routing to select semantic or structured query based on the Query fields.
+
 func (h *CallbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	// Start span for GraphRAG query
 	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.query",
@@ -1079,6 +1182,40 @@ func (h *CallbackHarness) GetRelatedFindings(ctx context.Context, findingID stri
 
 // StoreGraphNode stores an arbitrary node in the knowledge graph.
 // DEPRECATED: Use StoreSemantic() or StoreStructured() for explicit intent.
+
+// StoreNode stores a graph node using proto-canonical types.
+func (h *CallbackHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	// Start span for StoreNode
+	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.store_node",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.graphrag.node_type", node.Type.String()),
+		),
+	)
+	defer span.End()
+
+	protoReq := &proto.StoreNodeRequest{
+		Context: h.client.contextInfo(),
+		Node:    node,
+	}
+
+	resp, err := h.client.StoreNode(ctx, protoReq)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", fmt.Errorf("StoreNode callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("StoreNode error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return "", err
+	}
+
+	return resp.NodeId, nil
+}
+
 func (h *CallbackHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	protoReq := &proto.StoreGraphNodeRequest{
 		Node: h.graphNodeToProto(node),
@@ -1293,22 +1430,6 @@ func (h *CallbackHarness) GetAllRunFindings(ctx context.Context, filter finding.
 	// For now, return empty slice - orchestrator support pending
 	h.logger.Debug("GetAllRunFindings called - orchestrator callback not yet implemented")
 	return []*finding.Finding{}, nil
-}
-
-// QueryGraphRAGScoped executes a GraphRAG query with explicit scope.
-// This modifies the query to include scope and delegates to QueryGraphRAG.
-// Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
-func (h *CallbackHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	// Apply scope to query
-	query.Scope = scope
-
-	// Add mission context for scoped queries
-	if scope == graphrag.ScopeCurrentRun || scope == graphrag.ScopeSameMission {
-		query.MissionID = h.mission.ID
-		query.MissionName = h.mission.Name
-	}
-
-	return h.QueryGraphRAG(ctx, query)
 }
 
 // ============================================================================

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zero-day-ai/sdk/schema"
+	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"github.com/zero-day-ai/sdk/serve"
 	"github.com/zero-day-ai/sdk/types"
+	protolib "google.golang.org/protobuf/proto"
 )
 
-// ExampleTool demonstrates a simple tool implementation
+// ExampleTool demonstrates a simple tool implementation using proto messages
 type ExampleTool struct{}
 
 func (t *ExampleTool) Name() string {
@@ -29,26 +30,38 @@ func (t *ExampleTool) Tags() []string {
 	return []string{"example", "demo"}
 }
 
-func (t *ExampleTool) InputSchema() schema.JSON {
-	return schema.Object(map[string]schema.JSON{
-		"message": schema.StringWithDesc("The message to process"),
-	}, "message")
+func (t *ExampleTool) InputMessageType() string {
+	return "gibson.common.TypedMap"
 }
 
-func (t *ExampleTool) OutputSchema() schema.JSON {
-	return schema.Object(map[string]schema.JSON{
-		"result": schema.StringWithDesc("The processed result"),
-	}, "result")
+func (t *ExampleTool) OutputMessageType() string {
+	return "gibson.common.TypedMap"
 }
 
-func (t *ExampleTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
-	msg, ok := input["message"].(string)
+func (t *ExampleTool) ExecuteProto(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+	// Cast input to TypedMap
+	inputMap, ok := input.(*proto.TypedMap)
 	if !ok {
-		return nil, fmt.Errorf("message field is required and must be a string")
+		return nil, fmt.Errorf("expected TypedMap input, got %T", input)
 	}
 
-	return map[string]any{
-		"result": fmt.Sprintf("Processed: %s", msg),
+	// Get message field
+	messageVal, exists := inputMap.Entries["message"]
+	if !exists {
+		return nil, fmt.Errorf("message field is required")
+	}
+
+	msg := messageVal.GetStringValue()
+
+	// Create output with result
+	return &proto.TypedMap{
+		Entries: map[string]*proto.TypedValue{
+			"result": {
+				Kind: &proto.TypedValue_StringValue{
+					StringValue: fmt.Sprintf("Processed: %s", msg),
+				},
+			},
+		},
 	}, nil
 }
 

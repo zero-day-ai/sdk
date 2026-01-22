@@ -1,0 +1,126 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// WhatwebRequest represents input for the whatweb tool
+message WhatwebRequest {
+    // Targets is the list of URLs or hosts to analyze (required)
+    repeated string targets = 1;
+
+    // Aggression is the aggression level (1-4: 1=stealthy, 4=heavy)
+    int32 aggression = 2;
+
+    // Threads is the number of concurrent threads
+    int32 threads = 3;
+
+    // Timeout is the timeout in seconds for each request
+    int32 timeout = 4;
+
+    // UserAgent specifies a custom user agent string
+    string user_agent = 5;
+
+    // Proxy specifies a proxy URL
+    string proxy = 6;
+
+    // FollowRedirect controls redirect following
+    string follow_redirect = 7;
+
+    // MaxRedirects is the maximum number of redirects to follow
+    int32 max_redirects = 8;
+
+    // Plugins specifies plugins to use (empty = all)
+    repeated string plugins = 9;
+
+    // CustomHeaders contains custom HTTP headers
+    map<string, string> custom_headers = 10;
+
+    // NoErrors suppresses error messages
+    bool no_errors = 11;
+
+    // UrlGrep filters URLs matching pattern
+    string url_grep = 12;
+}
+
+// WhatwebResponse represents output from the whatweb tool
+message WhatwebResponse {
+    // Results contains the analysis results
+    repeated WhatwebResult results = 1;
+
+    // TotalTargets is the total number of targets analyzed
+    int32 total_targets = 2;
+
+    // Duration is the analysis duration in seconds
+    double duration = 3;
+}
+
+// WhatwebResult represents a single whatweb analysis result
+message WhatwebResult {
+    // Target is the analyzed target URL or host
+    string target = 1;
+
+    // StatusCode is the HTTP status code
+    int32 status_code = 2;
+
+    // IP is the target IP address
+    string ip = 3;
+
+    // Plugins contains detected plugins/technologies
+    repeated WhatwebPlugin plugins = 4;
+
+    // RequestConfig contains request configuration details
+    WhatwebRequestConfig request_config = 5;
+
+    // HTTPServer is the detected HTTP server
+    string http_server = 6;
+
+    // Title is the HTML page title
+    string title = 7;
+
+    // RedirectLocation is the redirect location (if any)
+    string redirect_location = 8;
+
+    // Error contains the error message if analysis failed
+    string error = 9;
+}
+
+// WhatwebPlugin represents a detected whatweb plugin/technology
+message WhatwebPlugin {
+    // Name is the plugin name
+    string name = 1;
+
+    // Version is the detected version
+    repeated string version = 2;
+
+    // String contains detection strings
+    repeated string string = 3;
+
+    // Account contains detected account information
+    repeated string account = 4;
+
+    // Module contains detected modules
+    repeated string module = 5;
+
+    // OS contains detected operating system
+    repeated string os = 6;
+
+    // Search contains search-related information
+    repeated string search = 7;
+
+    // Categories contains plugin categories
+    repeated string categories = 8;
+}
+
+// WhatwebRequestConfig contains request configuration details
+message WhatwebRequestConfig {
+    // UserAgent is the user agent used
+    string user_agent = 1;
+
+    // Headers contains request headers
+    map<string, string> headers = 2;
+
+    // Cookies contains request cookies
+    map<string, string> cookies = 3;
+
+    // BasicAuth contains basic authentication credentials
+    string basic_auth = 4;
+}

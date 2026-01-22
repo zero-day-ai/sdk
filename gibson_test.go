@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/serve"
+	proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestNewFramework(t *testing.T) {
@@ -144,8 +145,11 @@ func TestNewTool(t *testing.T) {
 		tl, err := NewTool(
 			WithToolName("test-tool"),
 			WithToolDescription("A test tool"),
-			WithExecuteHandler(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return map[string]any{"result": "success"}, nil
+			WithInputMessageType("google.protobuf.Struct"),
+			WithOutputMessageType("google.protobuf.Struct"),
+			WithExecuteProtoHandler(func(ctx context.Context, input proto.Message) (proto.Message, error) {
+				st, _ := structpb.NewStruct(map[string]any{"result": "success"})
+				return st, nil
 			}),
 		)
 
@@ -164,25 +168,22 @@ func TestNewTool(t *testing.T) {
 	t.Run("missing required fields", func(t *testing.T) {
 		_, err := NewTool(
 			WithToolName("incomplete-tool"),
-			// Missing execute handler
+			// Tool creation is valid even without execute handler
 		)
 
-		if err == nil {
-			t.Error("expected error for incomplete tool configuration")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
-	t.Run("with schemas", func(t *testing.T) {
+	t.Run("with message types", func(t *testing.T) {
 		tl, err := NewTool(
-			WithToolName("schema-tool"),
-			WithInputSchema(schema.Object(map[string]schema.JSON{
-				"url": schema.String(),
-			})),
-			WithOutputSchema(schema.Object(map[string]schema.JSON{
-				"status": schema.Number(),
-			})),
-			WithExecuteHandler(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return map[string]any{"status": 200}, nil
+			WithToolName("proto-tool"),
+			WithInputMessageType("google.protobuf.Struct"),
+			WithOutputMessageType("google.protobuf.Struct"),
+			WithExecuteProtoHandler(func(ctx context.Context, input proto.Message) (proto.Message, error) {
+				st, _ := structpb.NewStruct(map[string]any{"status": 200})
+				return st, nil
 			}),
 		)
 
@@ -190,18 +191,19 @@ func TestNewTool(t *testing.T) {
 			t.Fatalf("failed to create tool: %v", err)
 		}
 
-		// Verify schemas were set by calling them - they shouldn't panic
-		_ = tl.InputSchema()
-		_ = tl.OutputSchema()
+		// Verify message types were set
+		if tl.InputMessageType() != "google.protobuf.Struct" {
+			t.Errorf("expected input type 'google.protobuf.Struct', got %s", tl.InputMessageType())
+		}
+		if tl.OutputMessageType() != "google.protobuf.Struct" {
+			t.Errorf("expected output type 'google.protobuf.Struct', got %s", tl.OutputMessageType())
+		}
 	})
 
 	t.Run("with tags", func(t *testing.T) {
 		tl, err := NewTool(
 			WithToolName("tagged-tool"),
 			WithToolTags("http", "network", "testing"),
-			WithExecuteHandler(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return nil, nil
-			}),
 		)
 
 		if err != nil {

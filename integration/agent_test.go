@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	sdk "github.com/zero-day-ai/sdk"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -21,6 +22,7 @@ import (
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // TestAgentCreation tests creating an agent using SDK entry points.
@@ -409,6 +411,10 @@ func (m *mockHarness) Stream(ctx context.Context, slot string, messages []llm.Me
 	return nil, errors.New("not implemented")
 }
 
+func (m *mockHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	return errors.New("not implemented")
+}
+
 func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 	return nil, errors.New("not implemented")
 }
@@ -470,6 +476,10 @@ func (m *mockHarness) TokenUsage() llm.TokenTracker {
 }
 
 // GraphRAG methods (required by Harness interface)
+func (m *mockHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return nil, errors.New("not implemented")
 }
@@ -496,6 +506,10 @@ func (m *mockHarness) GetAttackChains(ctx context.Context, techniqueID string, m
 
 func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return nil, errors.New("not implemented")
+}
+
+func (m *mockHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	return "", errors.New("not implemented")
 }
 
 func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
@@ -549,10 +563,6 @@ func (m *mockHarness) GetPreviousRunFindings(ctx context.Context, filter finding
 
 func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return []*finding.Finding{}, nil
-}
-
-func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
 }
 
 // MissionManager methods - stubs for testing

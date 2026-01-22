@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -20,6 +21,7 @@ import (
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // LocalHarness provides a minimal harness implementation for standalone agent execution.
@@ -125,6 +127,12 @@ func (h *LocalHarness) CompleteStructuredAny(ctx context.Context, slot string, m
 // Tool Operations (Not Available)
 // ============================================================================
 
+// CallToolProto returns an error indicating proto tool operations are not available.
+func (h *LocalHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	h.logger.Warn("CallToolProto not available in standalone mode", "tool", name)
+	return fmt.Errorf("proto tool operations not available in standalone mode (no orchestrator connected)")
+}
+
 // CallTool returns an error indicating tool operations are not available.
 func (h *LocalHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
 	h.logger.Warn("CallTool not available in standalone mode", "tool", name)
@@ -208,6 +216,12 @@ func (h *LocalHarness) GetFindings(ctx context.Context, filter finding.Filter) (
 // ============================================================================
 
 // QueryGraphRAG returns an error indicating GraphRAG is not available.
+// QueryNodes returns an error indicating proto GraphRAG is not available.
+func (h *LocalHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	h.logger.Warn("QueryNodes not available in standalone mode")
+	return nil, fmt.Errorf("proto GraphRAG not available in standalone mode (no orchestrator connected)")
+}
+
 func (h *LocalHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	h.logger.Warn("QueryGraphRAG not available in standalone mode")
 	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
@@ -252,6 +266,12 @@ func (h *LocalHarness) GetRelatedFindings(ctx context.Context, findingID string)
 // ============================================================================
 // GraphRAG Storage Operations (Not Available)
 // ============================================================================
+
+// StoreNode returns an error indicating proto GraphRAG is not available.
+func (h *LocalHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	h.logger.Warn("StoreNode not available in standalone mode")
+	return "", fmt.Errorf("proto GraphRAG not available in standalone mode (no orchestrator connected)")
+}
 
 // StoreGraphNode returns an error indicating GraphRAG is not available.
 func (h *LocalHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
@@ -334,12 +354,6 @@ func (h *LocalHarness) GetPreviousRunFindings(ctx context.Context, filter findin
 func (h *LocalHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	h.logger.Warn("GetAllRunFindings not available in standalone mode")
 	return []*finding.Finding{}, nil
-}
-
-// QueryGraphRAGScoped returns an error indicating GraphRAG is not available.
-func (h *LocalHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	h.logger.Warn("QueryGraphRAGScoped not available in standalone mode", "scope", scope)
-	return nil, fmt.Errorf("GraphRAG not available in standalone mode (no orchestrator connected)")
 }
 
 // ============================================================================

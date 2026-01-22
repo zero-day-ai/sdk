@@ -8,7 +8,6 @@ import (
 	sdk "github.com/zero-day-ai/sdk"
 	"github.com/zero-day-ai/sdk/agent"
 	"github.com/zero-day-ai/sdk/llm"
-	"github.com/zero-day-ai/sdk/types"
 )
 
 func main() {
@@ -21,11 +20,8 @@ func main() {
 		sdk.WithDescription("A minimal example agent demonstrating basic SDK usage"),
 
 		// Specify what types of AI systems this agent can test
-		sdk.WithTargetTypes(types.TargetTypeLLMChat),
-
-		// Define the agent's security testing capabilities
-		// This agent is designed to test for prompt injection vulnerabilities
-		sdk.WithCapabilities(agent.CapabilityPromptInjection),
+		// Target types are now strings for extensibility
+		sdk.WithTargetTypes("llm_chat"),
 
 		// Configure LLM requirements for the agent
 		// The agent requires an LLM with at least 8000 tokens of context window
@@ -114,13 +110,14 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	// }
 
 	// Example: Store data in agent memory
-	// Memory allows agents to maintain state across task executions
-	if err := h.Memory().Set(ctx, "last_task_id", task.ID); err != nil {
+	// Memory is now organized into tiers: Working, Mission, and LongTerm
+	// Working memory is ephemeral and cleared between executions
+	if err := h.Memory().Working().Set(ctx, "last_task_id", task.ID); err != nil {
 		fmt.Printf("  Warning: Failed to store in memory: %v\n", err)
 	}
 
 	// Example: Retrieve data from memory
-	// lastTaskID, err := h.Memory().Get(ctx, "last_task_id")
+	// lastTaskID, err := h.Memory().Working().Get(ctx, "last_task_id")
 	// if err == nil {
 	//     fmt.Printf("  Previous task ID: %v\n", lastTaskID)
 	// }

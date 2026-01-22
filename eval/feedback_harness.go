@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -15,6 +16,7 @@ import (
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 )
 
 // FeedbackOptions configures real-time evaluation feedback behavior.
@@ -534,11 +536,11 @@ func (f *FeedbackHarness) Stream(ctx context.Context, slot string, messages []ll
 	return ch, err
 }
 
-// CallTool invokes a tool.
-func (f *FeedbackHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	output, err := f.recording.CallTool(ctx, name, input)
+// CallToolProto invokes a tool with proto messages.
+func (f *FeedbackHarness) CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error {
+	err := f.recording.CallToolProto(ctx, name, request, response)
 	f.recordAndEvaluate(ctx)
-	return output, err
+	return err
 }
 
 // ListTools returns descriptors for all available tools.
@@ -612,9 +614,9 @@ func (f *FeedbackHarness) TokenUsage() llm.TokenTracker {
 	return f.recording.TokenUsage()
 }
 
-// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
-func (f *FeedbackHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
-	results, err := f.recording.QueryGraphRAG(ctx, query)
+// QueryNodes performs a query against the knowledge graph using proto messages.
+func (f *FeedbackHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	results, err := f.recording.QueryNodes(ctx, query)
 	f.recordAndEvaluate(ctx)
 	return results, err
 }
@@ -647,32 +649,11 @@ func (f *FeedbackHarness) GetRelatedFindings(ctx context.Context, findingID stri
 	return findings, err
 }
 
-// StoreGraphNode stores a node in the knowledge graph.
-func (f *FeedbackHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
-	nodeID, err := f.recording.StoreGraphNode(ctx, node)
+// StoreNode stores a graph node using proto messages.
+func (f *FeedbackHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	nodeID, err := f.recording.StoreNode(ctx, node)
 	f.recordAndEvaluate(ctx)
 	return nodeID, err
-}
-
-// CreateGraphRelationship creates a relationship between nodes.
-func (f *FeedbackHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
-	err := f.recording.CreateGraphRelationship(ctx, rel)
-	f.recordAndEvaluate(ctx)
-	return err
-}
-
-// StoreGraphBatch stores multiple nodes and relationships.
-func (f *FeedbackHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
-	nodeIDs, err := f.recording.StoreGraphBatch(ctx, batch)
-	f.recordAndEvaluate(ctx)
-	return nodeIDs, err
-}
-
-// TraverseGraph walks the graph.
-func (f *FeedbackHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
-	results, err := f.recording.TraverseGraph(ctx, startNodeID, opts)
-	f.recordAndEvaluate(ctx)
-	return results, err
 }
 
 // GraphRAGHealth returns the health status of the GraphRAG subsystem.

@@ -1,0 +1,177 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// HttpxRequest represents input for the httpx tool
+message HttpxRequest {
+    // Targets is the list of URLs or hosts to scan (required)
+    repeated string targets = 1;
+
+    // TechDetect enables technology detection
+    bool tech_detect = 2;
+
+    // FollowRedirects enables following HTTP redirects
+    bool follow_redirects = 3;
+
+    // Timeout is the timeout in seconds for each request
+    int32 timeout = 4;
+
+    // Threads is the number of concurrent threads
+    int32 threads = 5;
+
+    // RateLimit is the maximum requests per second
+    int32 rate_limit = 6;
+
+    // StatusCode filters results by specific status codes
+    repeated int32 status_code = 7;
+
+    // MatchRegex filters results matching regex pattern
+    string match_regex = 8;
+
+    // FilterRegex excludes results matching regex pattern
+    string filter_regex = 9;
+
+    // Methods specifies HTTP methods to test
+    repeated string methods = 10;
+
+    // OutputAll includes all response data in results
+    bool output_all = 11;
+}
+
+// HttpxResponse represents output from the httpx tool
+message HttpxResponse {
+    // Results contains the scan results
+    repeated HttpxResult results = 1;
+
+    // TotalScanned is the total number of targets scanned
+    int32 total_scanned = 2;
+
+    // TotalSuccess is the number of successful responses
+    int32 total_success = 3;
+
+    // TotalFailed is the number of failed requests
+    int32 total_failed = 4;
+
+    // Duration is the scan duration in seconds
+    double duration = 5;
+}
+
+// HttpxResult represents a single httpx scan result
+message HttpxResult {
+    // URL is the scanned URL
+    string url = 1;
+
+    // StatusCode is the HTTP status code
+    int32 status_code = 2;
+
+    // ContentLength is the response body length
+    int64 content_length = 3;
+
+    // Title is the HTML page title
+    string title = 4;
+
+    // Technologies contains detected technologies
+    repeated Technology technologies = 5;
+
+    // Headers contains HTTP response headers
+    map<string, string> headers = 6;
+
+    // TLS contains TLS/SSL information
+    TLSInfo tls = 7;
+
+    // Server is the Server header value
+    string server = 8;
+
+    // ContentType is the Content-Type header value
+    string content_type = 9;
+
+    // ResponseTime is the response time in milliseconds
+    int64 response_time = 10;
+
+    // Method is the HTTP method used
+    string method = 11;
+
+    // Host is the target host
+    string host = 12;
+
+    // Port is the target port
+    int32 port = 13;
+
+    // Scheme is the URL scheme (http, https)
+    string scheme = 14;
+
+    // Path is the URL path
+    string path = 15;
+
+    // IP is the resolved IP address
+    string ip = 16;
+
+    // CDN is the detected CDN provider
+    string cdn = 17;
+
+    // WebServer is the detected web server software
+    string web_server = 18;
+
+    // Failed indicates if the request failed
+    bool failed = 19;
+
+    // Error contains the error message if failed
+    string error = 20;
+}
+
+// Technology represents a detected technology
+message Technology {
+    // Name is the technology name
+    string name = 1;
+
+    // Version is the technology version
+    string version = 2;
+
+    // Category is the technology category
+    string category = 3;
+
+    // Confidence is the detection confidence (0.0-1.0)
+    double confidence = 4;
+}
+
+// TLSInfo contains TLS/SSL certificate information
+message TLSInfo {
+    // Version is the TLS version (TLS 1.2, TLS 1.3, etc.)
+    string version = 1;
+
+    // Cipher is the cipher suite used
+    string cipher = 2;
+
+    // SubjectDN is the certificate subject distinguished name
+    string subject_dn = 3;
+
+    // IssuerDN is the certificate issuer distinguished name
+    string issuer_dn = 4;
+
+    // NotBefore is the certificate validity start date
+    string not_before = 5;
+
+    // NotAfter is the certificate validity end date
+    string not_after = 6;
+
+    // SANs contains Subject Alternative Names
+    repeated string sans = 7;
+
+    // Expired indicates if the certificate is expired
+    bool expired = 8;
+
+    // SelfSigned indicates if the certificate is self-signed
+    bool self_signed = 9;
+
+    // SerialNumber is the certificate serial number
+    string serial_number = 10;
+
+    // SignatureAlgorithm is the signature algorithm
+    string signature_algorithm = 11;
+
+    // PublicKeyAlgorithm is the public key algorithm
+    string public_key_algorithm = 12;
+
+    // PublicKeySize is the public key size in bits
+    int32 public_key_size = 13;
+}

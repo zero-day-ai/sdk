@@ -6,9 +6,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/types"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 func TestSetStreamingExecuteFunc(t *testing.T) {
@@ -108,6 +110,19 @@ func (m *mockStreamingHarness) Steering() <-chan SteeringMessage {
 
 func (m *mockStreamingHarness) Mode() ExecutionMode {
 	return ExecutionModeAutonomous
+}
+
+// Proto method stubs
+func (m *mockStreamingHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	return nil
+}
+
+func (m *mockStreamingHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	return "", nil
+}
+
+func (m *mockStreamingHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	return nil, nil
 }
 
 // GraphRAG stub implementations (not used in these tests but required by interface)

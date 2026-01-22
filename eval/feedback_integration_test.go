@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/llm"
 )
 
@@ -84,7 +85,7 @@ func TestIntegration_FeedbackLoop(t *testing.T) {
 	assert.Nil(t, feedback1, "Should not have feedback after 1 step")
 
 	t.Log("Step 2: Execute second step - should trigger evaluation")
-	_, err = fh.CallTool(ctx, "nmap", map[string]any{"target": "example.com"})
+	err = fh.CallToolProto(ctx, "nmap", &toolspb.NmapRequest{Targets: []string{"example.com"}}, &toolspb.NmapResponse{})
 	require.NoError(t, err)
 
 	time.Sleep(150 * time.Millisecond)
@@ -125,7 +126,7 @@ func TestIntegration_FeedbackLoop(t *testing.T) {
 	assert.Nil(t, feedback3, "Should not have new feedback after 1 step")
 
 	t.Log("Step 4: Execute fourth step - should trigger second evaluation")
-	_, err = fh.CallTool(ctx, "http-client", map[string]any{"url": "https://example.com"})
+	err = fh.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"https://example.com"}}, &toolspb.HttpxResponse{})
 	require.NoError(t, err)
 
 	time.Sleep(150 * time.Millisecond)
@@ -357,7 +358,7 @@ func TestIntegration_FeedbackAwareAgent(t *testing.T) {
 	}
 
 	t.Log("Step 3: Agent can also manually read feedback")
-	_, err = fh.CallTool(ctx, "nmap", map[string]any{"target": "example.com"})
+	err = fh.CallToolProto(ctx, "nmap", &toolspb.NmapRequest{Targets: []string{"example.com"}}, &toolspb.NmapResponse{})
 	require.NoError(t, err)
 
 	time.Sleep(150 * time.Millisecond)
@@ -478,33 +479,31 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	t.Log("Executing complete workflow...")
 
 	// Simulate agent execution matching the expected tools
-	steps := []struct {
-		stepType string
-		name     string
-		input    any
-	}{
-		{"llm", "primary", []llm.Message{{Role: "user", Content: "Analyze target"}}},
-		{"tool", "nmap", map[string]any{"target": "example.com"}},
-		{"llm", "primary", []llm.Message{{Role: "user", Content: "Process nmap results"}}},
-		{"tool", "http-client", map[string]any{"url": "https://example.com"}},
-		{"llm", "primary", []llm.Message{{Role: "user", Content: "Compile findings"}}},
-	}
+	// Execute LLM calls and tool calls in sequence
+	t.Log("  Step 1: llm - primary")
+	_, err := fh.Complete(ctx, "primary", []llm.Message{{Role: "user", Content: "Analyze target"}})
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
 
-	for i, step := range steps {
-		t.Logf("  Step %d: %s - %s", i+1, step.stepType, step.name)
+	t.Log("  Step 2: tool - nmap")
+	err = fh.CallToolProto(ctx, "nmap", &toolspb.NmapRequest{Targets: []string{"example.com"}}, &toolspb.NmapResponse{})
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
 
-		switch step.stepType {
-		case "llm":
-			_, err := fh.Complete(ctx, step.name, step.input.([]llm.Message))
-			require.NoError(t, err)
-		case "tool":
-			_, err := fh.CallTool(ctx, step.name, step.input.(map[string]any))
-			require.NoError(t, err)
-		}
+	t.Log("  Step 3: llm - primary")
+	_, err = fh.Complete(ctx, "primary", []llm.Message{{Role: "user", Content: "Process nmap results"}})
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
 
-		// Brief pause between steps
-		time.Sleep(50 * time.Millisecond)
-	}
+	t.Log("  Step 4: tool - httpx")
+	err = fh.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"https://example.com"}}, &toolspb.HttpxResponse{})
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
+
+	t.Log("  Step 5: llm - primary")
+	_, err = fh.Complete(ctx, "primary", []llm.Message{{Role: "user", Content: "Compile findings"}})
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
 
 	// Wait for final evaluations to complete
 	time.Sleep(200 * time.Millisecond)
@@ -518,7 +517,7 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	assert.Equal(t, "tool", trajectory.Steps[1].Type)
 	assert.Equal(t, "nmap", trajectory.Steps[1].Name)
 	assert.Equal(t, "tool", trajectory.Steps[3].Type)
-	assert.Equal(t, "http-client", trajectory.Steps[3].Name)
+	assert.Equal(t, "httpx", trajectory.Steps[3].Name)
 
 	t.Log("Verifying feedback history...")
 	history := fh.FeedbackHistory()

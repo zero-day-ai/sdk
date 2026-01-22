@@ -231,11 +231,11 @@ func TestStreamExecute_StreamingAgent(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -313,11 +313,11 @@ func TestStreamExecute_SteeringMessage(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -418,11 +418,11 @@ func TestStreamExecute_SetMode(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest with autonomous mode
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -502,11 +502,11 @@ func TestStreamExecute_Interrupt(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -582,11 +582,11 @@ func TestStreamExecute_Resume(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -660,11 +660,11 @@ func TestStreamExecute_AgentError(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -877,11 +877,11 @@ func TestStreamExecute_SequenceNumbers(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},
@@ -958,11 +958,11 @@ func TestStreamExecute_EventOrdering(t *testing.T) {
 	}()
 
 	// Send StartExecutionRequest
-	
+
 	stream.sendClientMessage(&proto.ClientMessage{
 		Payload: &proto.ClientMessage_Start{
 			Start: &proto.StartExecutionRequest{
-				Task: &proto.Task{Id: "task-1"},
+				Task:        &proto.Task{Id: "task-1"},
 				InitialMode: proto.AgentMode_AGENT_MODE_AUTONOMOUS,
 			},
 		},

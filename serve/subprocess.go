@@ -37,10 +37,8 @@
 package serve
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/zero-day-ai/sdk/tool"
@@ -61,42 +59,11 @@ import (
 //	    os.Exit(1)
 //	}
 func RunSubprocess(t tool.Tool) error {
-	// Read JSON input from stdin
-	inputBytes, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		writeError("failed to read stdin: %v", err)
-		return err
-	}
-
-	// Parse JSON input
-	var input map[string]any
-	if err := json.Unmarshal(inputBytes, &input); err != nil {
-		writeError("failed to parse input JSON: %v", err)
-		return err
-	}
-
-	// Execute the tool
-	ctx := context.Background()
-	output, err := t.Execute(ctx, input)
-	if err != nil {
-		writeError("tool execution failed: %v", err)
-		return err
-	}
-
-	// Marshal output to JSON
-	outputBytes, err := json.Marshal(output)
-	if err != nil {
-		writeError("failed to marshal output: %v", err)
-		return err
-	}
-
-	// Write output to stdout
-	if _, err := os.Stdout.Write(outputBytes); err != nil {
-		writeError("failed to write output: %v", err)
-		return err
-	}
-
-	return nil
+	// NOTE: Subprocess mode with Execute has been removed.
+	// Tools must now use gRPC mode with ExecuteProto.
+	// See serve.Tool() for the recommended approach.
+	writeError("subprocess mode with Execute is no longer supported - use gRPC mode with serve.Tool()")
+	return fmt.Errorf("subprocess mode is deprecated")
 }
 
 // OutputSchema outputs the tool's schema as JSON to stdout.
@@ -120,12 +87,12 @@ func RunSubprocess(t tool.Tool) error {
 func OutputSchema(t tool.Tool) error {
 	// Build schema output
 	schema := map[string]any{
-		"name":          t.Name(),
-		"version":       t.Version(),
-		"description":   t.Description(),
-		"tags":          t.Tags(),
-		"input_schema":  t.InputSchema(),
-		"output_schema": t.OutputSchema(),
+		"name":                t.Name(),
+		"version":             t.Version(),
+		"description":         t.Description(),
+		"tags":                t.Tags(),
+		"input_message_type":  t.InputMessageType(),
+		"output_message_type": t.OutputMessageType(),
 	}
 
 	// Marshal schema to JSON

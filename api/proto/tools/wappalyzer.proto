@@ -1,0 +1,102 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// WappalyzerRequest represents input for the wappalyzer tool
+message WappalyzerRequest {
+    // Targets is the list of URLs to analyze (required)
+    repeated string targets = 1;
+
+    // Timeout is the timeout in seconds for each request
+    int32 timeout = 2;
+
+    // MaxDepth is the maximum crawl depth
+    int32 max_depth = 3;
+
+    // MaxPages is the maximum number of pages to crawl per target
+    int32 max_pages = 4;
+
+    // UserAgent specifies a custom user agent string
+    string user_agent = 5;
+
+    // Proxy specifies a proxy URL
+    string proxy = 6;
+
+    // Headers contains custom HTTP headers
+    map<string, string> headers = 7;
+
+    // Recursive enables recursive crawling
+    bool recursive = 8;
+
+    // FollowRedirect enables following HTTP redirects
+    bool follow_redirect = 9;
+}
+
+// WappalyzerResponse represents output from the wappalyzer tool
+message WappalyzerResponse {
+    // Results contains the analysis results
+    repeated WappalyzerResult results = 1;
+
+    // TotalTargets is the total number of targets analyzed
+    int32 total_targets = 2;
+
+    // Duration is the analysis duration in seconds
+    double duration = 3;
+}
+
+// WappalyzerResult represents a single wappalyzer analysis result
+message WappalyzerResult {
+    // URL is the analyzed URL
+    string url = 1;
+
+    // Technologies contains detected technologies
+    repeated DetectedTechnology technologies = 2;
+
+    // TotalTechnologies is the count of detected technologies
+    int32 total_technologies = 3;
+
+    // Error contains the error message if analysis failed
+    string error = 4;
+}
+
+// DetectedTechnology represents a detected technology
+message DetectedTechnology {
+    // Name is the technology name
+    string name = 1;
+
+    // Version is the detected version
+    string version = 2;
+
+    // Icon is the technology icon URL
+    string icon = 3;
+
+    // Website is the technology website
+    string website = 4;
+
+    // CPE is the Common Platform Enumeration
+    string cpe = 5;
+
+    // Categories contains technology categories
+    repeated TechnologyCategory categories = 6;
+
+    // Confidence is the detection confidence (0-100)
+    int32 confidence = 7;
+
+    // ImpliedBy contains technologies implied by this detection
+    repeated string implied_by = 8;
+
+    // Excludes contains technologies excluded by this detection
+    repeated string excludes = 9;
+}
+
+// TechnologyCategory represents a technology category
+message TechnologyCategory {
+    // ID is the category ID
+    int32 id = 1;
+
+    // Name is the category name
+    string name = 2;
+
+    // Slug is the category slug
+    string slug = 3;
+}

@@ -1,0 +1,351 @@
+syntax = "proto3";
+package gibson.tools;
+option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
+
+// SslyzeRequest represents input for the sslyze tool
+message SslyzeRequest {
+    // Targets is the list of hosts or URLs to scan (required)
+    repeated string targets = 1;
+
+    // Port is the target port (default: 443)
+    int32 port = 2;
+
+    // StartTLS specifies the STARTTLS protocol (smtp, xmpp, xmpp_server, pop3, imap, ftp, ldap, rdp, postgres)
+    string start_tls = 3;
+
+    // SNI specifies the SNI hostname
+    string sni = 4;
+
+    // Certinfo enables certificate information scan
+    bool certinfo = 5;
+
+    // SSLv2 enables SSLv2 cipher suite scan
+    bool sslv2 = 6;
+
+    // SSLv3 enables SSLv3 cipher suite scan
+    bool sslv3 = 7;
+
+    // TLSv1_0 enables TLS 1.0 cipher suite scan
+    bool tlsv1_0 = 8;
+
+    // TLSv1_1 enables TLS 1.1 cipher suite scan
+    bool tlsv1_1 = 9;
+
+    // TLSv1_2 enables TLS 1.2 cipher suite scan
+    bool tlsv1_2 = 10;
+
+    // TLSv1_3 enables TLS 1.3 cipher suite scan
+    bool tlsv1_3 = 11;
+
+    // HTTPHeaders enables HTTP security headers scan
+    bool http_headers = 12;
+
+    // Heartbleed enables Heartbleed vulnerability scan
+    bool heartbleed = 13;
+
+    // Compression enables TLS compression scan
+    bool compression = 14;
+
+    // FallbackSCSV enables TLS_FALLBACK_SCSV scan
+    bool fallback_scsv = 15;
+
+    // Renegotiation enables TLS renegotiation scan
+    bool renegotiation = 16;
+
+    // SessionResumption enables session resumption scan
+    bool session_resumption = 17;
+
+    // SessionResumptionWithTickets enables session resumption with tickets scan
+    bool session_resumption_with_tickets = 18;
+
+    // OCSP enables OCSP stapling scan
+    bool ocsp = 19;
+
+    // EarlyData enables TLS 1.3 early data scan
+    bool early_data = 20;
+
+    // Robot enables ROBOT vulnerability scan
+    bool robot = 21;
+
+    // CertificateTransparency enables certificate transparency scan
+    bool certificate_transparency = 22;
+
+    // Timeout is the timeout in seconds for each connection
+    int32 timeout = 23;
+
+    // ClientCertPath specifies path to client certificate
+    string client_cert_path = 24;
+
+    // ClientKeyPath specifies path to client private key
+    string client_key_path = 25;
+}
+
+// SslyzeResponse represents output from the sslyze tool
+message SslyzeResponse {
+    // Results contains the scan results
+    repeated SslyzeResult results = 1;
+
+    // TotalTargets is the total number of targets scanned
+    int32 total_targets = 2;
+
+    // Duration is the scan duration in seconds
+    double duration = 3;
+}
+
+// SslyzeResult represents a single sslyze scan result
+message SslyzeResult {
+    // Target is the scanned target
+    string target = 1;
+
+    // IP is the target IP address
+    string ip = 2;
+
+    // Port is the target port
+    int32 port = 3;
+
+    // Certificate contains certificate information
+    SslyzeCertificateInfo certificate = 4;
+
+    // CipherSuites contains cipher suite scan results by protocol
+    map<string, CipherSuiteList> cipher_suites = 5;
+
+    // Heartbleed contains Heartbleed vulnerability result
+    VulnerabilityScanResult heartbleed = 6;
+
+    // Compression contains TLS compression result
+    CompressionScanResult compression = 7;
+
+    // FallbackSCSV contains TLS_FALLBACK_SCSV result
+    FallbackSCSVResult fallback_scsv = 8;
+
+    // Renegotiation contains renegotiation scan result
+    RenegotiationScanResult renegotiation = 9;
+
+    // SessionResumption contains session resumption result
+    SessionResumptionResult session_resumption = 10;
+
+    // OCSP contains OCSP stapling result
+    OCSPResult ocsp = 11;
+
+    // EarlyData contains TLS 1.3 early data result
+    EarlyDataResult early_data = 12;
+
+    // Robot contains ROBOT vulnerability result
+    VulnerabilityScanResult robot = 13;
+
+    // HTTPHeaders contains HTTP security headers
+    HTTPSecurityHeaders http_headers = 14;
+
+    // Error contains the error message if scan failed
+    string error = 15;
+}
+
+// SslyzeCertificateInfo contains certificate information
+message SslyzeCertificateInfo {
+    // SubjectDN is the certificate subject
+    string subject_dn = 1;
+
+    // IssuerDN is the certificate issuer
+    string issuer_dn = 2;
+
+    // NotBefore is the validity start date
+    string not_before = 3;
+
+    // NotAfter is the validity end date
+    string not_after = 4;
+
+    // SANs contains Subject Alternative Names
+    repeated string sans = 5;
+
+    // SerialNumber is the certificate serial number
+    string serial_number = 6;
+
+    // SignatureAlgorithm is the signature algorithm
+    string signature_algorithm = 7;
+
+    // PublicKeyAlgorithm is the public key algorithm
+    string public_key_algorithm = 8;
+
+    // PublicKeySize is the public key size in bits
+    int32 public_key_size = 9;
+
+    // FingerprintSHA1 is the SHA1 fingerprint
+    string fingerprint_sha1 = 10;
+
+    // FingerprintSHA256 is the SHA256 fingerprint
+    string fingerprint_sha256 = 11;
+
+    // Expired indicates if certificate is expired
+    bool expired = 12;
+
+    // SelfSigned indicates if certificate is self-signed
+    bool self_signed = 13;
+
+    // ChainValidation contains certificate chain validation result
+    ChainValidation chain_validation = 14;
+
+    // OCSPResponse contains OCSP response
+    string ocsp_response = 15;
+
+    // MustStaple indicates if OCSP Must-Staple is set
+    bool must_staple = 16;
+}
+
+// ChainValidation contains certificate chain validation result
+message ChainValidation {
+    // Valid indicates if the chain is valid
+    bool valid = 1;
+
+    // TrustStore is the trust store used for validation
+    string trust_store = 2;
+
+    // ValidationErrors contains validation errors
+    repeated string validation_errors = 3;
+
+    // Chain contains the certificate chain
+    repeated string chain = 4;
+}
+
+// CipherSuiteList contains a list of cipher suites for a protocol
+message CipherSuiteList {
+    // Protocol is the protocol version
+    string protocol = 1;
+
+    // AcceptedCiphers contains accepted cipher suites
+    repeated CipherSuite accepted_ciphers = 2;
+
+    // RejectedCiphers contains rejected cipher suites
+    repeated CipherSuite rejected_ciphers = 3;
+
+    // PreferredCipher is the server-preferred cipher suite
+    CipherSuite preferred_cipher = 4;
+}
+
+// CipherSuite represents a single cipher suite
+message CipherSuite {
+    // Name is the cipher suite name
+    string name = 1;
+
+    // KeyExchange is the key exchange algorithm
+    string key_exchange = 2;
+
+    // Authentication is the authentication algorithm
+    string authentication = 3;
+
+    // Encryption is the encryption algorithm
+    string encryption = 4;
+
+    // Bits is the cipher strength in bits
+    int32 bits = 5;
+
+    // IsAnonymous indicates if cipher is anonymous
+    bool is_anonymous = 6;
+}
+
+// VulnerabilityScanResult represents a vulnerability scan result
+message VulnerabilityScanResult {
+    // Vulnerable indicates if target is vulnerable
+    bool vulnerable = 1;
+
+    // Details contains additional details
+    string details = 2;
+}
+
+// CompressionScanResult represents TLS compression scan result
+message CompressionScanResult {
+    // Supported indicates if TLS compression is supported
+    bool supported = 1;
+}
+
+// FallbackSCSVResult represents TLS_FALLBACK_SCSV scan result
+message FallbackSCSVResult {
+    // Supported indicates if TLS_FALLBACK_SCSV is supported
+    bool supported = 1;
+}
+
+// RenegotiationScanResult represents renegotiation scan result
+message RenegotiationScanResult {
+    // SecureRenegotiation indicates if secure renegotiation is supported
+    bool secure_renegotiation = 1;
+
+    // ClientInitiatedRenegotiation indicates if client-initiated renegotiation is supported
+    bool client_initiated_renegotiation = 2;
+}
+
+// SessionResumptionResult represents session resumption scan result
+message SessionResumptionResult {
+    // SessionIdResumption contains session ID resumption statistics
+    SessionIdResumptionStats session_id_resumption = 1;
+
+    // SessionTicketResumption contains session ticket resumption statistics
+    SessionTicketResumptionStats session_ticket_resumption = 2;
+}
+
+// SessionIdResumptionStats contains session ID resumption statistics
+message SessionIdResumptionStats {
+    // Supported indicates if session ID resumption is supported
+    bool supported = 1;
+
+    // SuccessfulAttempts is the number of successful resumptions
+    int32 successful_attempts = 2;
+
+    // FailedAttempts is the number of failed resumptions
+    int32 failed_attempts = 3;
+
+    // TotalAttempts is the total number of resumption attempts
+    int32 total_attempts = 4;
+}
+
+// SessionTicketResumptionStats contains session ticket resumption statistics
+message SessionTicketResumptionStats {
+    // Supported indicates if session ticket resumption is supported
+    bool supported = 1;
+
+    // SuccessfulAttempts is the number of successful resumptions
+    int32 successful_attempts = 2;
+
+    // FailedAttempts is the number of failed resumptions
+    int32 failed_attempts = 3;
+
+    // TotalAttempts is the total number of resumption attempts
+    int32 total_attempts = 4;
+}
+
+// OCSPResult represents OCSP stapling scan result
+message OCSPResult {
+    // Supported indicates if OCSP stapling is supported
+    bool supported = 1;
+
+    // Response contains the OCSP response status
+    string response = 2;
+}
+
+// EarlyDataResult represents TLS 1.3 early data scan result
+message EarlyDataResult {
+    // Supported indicates if TLS 1.3 early data is supported
+    bool supported = 1;
+}
+
+// HTTPSecurityHeaders contains HTTP security headers
+message HTTPSecurityHeaders {
+    // StrictTransportSecurity is the HSTS header value
+    string strict_transport_security = 1;
+
+    // PublicKeyPins is the HPKP header value
+    string public_key_pins = 2;
+
+    // ExpectCT is the Expect-CT header value
+    string expect_ct = 3;
+
+    // XFrameOptions is the X-Frame-Options header value
+    string x_frame_options = 4;
+
+    // XContentTypeOptions is the X-Content-Type-Options header value
+    string x_content_type_options = 5;
+
+    // ContentSecurityPolicy is the CSP header value
+    string content_security_policy = 6;
+
+    // ReferrerPolicy is the Referrer-Policy header value
+    string referrer_policy = 7;
+}

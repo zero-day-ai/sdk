@@ -275,10 +275,6 @@ func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filt
 	return []*finding.Finding{}, nil
 }
 
-func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
-}
-
 // MissionManager methods - stubs for testing
 func (m *mockHarness) CreateMission(ctx context.Context, workflow any, targetID string, opts *mission.CreateMissionOpts) (*mission.MissionInfo, error) {
 	return &mission.MissionInfo{

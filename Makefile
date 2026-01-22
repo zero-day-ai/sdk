@@ -14,7 +14,10 @@ GOMOD=$(GOCMD) mod
 BIN_DIR=bin
 EXAMPLES_DIR=examples
 PROTO_DIR=api/proto
-PROTO_OUT=api/gen/proto
+PROTO_OUT=api/gen
+GRAPHRAGPB_OUT=$(PROTO_OUT)/graphragpb
+WORKFLOWPB_OUT=$(PROTO_OUT)/workflowpb
+TOOLSPB_OUT=$(PROTO_OUT)/toolspb
 
 # Example binaries to build
 EXAMPLES=minimal-agent custom-tool custom-plugin
@@ -122,19 +125,42 @@ proto-deps:
 
 proto: proto-deps
 	@echo "Generating Go code from proto files..."
-	@mkdir -p $(PROTO_OUT)
+	@mkdir -p $(GRAPHRAGPB_OUT) $(WORKFLOWPB_OUT) $(TOOLSPB_OUT) $(PROTO_OUT)/proto
+	$(eval PROTOBUF_DIR := $(shell go list -m -f '{{.Dir}}' google.golang.org/protobuf))
+	@echo "  Generating graphrag.proto..."
+	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+		--go_out=$(GRAPHRAGPB_OUT) --go_opt=paths=source_relative \
+		$(PROTO_DIR)/graphrag.proto
+	@echo "  Generating workflow.proto..."
+	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+		--go_out=$(WORKFLOWPB_OUT) --go_opt=paths=source_relative \
+		$(PROTO_DIR)/workflow.proto
+	@echo "  Generating tool protos..."
+	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+		--go_out=$(TOOLSPB_OUT) --go_opt=paths=source_relative \
+		$(PROTO_DIR)/tools/*.proto
+	@if [ -d "$(TOOLSPB_OUT)/tools" ]; then \
+		mv $(TOOLSPB_OUT)/tools/*.pb.go $(TOOLSPB_OUT)/ 2>/dev/null || true; \
+		rmdir $(TOOLSPB_OUT)/tools 2>/dev/null || true; \
+	fi
+	@echo "  Generating common protos..."
 	@for proto in $(PROTO_DIR)/*.proto; do \
-		echo "  Generating from $$(basename $$proto)..."; \
-		protoc --proto_path=$(PROTO_DIR) \
-			--go_out=$(PROTO_OUT) --go_opt=paths=source_relative \
-			--go-grpc_out=$(PROTO_OUT) --go-grpc_opt=paths=source_relative \
-			$$proto; \
+		if [ "$$(basename $$proto)" != "graphrag.proto" ] && [ "$$(basename $$proto)" != "workflow.proto" ]; then \
+			echo "    Generating from $$(basename $$proto)..."; \
+			protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+				--go_out=$(PROTO_OUT)/proto --go_opt=paths=source_relative \
+				--go-grpc_out=$(PROTO_OUT)/proto --go-grpc_opt=paths=source_relative \
+				$$proto; \
+		fi \
 	done
 	@echo "Proto generation complete"
 
 proto-clean:
 	@echo "Cleaning generated proto files..."
-	@rm -rf $(PROTO_OUT)/*.pb.go
+	@rm -rf $(PROTO_OUT)/graphragpb/*.pb.go
+	@rm -rf $(PROTO_OUT)/workflowpb/*.pb.go
+	@rm -rf $(PROTO_OUT)/toolspb/*.pb.go
+	@rm -rf $(PROTO_OUT)/proto/*.pb.go
 
 # Help target
 help:

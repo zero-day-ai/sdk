@@ -7,6 +7,7 @@
 package proto
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -6309,6 +6310,218 @@ func (x *GraphRAGHealthResponse) GetStatus() *HarnessHealthStatus {
 	return nil
 }
 
+// StoreNodeRequest stores a graph node using the canonical graphragpb.GraphNode type.
+type StoreNodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	Node          *graphragpb.GraphNode  `protobuf:"bytes,2,opt,name=node,proto3" json:"node,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StoreNodeRequest) Reset() {
+	*x = StoreNodeRequest{}
+	mi := &file_harness_callback_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StoreNodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StoreNodeRequest) ProtoMessage() {}
+
+func (x *StoreNodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StoreNodeRequest.ProtoReflect.Descriptor instead.
+func (*StoreNodeRequest) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *StoreNodeRequest) GetContext() *ContextInfo {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *StoreNodeRequest) GetNode() *graphragpb.GraphNode {
+	if x != nil {
+		return x.Node
+	}
+	return nil
+}
+
+// StoreNodeResponse returns the stored node ID.
+type StoreNodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	Error         *HarnessError          `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StoreNodeResponse) Reset() {
+	*x = StoreNodeResponse{}
+	mi := &file_harness_callback_proto_msgTypes[98]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StoreNodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StoreNodeResponse) ProtoMessage() {}
+
+func (x *StoreNodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[98]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StoreNodeResponse.ProtoReflect.Descriptor instead.
+func (*StoreNodeResponse) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *StoreNodeResponse) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *StoreNodeResponse) GetError() *HarnessError {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
+// QueryNodesRequest queries graph nodes using the canonical graphragpb.GraphQuery type.
+type QueryNodesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	Query         *graphragpb.GraphQuery `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryNodesRequest) Reset() {
+	*x = QueryNodesRequest{}
+	mi := &file_harness_callback_proto_msgTypes[99]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryNodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryNodesRequest) ProtoMessage() {}
+
+func (x *QueryNodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[99]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryNodesRequest.ProtoReflect.Descriptor instead.
+func (*QueryNodesRequest) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{99}
+}
+
+func (x *QueryNodesRequest) GetContext() *ContextInfo {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *QueryNodesRequest) GetQuery() *graphragpb.GraphQuery {
+	if x != nil {
+		return x.Query
+	}
+	return nil
+}
+
+// QueryNodesResponse returns query results using the canonical graphragpb.QueryResult type.
+type QueryNodesResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Results       []*graphragpb.QueryResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Error         *HarnessError             `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryNodesResponse) Reset() {
+	*x = QueryNodesResponse{}
+	mi := &file_harness_callback_proto_msgTypes[100]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryNodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryNodesResponse) ProtoMessage() {}
+
+func (x *QueryNodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_harness_callback_proto_msgTypes[100]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryNodesResponse.ProtoReflect.Descriptor instead.
+func (*QueryNodesResponse) Descriptor() ([]byte, []int) {
+	return file_harness_callback_proto_rawDescGZIP(), []int{100}
+}
+
+func (x *QueryNodesResponse) GetResults() []*graphragpb.QueryResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+func (x *QueryNodesResponse) GetError() *HarnessError {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
 type GetPlanContextRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Context       *ContextInfo           `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
@@ -6318,7 +6531,7 @@ type GetPlanContextRequest struct {
 
 func (x *GetPlanContextRequest) Reset() {
 	*x = GetPlanContextRequest{}
-	mi := &file_harness_callback_proto_msgTypes[97]
+	mi := &file_harness_callback_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6330,7 +6543,7 @@ func (x *GetPlanContextRequest) String() string {
 func (*GetPlanContextRequest) ProtoMessage() {}
 
 func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[97]
+	mi := &file_harness_callback_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6343,7 +6556,7 @@ func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextRequest.ProtoReflect.Descriptor instead.
 func (*GetPlanContextRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{97}
+	return file_harness_callback_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *GetPlanContextRequest) GetContext() *ContextInfo {
@@ -6363,7 +6576,7 @@ type GetPlanContextResponse struct {
 
 func (x *GetPlanContextResponse) Reset() {
 	*x = GetPlanContextResponse{}
-	mi := &file_harness_callback_proto_msgTypes[98]
+	mi := &file_harness_callback_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6375,7 +6588,7 @@ func (x *GetPlanContextResponse) String() string {
 func (*GetPlanContextResponse) ProtoMessage() {}
 
 func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[98]
+	mi := &file_harness_callback_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6388,7 +6601,7 @@ func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextResponse.ProtoReflect.Descriptor instead.
 func (*GetPlanContextResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{98}
+	return file_harness_callback_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *GetPlanContextResponse) GetPlanContext() *PlanContext {
@@ -6418,7 +6631,7 @@ type PlanContext struct {
 
 func (x *PlanContext) Reset() {
 	*x = PlanContext{}
-	mi := &file_harness_callback_proto_msgTypes[99]
+	mi := &file_harness_callback_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6430,7 +6643,7 @@ func (x *PlanContext) String() string {
 func (*PlanContext) ProtoMessage() {}
 
 func (x *PlanContext) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[99]
+	mi := &file_harness_callback_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6443,7 +6656,7 @@ func (x *PlanContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanContext.ProtoReflect.Descriptor instead.
 func (*PlanContext) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{99}
+	return file_harness_callback_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *PlanContext) GetCurrentStepIndex() int32 {
@@ -6491,7 +6704,7 @@ type ReportStepHintsRequest struct {
 
 func (x *ReportStepHintsRequest) Reset() {
 	*x = ReportStepHintsRequest{}
-	mi := &file_harness_callback_proto_msgTypes[100]
+	mi := &file_harness_callback_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6503,7 +6716,7 @@ func (x *ReportStepHintsRequest) String() string {
 func (*ReportStepHintsRequest) ProtoMessage() {}
 
 func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[100]
+	mi := &file_harness_callback_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6516,7 +6729,7 @@ func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsRequest.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{100}
+	return file_harness_callback_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *ReportStepHintsRequest) GetContext() *ContextInfo {
@@ -6542,7 +6755,7 @@ type ReportStepHintsResponse struct {
 
 func (x *ReportStepHintsResponse) Reset() {
 	*x = ReportStepHintsResponse{}
-	mi := &file_harness_callback_proto_msgTypes[101]
+	mi := &file_harness_callback_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6554,7 +6767,7 @@ func (x *ReportStepHintsResponse) String() string {
 func (*ReportStepHintsResponse) ProtoMessage() {}
 
 func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[101]
+	mi := &file_harness_callback_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6567,7 +6780,7 @@ func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsResponse.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{101}
+	return file_harness_callback_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ReportStepHintsResponse) GetError() *HarnessError {
@@ -6589,7 +6802,7 @@ type StepHints struct {
 
 func (x *StepHints) Reset() {
 	*x = StepHints{}
-	mi := &file_harness_callback_proto_msgTypes[102]
+	mi := &file_harness_callback_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6601,7 +6814,7 @@ func (x *StepHints) String() string {
 func (*StepHints) ProtoMessage() {}
 
 func (x *StepHints) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[102]
+	mi := &file_harness_callback_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6614,7 +6827,7 @@ func (x *StepHints) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StepHints.ProtoReflect.Descriptor instead.
 func (*StepHints) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{102}
+	return file_harness_callback_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *StepHints) GetConfidence() float64 {
@@ -6662,7 +6875,7 @@ type AnyValue struct {
 
 func (x *AnyValue) Reset() {
 	*x = AnyValue{}
-	mi := &file_harness_callback_proto_msgTypes[103]
+	mi := &file_harness_callback_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6674,7 +6887,7 @@ func (x *AnyValue) String() string {
 func (*AnyValue) ProtoMessage() {}
 
 func (x *AnyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[103]
+	mi := &file_harness_callback_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6687,7 +6900,7 @@ func (x *AnyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnyValue.ProtoReflect.Descriptor instead.
 func (*AnyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{103}
+	return file_harness_callback_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *AnyValue) GetValue() isAnyValue_Value {
@@ -6787,7 +7000,7 @@ type KeyValue struct {
 
 func (x *KeyValue) Reset() {
 	*x = KeyValue{}
-	mi := &file_harness_callback_proto_msgTypes[104]
+	mi := &file_harness_callback_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6799,7 +7012,7 @@ func (x *KeyValue) String() string {
 func (*KeyValue) ProtoMessage() {}
 
 func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[104]
+	mi := &file_harness_callback_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6812,7 +7025,7 @@ func (x *KeyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{104}
+	return file_harness_callback_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *KeyValue) GetKey() string {
@@ -6841,7 +7054,7 @@ type SpanEvent struct {
 
 func (x *SpanEvent) Reset() {
 	*x = SpanEvent{}
-	mi := &file_harness_callback_proto_msgTypes[105]
+	mi := &file_harness_callback_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6853,7 +7066,7 @@ func (x *SpanEvent) String() string {
 func (*SpanEvent) ProtoMessage() {}
 
 func (x *SpanEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[105]
+	mi := &file_harness_callback_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6866,7 +7079,7 @@ func (x *SpanEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpanEvent.ProtoReflect.Descriptor instead.
 func (*SpanEvent) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{105}
+	return file_harness_callback_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *SpanEvent) GetName() string {
@@ -6910,7 +7123,7 @@ type Span struct {
 
 func (x *Span) Reset() {
 	*x = Span{}
-	mi := &file_harness_callback_proto_msgTypes[106]
+	mi := &file_harness_callback_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6922,7 +7135,7 @@ func (x *Span) String() string {
 func (*Span) ProtoMessage() {}
 
 func (x *Span) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[106]
+	mi := &file_harness_callback_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6935,7 +7148,7 @@ func (x *Span) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Span.ProtoReflect.Descriptor instead.
 func (*Span) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{106}
+	return file_harness_callback_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *Span) GetTraceId() string {
@@ -7025,7 +7238,7 @@ type RecordSpanRequest struct {
 
 func (x *RecordSpanRequest) Reset() {
 	*x = RecordSpanRequest{}
-	mi := &file_harness_callback_proto_msgTypes[107]
+	mi := &file_harness_callback_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7037,7 +7250,7 @@ func (x *RecordSpanRequest) String() string {
 func (*RecordSpanRequest) ProtoMessage() {}
 
 func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[107]
+	mi := &file_harness_callback_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7050,7 +7263,7 @@ func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpanRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{107}
+	return file_harness_callback_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *RecordSpanRequest) GetContext() *ContextInfo {
@@ -7076,7 +7289,7 @@ type RecordSpanResponse struct {
 
 func (x *RecordSpanResponse) Reset() {
 	*x = RecordSpanResponse{}
-	mi := &file_harness_callback_proto_msgTypes[108]
+	mi := &file_harness_callback_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7088,7 +7301,7 @@ func (x *RecordSpanResponse) String() string {
 func (*RecordSpanResponse) ProtoMessage() {}
 
 func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[108]
+	mi := &file_harness_callback_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7101,7 +7314,7 @@ func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpanResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{108}
+	return file_harness_callback_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *RecordSpanResponse) GetError() *HarnessError {
@@ -7121,7 +7334,7 @@ type RecordSpansRequest struct {
 
 func (x *RecordSpansRequest) Reset() {
 	*x = RecordSpansRequest{}
-	mi := &file_harness_callback_proto_msgTypes[109]
+	mi := &file_harness_callback_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7133,7 +7346,7 @@ func (x *RecordSpansRequest) String() string {
 func (*RecordSpansRequest) ProtoMessage() {}
 
 func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[109]
+	mi := &file_harness_callback_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7146,7 +7359,7 @@ func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpansRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{109}
+	return file_harness_callback_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *RecordSpansRequest) GetContext() *ContextInfo {
@@ -7172,7 +7385,7 @@ type RecordSpansResponse struct {
 
 func (x *RecordSpansResponse) Reset() {
 	*x = RecordSpansResponse{}
-	mi := &file_harness_callback_proto_msgTypes[110]
+	mi := &file_harness_callback_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7184,7 +7397,7 @@ func (x *RecordSpansResponse) String() string {
 func (*RecordSpansResponse) ProtoMessage() {}
 
 func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[110]
+	mi := &file_harness_callback_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7197,7 +7410,7 @@ func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpansResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{110}
+	return file_harness_callback_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *RecordSpansResponse) GetError() *HarnessError {
@@ -7217,7 +7430,7 @@ type GetCredentialRequest struct {
 
 func (x *GetCredentialRequest) Reset() {
 	*x = GetCredentialRequest{}
-	mi := &file_harness_callback_proto_msgTypes[111]
+	mi := &file_harness_callback_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7229,7 +7442,7 @@ func (x *GetCredentialRequest) String() string {
 func (*GetCredentialRequest) ProtoMessage() {}
 
 func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[111]
+	mi := &file_harness_callback_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7242,7 +7455,7 @@ func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialRequest.ProtoReflect.Descriptor instead.
 func (*GetCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{111}
+	return file_harness_callback_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *GetCredentialRequest) GetContext() *ContextInfo {
@@ -7269,7 +7482,7 @@ type GetCredentialResponse struct {
 
 func (x *GetCredentialResponse) Reset() {
 	*x = GetCredentialResponse{}
-	mi := &file_harness_callback_proto_msgTypes[112]
+	mi := &file_harness_callback_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7281,7 +7494,7 @@ func (x *GetCredentialResponse) String() string {
 func (*GetCredentialResponse) ProtoMessage() {}
 
 func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[112]
+	mi := &file_harness_callback_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7294,7 +7507,7 @@ func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialResponse.ProtoReflect.Descriptor instead.
 func (*GetCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{112}
+	return file_harness_callback_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *GetCredentialResponse) GetCredential() *Credential {
@@ -7330,7 +7543,7 @@ type Credential struct {
 
 func (x *Credential) Reset() {
 	*x = Credential{}
-	mi := &file_harness_callback_proto_msgTypes[113]
+	mi := &file_harness_callback_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7342,7 +7555,7 @@ func (x *Credential) String() string {
 func (*Credential) ProtoMessage() {}
 
 func (x *Credential) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[113]
+	mi := &file_harness_callback_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7355,7 +7568,7 @@ func (x *Credential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Credential.ProtoReflect.Descriptor instead.
 func (*Credential) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{113}
+	return file_harness_callback_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *Credential) GetName() string {
@@ -7476,7 +7689,7 @@ type BasicAuth struct {
 
 func (x *BasicAuth) Reset() {
 	*x = BasicAuth{}
-	mi := &file_harness_callback_proto_msgTypes[114]
+	mi := &file_harness_callback_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7488,7 +7701,7 @@ func (x *BasicAuth) String() string {
 func (*BasicAuth) ProtoMessage() {}
 
 func (x *BasicAuth) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[114]
+	mi := &file_harness_callback_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7501,7 +7714,7 @@ func (x *BasicAuth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BasicAuth.ProtoReflect.Descriptor instead.
 func (*BasicAuth) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{114}
+	return file_harness_callback_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *BasicAuth) GetUsername() string {
@@ -7531,7 +7744,7 @@ type OAuthCredential struct {
 
 func (x *OAuthCredential) Reset() {
 	*x = OAuthCredential{}
-	mi := &file_harness_callback_proto_msgTypes[115]
+	mi := &file_harness_callback_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7543,7 +7756,7 @@ func (x *OAuthCredential) String() string {
 func (*OAuthCredential) ProtoMessage() {}
 
 func (x *OAuthCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[115]
+	mi := &file_harness_callback_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7556,7 +7769,7 @@ func (x *OAuthCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OAuthCredential.ProtoReflect.Descriptor instead.
 func (*OAuthCredential) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{115}
+	return file_harness_callback_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *OAuthCredential) GetAccessToken() string {
@@ -7596,7 +7809,7 @@ type GetTaxonomySchemaRequest struct {
 
 func (x *GetTaxonomySchemaRequest) Reset() {
 	*x = GetTaxonomySchemaRequest{}
-	mi := &file_harness_callback_proto_msgTypes[116]
+	mi := &file_harness_callback_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7608,7 +7821,7 @@ func (x *GetTaxonomySchemaRequest) String() string {
 func (*GetTaxonomySchemaRequest) ProtoMessage() {}
 
 func (x *GetTaxonomySchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[116]
+	mi := &file_harness_callback_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7621,7 +7834,7 @@ func (x *GetTaxonomySchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaxonomySchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetTaxonomySchemaRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{116}
+	return file_harness_callback_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *GetTaxonomySchemaRequest) GetContext() *ContextInfo {
@@ -7647,7 +7860,7 @@ type GetTaxonomySchemaResponse struct {
 
 func (x *GetTaxonomySchemaResponse) Reset() {
 	*x = GetTaxonomySchemaResponse{}
-	mi := &file_harness_callback_proto_msgTypes[117]
+	mi := &file_harness_callback_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7659,7 +7872,7 @@ func (x *GetTaxonomySchemaResponse) String() string {
 func (*GetTaxonomySchemaResponse) ProtoMessage() {}
 
 func (x *GetTaxonomySchemaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[117]
+	mi := &file_harness_callback_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7672,7 +7885,7 @@ func (x *GetTaxonomySchemaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaxonomySchemaResponse.ProtoReflect.Descriptor instead.
 func (*GetTaxonomySchemaResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{117}
+	return file_harness_callback_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *GetTaxonomySchemaResponse) GetVersion() string {
@@ -7746,7 +7959,7 @@ type TaxonomyNodeType struct {
 
 func (x *TaxonomyNodeType) Reset() {
 	*x = TaxonomyNodeType{}
-	mi := &file_harness_callback_proto_msgTypes[118]
+	mi := &file_harness_callback_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7758,7 +7971,7 @@ func (x *TaxonomyNodeType) String() string {
 func (*TaxonomyNodeType) ProtoMessage() {}
 
 func (x *TaxonomyNodeType) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[118]
+	mi := &file_harness_callback_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7771,7 +7984,7 @@ func (x *TaxonomyNodeType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyNodeType.ProtoReflect.Descriptor instead.
 func (*TaxonomyNodeType) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{118}
+	return file_harness_callback_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *TaxonomyNodeType) GetId() string {
@@ -7840,7 +8053,7 @@ type TaxonomyRelationshipType struct {
 
 func (x *TaxonomyRelationshipType) Reset() {
 	*x = TaxonomyRelationshipType{}
-	mi := &file_harness_callback_proto_msgTypes[119]
+	mi := &file_harness_callback_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7852,7 +8065,7 @@ func (x *TaxonomyRelationshipType) String() string {
 func (*TaxonomyRelationshipType) ProtoMessage() {}
 
 func (x *TaxonomyRelationshipType) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[119]
+	mi := &file_harness_callback_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7865,7 +8078,7 @@ func (x *TaxonomyRelationshipType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyRelationshipType.ProtoReflect.Descriptor instead.
 func (*TaxonomyRelationshipType) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{119}
+	return file_harness_callback_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *TaxonomyRelationshipType) GetId() string {
@@ -7947,7 +8160,7 @@ type TaxonomyTechnique struct {
 
 func (x *TaxonomyTechnique) Reset() {
 	*x = TaxonomyTechnique{}
-	mi := &file_harness_callback_proto_msgTypes[120]
+	mi := &file_harness_callback_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7959,7 +8172,7 @@ func (x *TaxonomyTechnique) String() string {
 func (*TaxonomyTechnique) ProtoMessage() {}
 
 func (x *TaxonomyTechnique) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[120]
+	mi := &file_harness_callback_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7972,7 +8185,7 @@ func (x *TaxonomyTechnique) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTechnique.ProtoReflect.Descriptor instead.
 func (*TaxonomyTechnique) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{120}
+	return file_harness_callback_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *TaxonomyTechnique) GetTechniqueId() string {
@@ -8046,7 +8259,7 @@ type TaxonomyTargetType struct {
 
 func (x *TaxonomyTargetType) Reset() {
 	*x = TaxonomyTargetType{}
-	mi := &file_harness_callback_proto_msgTypes[121]
+	mi := &file_harness_callback_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8058,7 +8271,7 @@ func (x *TaxonomyTargetType) String() string {
 func (*TaxonomyTargetType) ProtoMessage() {}
 
 func (x *TaxonomyTargetType) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[121]
+	mi := &file_harness_callback_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8071,7 +8284,7 @@ func (x *TaxonomyTargetType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTargetType.ProtoReflect.Descriptor instead.
 func (*TaxonomyTargetType) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{121}
+	return file_harness_callback_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *TaxonomyTargetType) GetId() string {
@@ -8138,7 +8351,7 @@ type TaxonomyTechniqueType struct {
 
 func (x *TaxonomyTechniqueType) Reset() {
 	*x = TaxonomyTechniqueType{}
-	mi := &file_harness_callback_proto_msgTypes[122]
+	mi := &file_harness_callback_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8150,7 +8363,7 @@ func (x *TaxonomyTechniqueType) String() string {
 func (*TaxonomyTechniqueType) ProtoMessage() {}
 
 func (x *TaxonomyTechniqueType) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[122]
+	mi := &file_harness_callback_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8163,7 +8376,7 @@ func (x *TaxonomyTechniqueType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTechniqueType.ProtoReflect.Descriptor instead.
 func (*TaxonomyTechniqueType) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{122}
+	return file_harness_callback_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *TaxonomyTechniqueType) GetId() string {
@@ -8227,7 +8440,7 @@ type TaxonomyCapability struct {
 
 func (x *TaxonomyCapability) Reset() {
 	*x = TaxonomyCapability{}
-	mi := &file_harness_callback_proto_msgTypes[123]
+	mi := &file_harness_callback_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8239,7 +8452,7 @@ func (x *TaxonomyCapability) String() string {
 func (*TaxonomyCapability) ProtoMessage() {}
 
 func (x *TaxonomyCapability) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[123]
+	mi := &file_harness_callback_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8252,7 +8465,7 @@ func (x *TaxonomyCapability) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyCapability.ProtoReflect.Descriptor instead.
 func (*TaxonomyCapability) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{123}
+	return file_harness_callback_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *TaxonomyCapability) GetId() string {
@@ -8297,7 +8510,7 @@ type TaxonomyProperty struct {
 
 func (x *TaxonomyProperty) Reset() {
 	*x = TaxonomyProperty{}
-	mi := &file_harness_callback_proto_msgTypes[124]
+	mi := &file_harness_callback_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8309,7 +8522,7 @@ func (x *TaxonomyProperty) String() string {
 func (*TaxonomyProperty) ProtoMessage() {}
 
 func (x *TaxonomyProperty) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[124]
+	mi := &file_harness_callback_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8322,7 +8535,7 @@ func (x *TaxonomyProperty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyProperty.ProtoReflect.Descriptor instead.
 func (*TaxonomyProperty) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{124}
+	return file_harness_callback_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *TaxonomyProperty) GetName() string {
@@ -8378,7 +8591,7 @@ type GenerateNodeIDRequest struct {
 
 func (x *GenerateNodeIDRequest) Reset() {
 	*x = GenerateNodeIDRequest{}
-	mi := &file_harness_callback_proto_msgTypes[125]
+	mi := &file_harness_callback_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8390,7 +8603,7 @@ func (x *GenerateNodeIDRequest) String() string {
 func (*GenerateNodeIDRequest) ProtoMessage() {}
 
 func (x *GenerateNodeIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[125]
+	mi := &file_harness_callback_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8403,7 +8616,7 @@ func (x *GenerateNodeIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateNodeIDRequest.ProtoReflect.Descriptor instead.
 func (*GenerateNodeIDRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{125}
+	return file_harness_callback_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *GenerateNodeIDRequest) GetContext() *ContextInfo {
@@ -8437,7 +8650,7 @@ type GenerateNodeIDResponse struct {
 
 func (x *GenerateNodeIDResponse) Reset() {
 	*x = GenerateNodeIDResponse{}
-	mi := &file_harness_callback_proto_msgTypes[126]
+	mi := &file_harness_callback_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8449,7 +8662,7 @@ func (x *GenerateNodeIDResponse) String() string {
 func (*GenerateNodeIDResponse) ProtoMessage() {}
 
 func (x *GenerateNodeIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[126]
+	mi := &file_harness_callback_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8462,7 +8675,7 @@ func (x *GenerateNodeIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateNodeIDResponse.ProtoReflect.Descriptor instead.
 func (*GenerateNodeIDResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{126}
+	return file_harness_callback_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *GenerateNodeIDResponse) GetNodeId() string {
@@ -8489,7 +8702,7 @@ type ValidateFindingRequest struct {
 
 func (x *ValidateFindingRequest) Reset() {
 	*x = ValidateFindingRequest{}
-	mi := &file_harness_callback_proto_msgTypes[127]
+	mi := &file_harness_callback_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8501,7 +8714,7 @@ func (x *ValidateFindingRequest) String() string {
 func (*ValidateFindingRequest) ProtoMessage() {}
 
 func (x *ValidateFindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[127]
+	mi := &file_harness_callback_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8514,7 +8727,7 @@ func (x *ValidateFindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateFindingRequest.ProtoReflect.Descriptor instead.
 func (*ValidateFindingRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{127}
+	return file_harness_callback_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *ValidateFindingRequest) GetContext() *ContextInfo {
@@ -8542,7 +8755,7 @@ type ValidateGraphNodeRequest struct {
 
 func (x *ValidateGraphNodeRequest) Reset() {
 	*x = ValidateGraphNodeRequest{}
-	mi := &file_harness_callback_proto_msgTypes[128]
+	mi := &file_harness_callback_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8554,7 +8767,7 @@ func (x *ValidateGraphNodeRequest) String() string {
 func (*ValidateGraphNodeRequest) ProtoMessage() {}
 
 func (x *ValidateGraphNodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[128]
+	mi := &file_harness_callback_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8567,7 +8780,7 @@ func (x *ValidateGraphNodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateGraphNodeRequest.ProtoReflect.Descriptor instead.
 func (*ValidateGraphNodeRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{128}
+	return file_harness_callback_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *ValidateGraphNodeRequest) GetContext() *ContextInfo {
@@ -8604,7 +8817,7 @@ type ValidateRelationshipRequest struct {
 
 func (x *ValidateRelationshipRequest) Reset() {
 	*x = ValidateRelationshipRequest{}
-	mi := &file_harness_callback_proto_msgTypes[129]
+	mi := &file_harness_callback_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8616,7 +8829,7 @@ func (x *ValidateRelationshipRequest) String() string {
 func (*ValidateRelationshipRequest) ProtoMessage() {}
 
 func (x *ValidateRelationshipRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[129]
+	mi := &file_harness_callback_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8629,7 +8842,7 @@ func (x *ValidateRelationshipRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateRelationshipRequest.ProtoReflect.Descriptor instead.
 func (*ValidateRelationshipRequest) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{129}
+	return file_harness_callback_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *ValidateRelationshipRequest) GetContext() *ContextInfo {
@@ -8679,7 +8892,7 @@ type ValidationResponse struct {
 
 func (x *ValidationResponse) Reset() {
 	*x = ValidationResponse{}
-	mi := &file_harness_callback_proto_msgTypes[130]
+	mi := &file_harness_callback_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8691,7 +8904,7 @@ func (x *ValidationResponse) String() string {
 func (*ValidationResponse) ProtoMessage() {}
 
 func (x *ValidationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[130]
+	mi := &file_harness_callback_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8704,7 +8917,7 @@ func (x *ValidationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationResponse.ProtoReflect.Descriptor instead.
 func (*ValidationResponse) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{130}
+	return file_harness_callback_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *ValidationResponse) GetValid() bool {
@@ -8746,7 +8959,7 @@ type ValidationError struct {
 
 func (x *ValidationError) Reset() {
 	*x = ValidationError{}
-	mi := &file_harness_callback_proto_msgTypes[131]
+	mi := &file_harness_callback_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8758,7 +8971,7 @@ func (x *ValidationError) String() string {
 func (*ValidationError) ProtoMessage() {}
 
 func (x *ValidationError) ProtoReflect() protoreflect.Message {
-	mi := &file_harness_callback_proto_msgTypes[131]
+	mi := &file_harness_callback_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8771,7 +8984,7 @@ func (x *ValidationError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationError.ProtoReflect.Descriptor instead.
 func (*ValidationError) Descriptor() ([]byte, []int) {
-	return file_harness_callback_proto_rawDescGZIP(), []int{131}
+	return file_harness_callback_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *ValidationError) GetField() string {
@@ -8799,7 +9012,7 @@ var File_harness_callback_proto protoreflect.FileDescriptor
 
 const file_harness_callback_proto_rawDesc = "" +
 	"\n" +
-	"\x16harness_callback.proto\x12\x0egibson.harness\x1a\fcommon.proto\x1a\vtypes.proto\"t\n" +
+	"\x16harness_callback.proto\x12\x0egibson.harness\x1a\fcommon.proto\x1a\vtypes.proto\x1a\x0egraphrag.proto\"t\n" +
 	"\fHarnessError\x12,\n" +
 	"\x04code\x18\x01 \x01(\x0e2\x18.gibson.common.ErrorCodeR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
@@ -9336,7 +9549,19 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\x15GraphRAGHealthRequest\x125\n" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\"U\n" +
 	"\x16GraphRAGHealthResponse\x12;\n" +
-	"\x06status\x18\x01 \x01(\v2#.gibson.harness.HarnessHealthStatusR\x06status\"N\n" +
+	"\x06status\x18\x01 \x01(\v2#.gibson.harness.HarnessHealthStatusR\x06status\"y\n" +
+	"\x10StoreNodeRequest\x125\n" +
+	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x12.\n" +
+	"\x04node\x18\x02 \x01(\v2\x1a.gibson.graphrag.GraphNodeR\x04node\"`\n" +
+	"\x11StoreNodeResponse\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x122\n" +
+	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"}\n" +
+	"\x11QueryNodesRequest\x125\n" +
+	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\x121\n" +
+	"\x05query\x18\x02 \x01(\v2\x1b.gibson.graphrag.GraphQueryR\x05query\"\x80\x01\n" +
+	"\x12QueryNodesResponse\x126\n" +
+	"\aresults\x18\x01 \x03(\v2\x1c.gibson.graphrag.QueryResultR\aresults\x122\n" +
+	"\x05error\x18\x02 \x01(\v2\x1c.gibson.harness.HarnessErrorR\x05error\"N\n" +
 	"\x15GetPlanContextRequest\x125\n" +
 	"\acontext\x18\x01 \x01(\v2\x1b.gibson.harness.ContextInfoR\acontext\"\x8c\x01\n" +
 	"\x16GetPlanContextResponse\x12>\n" +
@@ -9582,7 +9807,7 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\x16CREDENTIAL_TYPE_BEARER\x10\x02\x12\x19\n" +
 	"\x15CREDENTIAL_TYPE_BASIC\x10\x03\x12\x19\n" +
 	"\x15CREDENTIAL_TYPE_OAUTH\x10\x04\x12\x1a\n" +
-	"\x16CREDENTIAL_TYPE_CUSTOM\x10\x052\xed\"\n" +
+	"\x16CREDENTIAL_TYPE_CUSTOM\x10\x052\x94$\n" +
 	"\x16HarnessCallbackService\x12V\n" +
 	"\vLLMComplete\x12\".gibson.harness.LLMCompleteRequest\x1a#.gibson.harness.LLMCompleteResponse\x12h\n" +
 	"\x14LLMCompleteWithTools\x12+.gibson.harness.LLMCompleteWithToolsRequest\x1a#.gibson.harness.LLMCompleteResponse\x12t\n" +
@@ -9619,7 +9844,10 @@ const file_harness_callback_proto_rawDesc = "" +
 	"\x17CreateGraphRelationship\x12..gibson.harness.CreateGraphRelationshipRequest\x1a/.gibson.harness.CreateGraphRelationshipResponse\x12b\n" +
 	"\x0fStoreGraphBatch\x12&.gibson.harness.StoreGraphBatchRequest\x1a'.gibson.harness.StoreGraphBatchResponse\x12\\\n" +
 	"\rTraverseGraph\x12$.gibson.harness.TraverseGraphRequest\x1a%.gibson.harness.TraverseGraphResponse\x12_\n" +
-	"\x0eGraphRAGHealth\x12%.gibson.harness.GraphRAGHealthRequest\x1a&.gibson.harness.GraphRAGHealthResponse\x12_\n" +
+	"\x0eGraphRAGHealth\x12%.gibson.harness.GraphRAGHealthRequest\x1a&.gibson.harness.GraphRAGHealthResponse\x12P\n" +
+	"\tStoreNode\x12 .gibson.harness.StoreNodeRequest\x1a!.gibson.harness.StoreNodeResponse\x12S\n" +
+	"\n" +
+	"QueryNodes\x12!.gibson.harness.QueryNodesRequest\x1a\".gibson.harness.QueryNodesResponse\x12_\n" +
 	"\x0eGetPlanContext\x12%.gibson.harness.GetPlanContextRequest\x1a&.gibson.harness.GetPlanContextResponse\x12b\n" +
 	"\x0fReportStepHints\x12&.gibson.harness.ReportStepHintsRequest\x1a'.gibson.harness.ReportStepHintsResponse\x12S\n" +
 	"\n" +
@@ -9645,7 +9873,7 @@ func file_harness_callback_proto_rawDescGZIP() []byte {
 }
 
 var file_harness_callback_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 150)
+var file_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 154)
 var file_harness_callback_proto_goTypes = []any{
 	(MemoryTier)(0),                                  // 0: gibson.harness.MemoryTier
 	(SpanKind)(0),                                    // 1: gibson.harness.SpanKind
@@ -9748,70 +9976,77 @@ var file_harness_callback_proto_goTypes = []any{
 	(*TraversalResult)(nil),                          // 98: gibson.harness.TraversalResult
 	(*GraphRAGHealthRequest)(nil),                    // 99: gibson.harness.GraphRAGHealthRequest
 	(*GraphRAGHealthResponse)(nil),                   // 100: gibson.harness.GraphRAGHealthResponse
-	(*GetPlanContextRequest)(nil),                    // 101: gibson.harness.GetPlanContextRequest
-	(*GetPlanContextResponse)(nil),                   // 102: gibson.harness.GetPlanContextResponse
-	(*PlanContext)(nil),                              // 103: gibson.harness.PlanContext
-	(*ReportStepHintsRequest)(nil),                   // 104: gibson.harness.ReportStepHintsRequest
-	(*ReportStepHintsResponse)(nil),                  // 105: gibson.harness.ReportStepHintsResponse
-	(*StepHints)(nil),                                // 106: gibson.harness.StepHints
-	(*AnyValue)(nil),                                 // 107: gibson.harness.AnyValue
-	(*KeyValue)(nil),                                 // 108: gibson.harness.KeyValue
-	(*SpanEvent)(nil),                                // 109: gibson.harness.SpanEvent
-	(*Span)(nil),                                     // 110: gibson.harness.Span
-	(*RecordSpanRequest)(nil),                        // 111: gibson.harness.RecordSpanRequest
-	(*RecordSpanResponse)(nil),                       // 112: gibson.harness.RecordSpanResponse
-	(*RecordSpansRequest)(nil),                       // 113: gibson.harness.RecordSpansRequest
-	(*RecordSpansResponse)(nil),                      // 114: gibson.harness.RecordSpansResponse
-	(*GetCredentialRequest)(nil),                     // 115: gibson.harness.GetCredentialRequest
-	(*GetCredentialResponse)(nil),                    // 116: gibson.harness.GetCredentialResponse
-	(*Credential)(nil),                               // 117: gibson.harness.Credential
-	(*BasicAuth)(nil),                                // 118: gibson.harness.BasicAuth
-	(*OAuthCredential)(nil),                          // 119: gibson.harness.OAuthCredential
-	(*GetTaxonomySchemaRequest)(nil),                 // 120: gibson.harness.GetTaxonomySchemaRequest
-	(*GetTaxonomySchemaResponse)(nil),                // 121: gibson.harness.GetTaxonomySchemaResponse
-	(*TaxonomyNodeType)(nil),                         // 122: gibson.harness.TaxonomyNodeType
-	(*TaxonomyRelationshipType)(nil),                 // 123: gibson.harness.TaxonomyRelationshipType
-	(*TaxonomyTechnique)(nil),                        // 124: gibson.harness.TaxonomyTechnique
-	(*TaxonomyTargetType)(nil),                       // 125: gibson.harness.TaxonomyTargetType
-	(*TaxonomyTechniqueType)(nil),                    // 126: gibson.harness.TaxonomyTechniqueType
-	(*TaxonomyCapability)(nil),                       // 127: gibson.harness.TaxonomyCapability
-	(*TaxonomyProperty)(nil),                         // 128: gibson.harness.TaxonomyProperty
-	(*GenerateNodeIDRequest)(nil),                    // 129: gibson.harness.GenerateNodeIDRequest
-	(*GenerateNodeIDResponse)(nil),                   // 130: gibson.harness.GenerateNodeIDResponse
-	(*ValidateFindingRequest)(nil),                   // 131: gibson.harness.ValidateFindingRequest
-	(*ValidateGraphNodeRequest)(nil),                 // 132: gibson.harness.ValidateGraphNodeRequest
-	(*ValidateRelationshipRequest)(nil),              // 133: gibson.harness.ValidateRelationshipRequest
-	(*ValidationResponse)(nil),                       // 134: gibson.harness.ValidationResponse
-	(*ValidationError)(nil),                          // 135: gibson.harness.ValidationError
-	nil,                                              // 136: gibson.harness.CallToolRequest.InputEntry
-	nil,                                              // 137: gibson.harness.JSONSchemaNode.PropertiesEntry
-	nil,                                              // 138: gibson.harness.TaxonomyMapping.IdentifyingPropertiesEntry
-	nil,                                              // 139: gibson.harness.NodeReference.PropertiesEntry
-	nil,                                              // 140: gibson.harness.QueryPluginRequest.ParamsEntry
-	nil,                                              // 141: gibson.harness.MemoryGetResponse.MetadataEntry
-	nil,                                              // 142: gibson.harness.MemorySetRequest.MetadataEntry
-	nil,                                              // 143: gibson.harness.MissionMemoryResult.MetadataEntry
-	nil,                                              // 144: gibson.harness.MissionMemoryItem.MetadataEntry
-	nil,                                              // 145: gibson.harness.LongTermMemoryStoreRequest.MetadataEntry
-	nil,                                              // 146: gibson.harness.LongTermMemorySearchRequest.FiltersEntry
-	nil,                                              // 147: gibson.harness.LongTermMemoryResult.MetadataEntry
-	nil,                                              // 148: gibson.harness.GraphNode.PropertiesEntry
-	nil,                                              // 149: gibson.harness.Relationship.PropertiesEntry
-	nil,                                              // 150: gibson.harness.Credential.MetadataEntry
-	nil,                                              // 151: gibson.harness.GenerateNodeIDRequest.PropertiesEntry
-	nil,                                              // 152: gibson.harness.ValidateGraphNodeRequest.PropertiesEntry
-	nil,                                              // 153: gibson.harness.ValidateRelationshipRequest.PropertiesEntry
-	(ErrorCode)(0),                                   // 154: gibson.common.ErrorCode
-	(*TypedValue)(nil),                               // 155: gibson.common.TypedValue
-	(*Task)(nil),                                     // 156: gibson.types.Task
-	(*Result)(nil),                                   // 157: gibson.types.Result
-	(*Finding)(nil),                                  // 158: gibson.types.Finding
-	(FindingSeverity)(0),                             // 159: gibson.types.FindingSeverity
-	(FindingStatus)(0),                               // 160: gibson.types.FindingStatus
-	(*GraphQuery)(nil),                               // 161: gibson.types.GraphQuery
+	(*StoreNodeRequest)(nil),                         // 101: gibson.harness.StoreNodeRequest
+	(*StoreNodeResponse)(nil),                        // 102: gibson.harness.StoreNodeResponse
+	(*QueryNodesRequest)(nil),                        // 103: gibson.harness.QueryNodesRequest
+	(*QueryNodesResponse)(nil),                       // 104: gibson.harness.QueryNodesResponse
+	(*GetPlanContextRequest)(nil),                    // 105: gibson.harness.GetPlanContextRequest
+	(*GetPlanContextResponse)(nil),                   // 106: gibson.harness.GetPlanContextResponse
+	(*PlanContext)(nil),                              // 107: gibson.harness.PlanContext
+	(*ReportStepHintsRequest)(nil),                   // 108: gibson.harness.ReportStepHintsRequest
+	(*ReportStepHintsResponse)(nil),                  // 109: gibson.harness.ReportStepHintsResponse
+	(*StepHints)(nil),                                // 110: gibson.harness.StepHints
+	(*AnyValue)(nil),                                 // 111: gibson.harness.AnyValue
+	(*KeyValue)(nil),                                 // 112: gibson.harness.KeyValue
+	(*SpanEvent)(nil),                                // 113: gibson.harness.SpanEvent
+	(*Span)(nil),                                     // 114: gibson.harness.Span
+	(*RecordSpanRequest)(nil),                        // 115: gibson.harness.RecordSpanRequest
+	(*RecordSpanResponse)(nil),                       // 116: gibson.harness.RecordSpanResponse
+	(*RecordSpansRequest)(nil),                       // 117: gibson.harness.RecordSpansRequest
+	(*RecordSpansResponse)(nil),                      // 118: gibson.harness.RecordSpansResponse
+	(*GetCredentialRequest)(nil),                     // 119: gibson.harness.GetCredentialRequest
+	(*GetCredentialResponse)(nil),                    // 120: gibson.harness.GetCredentialResponse
+	(*Credential)(nil),                               // 121: gibson.harness.Credential
+	(*BasicAuth)(nil),                                // 122: gibson.harness.BasicAuth
+	(*OAuthCredential)(nil),                          // 123: gibson.harness.OAuthCredential
+	(*GetTaxonomySchemaRequest)(nil),                 // 124: gibson.harness.GetTaxonomySchemaRequest
+	(*GetTaxonomySchemaResponse)(nil),                // 125: gibson.harness.GetTaxonomySchemaResponse
+	(*TaxonomyNodeType)(nil),                         // 126: gibson.harness.TaxonomyNodeType
+	(*TaxonomyRelationshipType)(nil),                 // 127: gibson.harness.TaxonomyRelationshipType
+	(*TaxonomyTechnique)(nil),                        // 128: gibson.harness.TaxonomyTechnique
+	(*TaxonomyTargetType)(nil),                       // 129: gibson.harness.TaxonomyTargetType
+	(*TaxonomyTechniqueType)(nil),                    // 130: gibson.harness.TaxonomyTechniqueType
+	(*TaxonomyCapability)(nil),                       // 131: gibson.harness.TaxonomyCapability
+	(*TaxonomyProperty)(nil),                         // 132: gibson.harness.TaxonomyProperty
+	(*GenerateNodeIDRequest)(nil),                    // 133: gibson.harness.GenerateNodeIDRequest
+	(*GenerateNodeIDResponse)(nil),                   // 134: gibson.harness.GenerateNodeIDResponse
+	(*ValidateFindingRequest)(nil),                   // 135: gibson.harness.ValidateFindingRequest
+	(*ValidateGraphNodeRequest)(nil),                 // 136: gibson.harness.ValidateGraphNodeRequest
+	(*ValidateRelationshipRequest)(nil),              // 137: gibson.harness.ValidateRelationshipRequest
+	(*ValidationResponse)(nil),                       // 138: gibson.harness.ValidationResponse
+	(*ValidationError)(nil),                          // 139: gibson.harness.ValidationError
+	nil,                                              // 140: gibson.harness.CallToolRequest.InputEntry
+	nil,                                              // 141: gibson.harness.JSONSchemaNode.PropertiesEntry
+	nil,                                              // 142: gibson.harness.TaxonomyMapping.IdentifyingPropertiesEntry
+	nil,                                              // 143: gibson.harness.NodeReference.PropertiesEntry
+	nil,                                              // 144: gibson.harness.QueryPluginRequest.ParamsEntry
+	nil,                                              // 145: gibson.harness.MemoryGetResponse.MetadataEntry
+	nil,                                              // 146: gibson.harness.MemorySetRequest.MetadataEntry
+	nil,                                              // 147: gibson.harness.MissionMemoryResult.MetadataEntry
+	nil,                                              // 148: gibson.harness.MissionMemoryItem.MetadataEntry
+	nil,                                              // 149: gibson.harness.LongTermMemoryStoreRequest.MetadataEntry
+	nil,                                              // 150: gibson.harness.LongTermMemorySearchRequest.FiltersEntry
+	nil,                                              // 151: gibson.harness.LongTermMemoryResult.MetadataEntry
+	nil,                                              // 152: gibson.harness.GraphNode.PropertiesEntry
+	nil,                                              // 153: gibson.harness.Relationship.PropertiesEntry
+	nil,                                              // 154: gibson.harness.Credential.MetadataEntry
+	nil,                                              // 155: gibson.harness.GenerateNodeIDRequest.PropertiesEntry
+	nil,                                              // 156: gibson.harness.ValidateGraphNodeRequest.PropertiesEntry
+	nil,                                              // 157: gibson.harness.ValidateRelationshipRequest.PropertiesEntry
+	(ErrorCode)(0),                                   // 158: gibson.common.ErrorCode
+	(*TypedValue)(nil),                               // 159: gibson.common.TypedValue
+	(*Task)(nil),                                     // 160: gibson.types.Task
+	(*Result)(nil),                                   // 161: gibson.types.Result
+	(*Finding)(nil),                                  // 162: gibson.types.Finding
+	(FindingSeverity)(0),                             // 163: gibson.types.FindingSeverity
+	(FindingStatus)(0),                               // 164: gibson.types.FindingStatus
+	(*GraphQuery)(nil),                               // 165: gibson.types.GraphQuery
+	(*graphragpb.GraphNode)(nil),                     // 166: gibson.graphrag.GraphNode
+	(*graphragpb.GraphQuery)(nil),                    // 167: gibson.graphrag.GraphQuery
+	(*graphragpb.QueryResult)(nil),                   // 168: gibson.graphrag.QueryResult
 }
 var file_harness_callback_proto_depIdxs = []int32{
-	154, // 0: gibson.harness.HarnessError.code:type_name -> gibson.common.ErrorCode
+	158, // 0: gibson.harness.HarnessError.code:type_name -> gibson.common.ErrorCode
 	9,   // 1: gibson.harness.LLMMessage.tool_calls:type_name -> gibson.harness.ToolCall
 	10,  // 2: gibson.harness.LLMMessage.tool_results:type_name -> gibson.harness.ToolResult
 	24,  // 3: gibson.harness.ToolDef.parameters:type_name -> gibson.harness.JSONSchemaNode
@@ -9822,7 +10057,7 @@ var file_harness_callback_proto_depIdxs = []int32{
 	11,  // 8: gibson.harness.LLMCompleteWithToolsRequest.tools:type_name -> gibson.harness.ToolDef
 	6,   // 9: gibson.harness.LLMCompleteStructuredRequest.context:type_name -> gibson.harness.ContextInfo
 	8,   // 10: gibson.harness.LLMCompleteStructuredRequest.messages:type_name -> gibson.harness.LLMMessage
-	155, // 11: gibson.harness.LLMCompleteStructuredResponse.result:type_name -> gibson.common.TypedValue
+	159, // 11: gibson.harness.LLMCompleteStructuredResponse.result:type_name -> gibson.common.TypedValue
 	7,   // 12: gibson.harness.LLMCompleteStructuredResponse.usage:type_name -> gibson.harness.TokenUsage
 	4,   // 13: gibson.harness.LLMCompleteStructuredResponse.error:type_name -> gibson.harness.HarnessError
 	9,   // 14: gibson.harness.LLMCompleteResponse.tool_calls:type_name -> gibson.harness.ToolCall
@@ -9834,56 +10069,56 @@ var file_harness_callback_proto_depIdxs = []int32{
 	7,   // 20: gibson.harness.LLMStreamChunk.usage:type_name -> gibson.harness.TokenUsage
 	4,   // 21: gibson.harness.LLMStreamChunk.error:type_name -> gibson.harness.HarnessError
 	6,   // 22: gibson.harness.CallToolRequest.context:type_name -> gibson.harness.ContextInfo
-	136, // 23: gibson.harness.CallToolRequest.input:type_name -> gibson.harness.CallToolRequest.InputEntry
-	155, // 24: gibson.harness.CallToolResponse.output:type_name -> gibson.common.TypedValue
+	140, // 23: gibson.harness.CallToolRequest.input:type_name -> gibson.harness.CallToolRequest.InputEntry
+	159, // 24: gibson.harness.CallToolResponse.output:type_name -> gibson.common.TypedValue
 	4,   // 25: gibson.harness.CallToolResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 26: gibson.harness.ListToolsRequest.context:type_name -> gibson.harness.ContextInfo
 	23,  // 27: gibson.harness.ListToolsResponse.tools:type_name -> gibson.harness.HarnessToolDescriptor
 	4,   // 28: gibson.harness.ListToolsResponse.error:type_name -> gibson.harness.HarnessError
 	24,  // 29: gibson.harness.HarnessToolDescriptor.input_schema:type_name -> gibson.harness.JSONSchemaNode
 	24,  // 30: gibson.harness.HarnessToolDescriptor.output_schema:type_name -> gibson.harness.JSONSchemaNode
-	137, // 31: gibson.harness.JSONSchemaNode.properties:type_name -> gibson.harness.JSONSchemaNode.PropertiesEntry
+	141, // 31: gibson.harness.JSONSchemaNode.properties:type_name -> gibson.harness.JSONSchemaNode.PropertiesEntry
 	24,  // 32: gibson.harness.JSONSchemaNode.items:type_name -> gibson.harness.JSONSchemaNode
 	25,  // 33: gibson.harness.JSONSchemaNode.taxonomy:type_name -> gibson.harness.TaxonomyMapping
-	138, // 34: gibson.harness.TaxonomyMapping.identifying_properties:type_name -> gibson.harness.TaxonomyMapping.IdentifyingPropertiesEntry
+	142, // 34: gibson.harness.TaxonomyMapping.identifying_properties:type_name -> gibson.harness.TaxonomyMapping.IdentifyingPropertiesEntry
 	26,  // 35: gibson.harness.TaxonomyMapping.properties:type_name -> gibson.harness.PropertyMapping
 	28,  // 36: gibson.harness.TaxonomyMapping.relationships:type_name -> gibson.harness.RelationshipMapping
-	139, // 37: gibson.harness.NodeReference.properties:type_name -> gibson.harness.NodeReference.PropertiesEntry
+	143, // 37: gibson.harness.NodeReference.properties:type_name -> gibson.harness.NodeReference.PropertiesEntry
 	27,  // 38: gibson.harness.RelationshipMapping.from:type_name -> gibson.harness.NodeReference
 	27,  // 39: gibson.harness.RelationshipMapping.to:type_name -> gibson.harness.NodeReference
 	26,  // 40: gibson.harness.RelationshipMapping.rel_properties:type_name -> gibson.harness.PropertyMapping
 	6,   // 41: gibson.harness.QueryPluginRequest.context:type_name -> gibson.harness.ContextInfo
-	140, // 42: gibson.harness.QueryPluginRequest.params:type_name -> gibson.harness.QueryPluginRequest.ParamsEntry
-	155, // 43: gibson.harness.QueryPluginResponse.result:type_name -> gibson.common.TypedValue
+	144, // 42: gibson.harness.QueryPluginRequest.params:type_name -> gibson.harness.QueryPluginRequest.ParamsEntry
+	159, // 43: gibson.harness.QueryPluginResponse.result:type_name -> gibson.common.TypedValue
 	4,   // 44: gibson.harness.QueryPluginResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 45: gibson.harness.ListPluginsRequest.context:type_name -> gibson.harness.ContextInfo
 	33,  // 46: gibson.harness.ListPluginsResponse.plugins:type_name -> gibson.harness.HarnessPluginDescriptor
 	4,   // 47: gibson.harness.ListPluginsResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 48: gibson.harness.DelegateToAgentRequest.context:type_name -> gibson.harness.ContextInfo
-	156, // 49: gibson.harness.DelegateToAgentRequest.task:type_name -> gibson.types.Task
-	157, // 50: gibson.harness.DelegateToAgentResponse.result:type_name -> gibson.types.Result
+	160, // 49: gibson.harness.DelegateToAgentRequest.task:type_name -> gibson.types.Task
+	161, // 50: gibson.harness.DelegateToAgentResponse.result:type_name -> gibson.types.Result
 	4,   // 51: gibson.harness.DelegateToAgentResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 52: gibson.harness.ListAgentsRequest.context:type_name -> gibson.harness.ContextInfo
 	38,  // 53: gibson.harness.ListAgentsResponse.agents:type_name -> gibson.harness.HarnessAgentDescriptor
 	4,   // 54: gibson.harness.ListAgentsResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 55: gibson.harness.SubmitFindingRequest.context:type_name -> gibson.harness.ContextInfo
-	158, // 56: gibson.harness.SubmitFindingRequest.finding:type_name -> gibson.types.Finding
+	162, // 56: gibson.harness.SubmitFindingRequest.finding:type_name -> gibson.types.Finding
 	4,   // 57: gibson.harness.SubmitFindingResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 58: gibson.harness.GetFindingsRequest.context:type_name -> gibson.harness.ContextInfo
 	43,  // 59: gibson.harness.GetFindingsRequest.filter:type_name -> gibson.harness.FindingFilter
-	158, // 60: gibson.harness.GetFindingsResponse.findings:type_name -> gibson.types.Finding
+	162, // 60: gibson.harness.GetFindingsResponse.findings:type_name -> gibson.types.Finding
 	4,   // 61: gibson.harness.GetFindingsResponse.error:type_name -> gibson.harness.HarnessError
-	159, // 62: gibson.harness.FindingFilter.severity:type_name -> gibson.types.FindingSeverity
-	160, // 63: gibson.harness.FindingFilter.status:type_name -> gibson.types.FindingStatus
+	163, // 62: gibson.harness.FindingFilter.severity:type_name -> gibson.types.FindingSeverity
+	164, // 63: gibson.harness.FindingFilter.status:type_name -> gibson.types.FindingStatus
 	6,   // 64: gibson.harness.MemoryGetRequest.context:type_name -> gibson.harness.ContextInfo
 	0,   // 65: gibson.harness.MemoryGetRequest.tier:type_name -> gibson.harness.MemoryTier
-	155, // 66: gibson.harness.MemoryGetResponse.value:type_name -> gibson.common.TypedValue
+	159, // 66: gibson.harness.MemoryGetResponse.value:type_name -> gibson.common.TypedValue
 	4,   // 67: gibson.harness.MemoryGetResponse.error:type_name -> gibson.harness.HarnessError
-	141, // 68: gibson.harness.MemoryGetResponse.metadata:type_name -> gibson.harness.MemoryGetResponse.MetadataEntry
+	145, // 68: gibson.harness.MemoryGetResponse.metadata:type_name -> gibson.harness.MemoryGetResponse.MetadataEntry
 	6,   // 69: gibson.harness.MemorySetRequest.context:type_name -> gibson.harness.ContextInfo
-	155, // 70: gibson.harness.MemorySetRequest.value:type_name -> gibson.common.TypedValue
+	159, // 70: gibson.harness.MemorySetRequest.value:type_name -> gibson.common.TypedValue
 	0,   // 71: gibson.harness.MemorySetRequest.tier:type_name -> gibson.harness.MemoryTier
-	142, // 72: gibson.harness.MemorySetRequest.metadata:type_name -> gibson.harness.MemorySetRequest.MetadataEntry
+	146, // 72: gibson.harness.MemorySetRequest.metadata:type_name -> gibson.harness.MemorySetRequest.MetadataEntry
 	4,   // 73: gibson.harness.MemorySetResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 74: gibson.harness.MemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
 	0,   // 75: gibson.harness.MemoryDeleteRequest.tier:type_name -> gibson.harness.MemoryTier
@@ -9894,38 +10129,38 @@ var file_harness_callback_proto_depIdxs = []int32{
 	6,   // 80: gibson.harness.MissionMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
 	54,  // 81: gibson.harness.MissionMemorySearchResponse.results:type_name -> gibson.harness.MissionMemoryResult
 	4,   // 82: gibson.harness.MissionMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
-	155, // 83: gibson.harness.MissionMemoryResult.value:type_name -> gibson.common.TypedValue
-	143, // 84: gibson.harness.MissionMemoryResult.metadata:type_name -> gibson.harness.MissionMemoryResult.MetadataEntry
+	159, // 83: gibson.harness.MissionMemoryResult.value:type_name -> gibson.common.TypedValue
+	147, // 84: gibson.harness.MissionMemoryResult.metadata:type_name -> gibson.harness.MissionMemoryResult.MetadataEntry
 	6,   // 85: gibson.harness.MissionMemoryHistoryRequest.context:type_name -> gibson.harness.ContextInfo
 	57,  // 86: gibson.harness.MissionMemoryHistoryResponse.items:type_name -> gibson.harness.MissionMemoryItem
 	4,   // 87: gibson.harness.MissionMemoryHistoryResponse.error:type_name -> gibson.harness.HarnessError
-	155, // 88: gibson.harness.MissionMemoryItem.value:type_name -> gibson.common.TypedValue
-	144, // 89: gibson.harness.MissionMemoryItem.metadata:type_name -> gibson.harness.MissionMemoryItem.MetadataEntry
+	159, // 88: gibson.harness.MissionMemoryItem.value:type_name -> gibson.common.TypedValue
+	148, // 89: gibson.harness.MissionMemoryItem.metadata:type_name -> gibson.harness.MissionMemoryItem.MetadataEntry
 	6,   // 90: gibson.harness.MissionMemoryGetPreviousRunValueRequest.context:type_name -> gibson.harness.ContextInfo
-	155, // 91: gibson.harness.MissionMemoryGetPreviousRunValueResponse.value:type_name -> gibson.common.TypedValue
+	159, // 91: gibson.harness.MissionMemoryGetPreviousRunValueResponse.value:type_name -> gibson.common.TypedValue
 	4,   // 92: gibson.harness.MissionMemoryGetPreviousRunValueResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 93: gibson.harness.MissionMemoryGetValueHistoryRequest.context:type_name -> gibson.harness.ContextInfo
 	62,  // 94: gibson.harness.MissionMemoryGetValueHistoryResponse.values:type_name -> gibson.harness.HistoricalValueItem
 	4,   // 95: gibson.harness.MissionMemoryGetValueHistoryResponse.error:type_name -> gibson.harness.HarnessError
-	155, // 96: gibson.harness.HistoricalValueItem.value:type_name -> gibson.common.TypedValue
+	159, // 96: gibson.harness.HistoricalValueItem.value:type_name -> gibson.common.TypedValue
 	6,   // 97: gibson.harness.MissionMemoryContinuityModeRequest.context:type_name -> gibson.harness.ContextInfo
 	4,   // 98: gibson.harness.MissionMemoryContinuityModeResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 99: gibson.harness.LongTermMemoryStoreRequest.context:type_name -> gibson.harness.ContextInfo
-	145, // 100: gibson.harness.LongTermMemoryStoreRequest.metadata:type_name -> gibson.harness.LongTermMemoryStoreRequest.MetadataEntry
+	149, // 100: gibson.harness.LongTermMemoryStoreRequest.metadata:type_name -> gibson.harness.LongTermMemoryStoreRequest.MetadataEntry
 	4,   // 101: gibson.harness.LongTermMemoryStoreResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 102: gibson.harness.LongTermMemorySearchRequest.context:type_name -> gibson.harness.ContextInfo
-	146, // 103: gibson.harness.LongTermMemorySearchRequest.filters:type_name -> gibson.harness.LongTermMemorySearchRequest.FiltersEntry
+	150, // 103: gibson.harness.LongTermMemorySearchRequest.filters:type_name -> gibson.harness.LongTermMemorySearchRequest.FiltersEntry
 	69,  // 104: gibson.harness.LongTermMemorySearchResponse.results:type_name -> gibson.harness.LongTermMemoryResult
 	4,   // 105: gibson.harness.LongTermMemorySearchResponse.error:type_name -> gibson.harness.HarnessError
-	147, // 106: gibson.harness.LongTermMemoryResult.metadata:type_name -> gibson.harness.LongTermMemoryResult.MetadataEntry
+	151, // 106: gibson.harness.LongTermMemoryResult.metadata:type_name -> gibson.harness.LongTermMemoryResult.MetadataEntry
 	6,   // 107: gibson.harness.LongTermMemoryDeleteRequest.context:type_name -> gibson.harness.ContextInfo
 	4,   // 108: gibson.harness.LongTermMemoryDeleteResponse.error:type_name -> gibson.harness.HarnessError
 	6,   // 109: gibson.harness.GraphRAGQueryRequest.context:type_name -> gibson.harness.ContextInfo
-	161, // 110: gibson.harness.GraphRAGQueryRequest.query:type_name -> gibson.types.GraphQuery
+	165, // 110: gibson.harness.GraphRAGQueryRequest.query:type_name -> gibson.types.GraphQuery
 	74,  // 111: gibson.harness.GraphRAGQueryResponse.results:type_name -> gibson.harness.GraphRAGResult
 	4,   // 112: gibson.harness.GraphRAGQueryResponse.error:type_name -> gibson.harness.HarnessError
 	75,  // 113: gibson.harness.GraphRAGResult.node:type_name -> gibson.harness.GraphNode
-	148, // 114: gibson.harness.GraphNode.properties:type_name -> gibson.harness.GraphNode.PropertiesEntry
+	152, // 114: gibson.harness.GraphNode.properties:type_name -> gibson.harness.GraphNode.PropertiesEntry
 	6,   // 115: gibson.harness.FindSimilarAttacksRequest.context:type_name -> gibson.harness.ContextInfo
 	78,  // 116: gibson.harness.FindSimilarAttacksResponse.attacks:type_name -> gibson.harness.AttackPattern
 	4,   // 117: gibson.harness.FindSimilarAttacksResponse.error:type_name -> gibson.harness.HarnessError
@@ -9945,7 +10180,7 @@ var file_harness_callback_proto_depIdxs = []int32{
 	6,   // 131: gibson.harness.CreateGraphRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
 	92,  // 132: gibson.harness.CreateGraphRelationshipRequest.relationship:type_name -> gibson.harness.Relationship
 	4,   // 133: gibson.harness.CreateGraphRelationshipResponse.error:type_name -> gibson.harness.HarnessError
-	149, // 134: gibson.harness.Relationship.properties:type_name -> gibson.harness.Relationship.PropertiesEntry
+	153, // 134: gibson.harness.Relationship.properties:type_name -> gibson.harness.Relationship.PropertiesEntry
 	6,   // 135: gibson.harness.StoreGraphBatchRequest.context:type_name -> gibson.harness.ContextInfo
 	75,  // 136: gibson.harness.StoreGraphBatchRequest.nodes:type_name -> gibson.harness.GraphNode
 	92,  // 137: gibson.harness.StoreGraphBatchRequest.relationships:type_name -> gibson.harness.Relationship
@@ -9957,161 +10192,172 @@ var file_harness_callback_proto_depIdxs = []int32{
 	75,  // 143: gibson.harness.TraversalResult.node:type_name -> gibson.harness.GraphNode
 	6,   // 144: gibson.harness.GraphRAGHealthRequest.context:type_name -> gibson.harness.ContextInfo
 	5,   // 145: gibson.harness.GraphRAGHealthResponse.status:type_name -> gibson.harness.HarnessHealthStatus
-	6,   // 146: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
-	103, // 147: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
-	4,   // 148: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 149: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
-	106, // 150: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
-	4,   // 151: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
-	107, // 152: gibson.harness.KeyValue.value:type_name -> gibson.harness.AnyValue
-	108, // 153: gibson.harness.SpanEvent.attributes:type_name -> gibson.harness.KeyValue
-	1,   // 154: gibson.harness.Span.kind:type_name -> gibson.harness.SpanKind
-	2,   // 155: gibson.harness.Span.status_code:type_name -> gibson.harness.StatusCode
-	108, // 156: gibson.harness.Span.attributes:type_name -> gibson.harness.KeyValue
-	109, // 157: gibson.harness.Span.events:type_name -> gibson.harness.SpanEvent
-	6,   // 158: gibson.harness.RecordSpanRequest.context:type_name -> gibson.harness.ContextInfo
-	110, // 159: gibson.harness.RecordSpanRequest.span:type_name -> gibson.harness.Span
-	4,   // 160: gibson.harness.RecordSpanResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 161: gibson.harness.RecordSpansRequest.context:type_name -> gibson.harness.ContextInfo
-	110, // 162: gibson.harness.RecordSpansRequest.spans:type_name -> gibson.harness.Span
-	4,   // 163: gibson.harness.RecordSpansResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 164: gibson.harness.GetCredentialRequest.context:type_name -> gibson.harness.ContextInfo
-	117, // 165: gibson.harness.GetCredentialResponse.credential:type_name -> gibson.harness.Credential
-	4,   // 166: gibson.harness.GetCredentialResponse.error:type_name -> gibson.harness.HarnessError
-	3,   // 167: gibson.harness.Credential.type:type_name -> gibson.harness.CredentialType
-	118, // 168: gibson.harness.Credential.basic:type_name -> gibson.harness.BasicAuth
-	119, // 169: gibson.harness.Credential.oauth:type_name -> gibson.harness.OAuthCredential
-	150, // 170: gibson.harness.Credential.metadata:type_name -> gibson.harness.Credential.MetadataEntry
-	6,   // 171: gibson.harness.GetTaxonomySchemaRequest.context:type_name -> gibson.harness.ContextInfo
-	122, // 172: gibson.harness.GetTaxonomySchemaResponse.node_types:type_name -> gibson.harness.TaxonomyNodeType
-	123, // 173: gibson.harness.GetTaxonomySchemaResponse.relationship_types:type_name -> gibson.harness.TaxonomyRelationshipType
-	124, // 174: gibson.harness.GetTaxonomySchemaResponse.techniques:type_name -> gibson.harness.TaxonomyTechnique
-	125, // 175: gibson.harness.GetTaxonomySchemaResponse.target_types:type_name -> gibson.harness.TaxonomyTargetType
-	126, // 176: gibson.harness.GetTaxonomySchemaResponse.technique_types:type_name -> gibson.harness.TaxonomyTechniqueType
-	127, // 177: gibson.harness.GetTaxonomySchemaResponse.capabilities:type_name -> gibson.harness.TaxonomyCapability
-	4,   // 178: gibson.harness.GetTaxonomySchemaResponse.error:type_name -> gibson.harness.HarnessError
-	128, // 179: gibson.harness.TaxonomyNodeType.properties:type_name -> gibson.harness.TaxonomyProperty
-	128, // 180: gibson.harness.TaxonomyRelationshipType.properties:type_name -> gibson.harness.TaxonomyProperty
-	6,   // 181: gibson.harness.GenerateNodeIDRequest.context:type_name -> gibson.harness.ContextInfo
-	151, // 182: gibson.harness.GenerateNodeIDRequest.properties:type_name -> gibson.harness.GenerateNodeIDRequest.PropertiesEntry
-	4,   // 183: gibson.harness.GenerateNodeIDResponse.error:type_name -> gibson.harness.HarnessError
-	6,   // 184: gibson.harness.ValidateFindingRequest.context:type_name -> gibson.harness.ContextInfo
-	158, // 185: gibson.harness.ValidateFindingRequest.finding:type_name -> gibson.types.Finding
-	6,   // 186: gibson.harness.ValidateGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
-	152, // 187: gibson.harness.ValidateGraphNodeRequest.properties:type_name -> gibson.harness.ValidateGraphNodeRequest.PropertiesEntry
-	6,   // 188: gibson.harness.ValidateRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
-	153, // 189: gibson.harness.ValidateRelationshipRequest.properties:type_name -> gibson.harness.ValidateRelationshipRequest.PropertiesEntry
-	135, // 190: gibson.harness.ValidationResponse.errors:type_name -> gibson.harness.ValidationError
-	4,   // 191: gibson.harness.ValidationResponse.error:type_name -> gibson.harness.HarnessError
-	155, // 192: gibson.harness.CallToolRequest.InputEntry.value:type_name -> gibson.common.TypedValue
-	24,  // 193: gibson.harness.JSONSchemaNode.PropertiesEntry.value:type_name -> gibson.harness.JSONSchemaNode
-	155, // 194: gibson.harness.QueryPluginRequest.ParamsEntry.value:type_name -> gibson.common.TypedValue
-	155, // 195: gibson.harness.MemoryGetResponse.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 196: gibson.harness.MemorySetRequest.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 197: gibson.harness.MissionMemoryResult.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 198: gibson.harness.MissionMemoryItem.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 199: gibson.harness.LongTermMemoryStoreRequest.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 200: gibson.harness.LongTermMemorySearchRequest.FiltersEntry.value:type_name -> gibson.common.TypedValue
-	155, // 201: gibson.harness.LongTermMemoryResult.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 202: gibson.harness.GraphNode.PropertiesEntry.value:type_name -> gibson.common.TypedValue
-	155, // 203: gibson.harness.Relationship.PropertiesEntry.value:type_name -> gibson.common.TypedValue
-	155, // 204: gibson.harness.Credential.MetadataEntry.value:type_name -> gibson.common.TypedValue
-	155, // 205: gibson.harness.GenerateNodeIDRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
-	155, // 206: gibson.harness.ValidateGraphNodeRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
-	155, // 207: gibson.harness.ValidateRelationshipRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
-	12,  // 208: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
-	13,  // 209: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
-	14,  // 210: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
-	17,  // 211: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
-	19,  // 212: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
-	21,  // 213: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
-	29,  // 214: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
-	31,  // 215: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
-	34,  // 216: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
-	36,  // 217: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
-	39,  // 218: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
-	41,  // 219: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
-	44,  // 220: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
-	46,  // 221: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
-	48,  // 222: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
-	50,  // 223: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
-	52,  // 224: gibson.harness.HarnessCallbackService.MissionMemorySearch:input_type -> gibson.harness.MissionMemorySearchRequest
-	55,  // 225: gibson.harness.HarnessCallbackService.MissionMemoryHistory:input_type -> gibson.harness.MissionMemoryHistoryRequest
-	58,  // 226: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:input_type -> gibson.harness.MissionMemoryGetPreviousRunValueRequest
-	60,  // 227: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:input_type -> gibson.harness.MissionMemoryGetValueHistoryRequest
-	63,  // 228: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:input_type -> gibson.harness.MissionMemoryContinuityModeRequest
-	65,  // 229: gibson.harness.HarnessCallbackService.LongTermMemoryStore:input_type -> gibson.harness.LongTermMemoryStoreRequest
-	67,  // 230: gibson.harness.HarnessCallbackService.LongTermMemorySearch:input_type -> gibson.harness.LongTermMemorySearchRequest
-	70,  // 231: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:input_type -> gibson.harness.LongTermMemoryDeleteRequest
-	72,  // 232: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
-	76,  // 233: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
-	79,  // 234: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
-	82,  // 235: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
-	86,  // 236: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
-	88,  // 237: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
-	90,  // 238: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
-	93,  // 239: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
-	95,  // 240: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
-	99,  // 241: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
-	101, // 242: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
-	104, // 243: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
-	111, // 244: gibson.harness.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.RecordSpanRequest
-	113, // 245: gibson.harness.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.RecordSpansRequest
-	115, // 246: gibson.harness.HarnessCallbackService.GetCredential:input_type -> gibson.harness.GetCredentialRequest
-	120, // 247: gibson.harness.HarnessCallbackService.GetTaxonomySchema:input_type -> gibson.harness.GetTaxonomySchemaRequest
-	129, // 248: gibson.harness.HarnessCallbackService.GenerateNodeID:input_type -> gibson.harness.GenerateNodeIDRequest
-	131, // 249: gibson.harness.HarnessCallbackService.ValidateFinding:input_type -> gibson.harness.ValidateFindingRequest
-	132, // 250: gibson.harness.HarnessCallbackService.ValidateGraphNode:input_type -> gibson.harness.ValidateGraphNodeRequest
-	133, // 251: gibson.harness.HarnessCallbackService.ValidateRelationship:input_type -> gibson.harness.ValidateRelationshipRequest
-	16,  // 252: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
-	16,  // 253: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
-	15,  // 254: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
-	18,  // 255: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
-	20,  // 256: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
-	22,  // 257: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
-	30,  // 258: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
-	32,  // 259: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
-	35,  // 260: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
-	37,  // 261: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
-	40,  // 262: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
-	42,  // 263: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
-	45,  // 264: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
-	47,  // 265: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
-	49,  // 266: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
-	51,  // 267: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
-	53,  // 268: gibson.harness.HarnessCallbackService.MissionMemorySearch:output_type -> gibson.harness.MissionMemorySearchResponse
-	56,  // 269: gibson.harness.HarnessCallbackService.MissionMemoryHistory:output_type -> gibson.harness.MissionMemoryHistoryResponse
-	59,  // 270: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:output_type -> gibson.harness.MissionMemoryGetPreviousRunValueResponse
-	61,  // 271: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:output_type -> gibson.harness.MissionMemoryGetValueHistoryResponse
-	64,  // 272: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:output_type -> gibson.harness.MissionMemoryContinuityModeResponse
-	66,  // 273: gibson.harness.HarnessCallbackService.LongTermMemoryStore:output_type -> gibson.harness.LongTermMemoryStoreResponse
-	68,  // 274: gibson.harness.HarnessCallbackService.LongTermMemorySearch:output_type -> gibson.harness.LongTermMemorySearchResponse
-	71,  // 275: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:output_type -> gibson.harness.LongTermMemoryDeleteResponse
-	73,  // 276: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
-	77,  // 277: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
-	80,  // 278: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
-	83,  // 279: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
-	87,  // 280: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
-	89,  // 281: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
-	91,  // 282: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
-	94,  // 283: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
-	96,  // 284: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
-	100, // 285: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
-	102, // 286: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
-	105, // 287: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
-	112, // 288: gibson.harness.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.RecordSpanResponse
-	114, // 289: gibson.harness.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.RecordSpansResponse
-	116, // 290: gibson.harness.HarnessCallbackService.GetCredential:output_type -> gibson.harness.GetCredentialResponse
-	121, // 291: gibson.harness.HarnessCallbackService.GetTaxonomySchema:output_type -> gibson.harness.GetTaxonomySchemaResponse
-	130, // 292: gibson.harness.HarnessCallbackService.GenerateNodeID:output_type -> gibson.harness.GenerateNodeIDResponse
-	134, // 293: gibson.harness.HarnessCallbackService.ValidateFinding:output_type -> gibson.harness.ValidationResponse
-	134, // 294: gibson.harness.HarnessCallbackService.ValidateGraphNode:output_type -> gibson.harness.ValidationResponse
-	134, // 295: gibson.harness.HarnessCallbackService.ValidateRelationship:output_type -> gibson.harness.ValidationResponse
-	252, // [252:296] is the sub-list for method output_type
-	208, // [208:252] is the sub-list for method input_type
-	208, // [208:208] is the sub-list for extension type_name
-	208, // [208:208] is the sub-list for extension extendee
-	0,   // [0:208] is the sub-list for field type_name
+	6,   // 146: gibson.harness.StoreNodeRequest.context:type_name -> gibson.harness.ContextInfo
+	166, // 147: gibson.harness.StoreNodeRequest.node:type_name -> gibson.graphrag.GraphNode
+	4,   // 148: gibson.harness.StoreNodeResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 149: gibson.harness.QueryNodesRequest.context:type_name -> gibson.harness.ContextInfo
+	167, // 150: gibson.harness.QueryNodesRequest.query:type_name -> gibson.graphrag.GraphQuery
+	168, // 151: gibson.harness.QueryNodesResponse.results:type_name -> gibson.graphrag.QueryResult
+	4,   // 152: gibson.harness.QueryNodesResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 153: gibson.harness.GetPlanContextRequest.context:type_name -> gibson.harness.ContextInfo
+	107, // 154: gibson.harness.GetPlanContextResponse.plan_context:type_name -> gibson.harness.PlanContext
+	4,   // 155: gibson.harness.GetPlanContextResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 156: gibson.harness.ReportStepHintsRequest.context:type_name -> gibson.harness.ContextInfo
+	110, // 157: gibson.harness.ReportStepHintsRequest.hints:type_name -> gibson.harness.StepHints
+	4,   // 158: gibson.harness.ReportStepHintsResponse.error:type_name -> gibson.harness.HarnessError
+	111, // 159: gibson.harness.KeyValue.value:type_name -> gibson.harness.AnyValue
+	112, // 160: gibson.harness.SpanEvent.attributes:type_name -> gibson.harness.KeyValue
+	1,   // 161: gibson.harness.Span.kind:type_name -> gibson.harness.SpanKind
+	2,   // 162: gibson.harness.Span.status_code:type_name -> gibson.harness.StatusCode
+	112, // 163: gibson.harness.Span.attributes:type_name -> gibson.harness.KeyValue
+	113, // 164: gibson.harness.Span.events:type_name -> gibson.harness.SpanEvent
+	6,   // 165: gibson.harness.RecordSpanRequest.context:type_name -> gibson.harness.ContextInfo
+	114, // 166: gibson.harness.RecordSpanRequest.span:type_name -> gibson.harness.Span
+	4,   // 167: gibson.harness.RecordSpanResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 168: gibson.harness.RecordSpansRequest.context:type_name -> gibson.harness.ContextInfo
+	114, // 169: gibson.harness.RecordSpansRequest.spans:type_name -> gibson.harness.Span
+	4,   // 170: gibson.harness.RecordSpansResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 171: gibson.harness.GetCredentialRequest.context:type_name -> gibson.harness.ContextInfo
+	121, // 172: gibson.harness.GetCredentialResponse.credential:type_name -> gibson.harness.Credential
+	4,   // 173: gibson.harness.GetCredentialResponse.error:type_name -> gibson.harness.HarnessError
+	3,   // 174: gibson.harness.Credential.type:type_name -> gibson.harness.CredentialType
+	122, // 175: gibson.harness.Credential.basic:type_name -> gibson.harness.BasicAuth
+	123, // 176: gibson.harness.Credential.oauth:type_name -> gibson.harness.OAuthCredential
+	154, // 177: gibson.harness.Credential.metadata:type_name -> gibson.harness.Credential.MetadataEntry
+	6,   // 178: gibson.harness.GetTaxonomySchemaRequest.context:type_name -> gibson.harness.ContextInfo
+	126, // 179: gibson.harness.GetTaxonomySchemaResponse.node_types:type_name -> gibson.harness.TaxonomyNodeType
+	127, // 180: gibson.harness.GetTaxonomySchemaResponse.relationship_types:type_name -> gibson.harness.TaxonomyRelationshipType
+	128, // 181: gibson.harness.GetTaxonomySchemaResponse.techniques:type_name -> gibson.harness.TaxonomyTechnique
+	129, // 182: gibson.harness.GetTaxonomySchemaResponse.target_types:type_name -> gibson.harness.TaxonomyTargetType
+	130, // 183: gibson.harness.GetTaxonomySchemaResponse.technique_types:type_name -> gibson.harness.TaxonomyTechniqueType
+	131, // 184: gibson.harness.GetTaxonomySchemaResponse.capabilities:type_name -> gibson.harness.TaxonomyCapability
+	4,   // 185: gibson.harness.GetTaxonomySchemaResponse.error:type_name -> gibson.harness.HarnessError
+	132, // 186: gibson.harness.TaxonomyNodeType.properties:type_name -> gibson.harness.TaxonomyProperty
+	132, // 187: gibson.harness.TaxonomyRelationshipType.properties:type_name -> gibson.harness.TaxonomyProperty
+	6,   // 188: gibson.harness.GenerateNodeIDRequest.context:type_name -> gibson.harness.ContextInfo
+	155, // 189: gibson.harness.GenerateNodeIDRequest.properties:type_name -> gibson.harness.GenerateNodeIDRequest.PropertiesEntry
+	4,   // 190: gibson.harness.GenerateNodeIDResponse.error:type_name -> gibson.harness.HarnessError
+	6,   // 191: gibson.harness.ValidateFindingRequest.context:type_name -> gibson.harness.ContextInfo
+	162, // 192: gibson.harness.ValidateFindingRequest.finding:type_name -> gibson.types.Finding
+	6,   // 193: gibson.harness.ValidateGraphNodeRequest.context:type_name -> gibson.harness.ContextInfo
+	156, // 194: gibson.harness.ValidateGraphNodeRequest.properties:type_name -> gibson.harness.ValidateGraphNodeRequest.PropertiesEntry
+	6,   // 195: gibson.harness.ValidateRelationshipRequest.context:type_name -> gibson.harness.ContextInfo
+	157, // 196: gibson.harness.ValidateRelationshipRequest.properties:type_name -> gibson.harness.ValidateRelationshipRequest.PropertiesEntry
+	139, // 197: gibson.harness.ValidationResponse.errors:type_name -> gibson.harness.ValidationError
+	4,   // 198: gibson.harness.ValidationResponse.error:type_name -> gibson.harness.HarnessError
+	159, // 199: gibson.harness.CallToolRequest.InputEntry.value:type_name -> gibson.common.TypedValue
+	24,  // 200: gibson.harness.JSONSchemaNode.PropertiesEntry.value:type_name -> gibson.harness.JSONSchemaNode
+	159, // 201: gibson.harness.QueryPluginRequest.ParamsEntry.value:type_name -> gibson.common.TypedValue
+	159, // 202: gibson.harness.MemoryGetResponse.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 203: gibson.harness.MemorySetRequest.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 204: gibson.harness.MissionMemoryResult.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 205: gibson.harness.MissionMemoryItem.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 206: gibson.harness.LongTermMemoryStoreRequest.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 207: gibson.harness.LongTermMemorySearchRequest.FiltersEntry.value:type_name -> gibson.common.TypedValue
+	159, // 208: gibson.harness.LongTermMemoryResult.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 209: gibson.harness.GraphNode.PropertiesEntry.value:type_name -> gibson.common.TypedValue
+	159, // 210: gibson.harness.Relationship.PropertiesEntry.value:type_name -> gibson.common.TypedValue
+	159, // 211: gibson.harness.Credential.MetadataEntry.value:type_name -> gibson.common.TypedValue
+	159, // 212: gibson.harness.GenerateNodeIDRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
+	159, // 213: gibson.harness.ValidateGraphNodeRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
+	159, // 214: gibson.harness.ValidateRelationshipRequest.PropertiesEntry.value:type_name -> gibson.common.TypedValue
+	12,  // 215: gibson.harness.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.LLMCompleteRequest
+	13,  // 216: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.LLMCompleteWithToolsRequest
+	14,  // 217: gibson.harness.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.LLMCompleteStructuredRequest
+	17,  // 218: gibson.harness.HarnessCallbackService.LLMStream:input_type -> gibson.harness.LLMStreamRequest
+	19,  // 219: gibson.harness.HarnessCallbackService.CallTool:input_type -> gibson.harness.CallToolRequest
+	21,  // 220: gibson.harness.HarnessCallbackService.ListTools:input_type -> gibson.harness.ListToolsRequest
+	29,  // 221: gibson.harness.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.QueryPluginRequest
+	31,  // 222: gibson.harness.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.ListPluginsRequest
+	34,  // 223: gibson.harness.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.DelegateToAgentRequest
+	36,  // 224: gibson.harness.HarnessCallbackService.ListAgents:input_type -> gibson.harness.ListAgentsRequest
+	39,  // 225: gibson.harness.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.SubmitFindingRequest
+	41,  // 226: gibson.harness.HarnessCallbackService.GetFindings:input_type -> gibson.harness.GetFindingsRequest
+	44,  // 227: gibson.harness.HarnessCallbackService.MemoryGet:input_type -> gibson.harness.MemoryGetRequest
+	46,  // 228: gibson.harness.HarnessCallbackService.MemorySet:input_type -> gibson.harness.MemorySetRequest
+	48,  // 229: gibson.harness.HarnessCallbackService.MemoryDelete:input_type -> gibson.harness.MemoryDeleteRequest
+	50,  // 230: gibson.harness.HarnessCallbackService.MemoryList:input_type -> gibson.harness.MemoryListRequest
+	52,  // 231: gibson.harness.HarnessCallbackService.MissionMemorySearch:input_type -> gibson.harness.MissionMemorySearchRequest
+	55,  // 232: gibson.harness.HarnessCallbackService.MissionMemoryHistory:input_type -> gibson.harness.MissionMemoryHistoryRequest
+	58,  // 233: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:input_type -> gibson.harness.MissionMemoryGetPreviousRunValueRequest
+	60,  // 234: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:input_type -> gibson.harness.MissionMemoryGetValueHistoryRequest
+	63,  // 235: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:input_type -> gibson.harness.MissionMemoryContinuityModeRequest
+	65,  // 236: gibson.harness.HarnessCallbackService.LongTermMemoryStore:input_type -> gibson.harness.LongTermMemoryStoreRequest
+	67,  // 237: gibson.harness.HarnessCallbackService.LongTermMemorySearch:input_type -> gibson.harness.LongTermMemorySearchRequest
+	70,  // 238: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:input_type -> gibson.harness.LongTermMemoryDeleteRequest
+	72,  // 239: gibson.harness.HarnessCallbackService.GraphRAGQuery:input_type -> gibson.harness.GraphRAGQueryRequest
+	76,  // 240: gibson.harness.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.FindSimilarAttacksRequest
+	79,  // 241: gibson.harness.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.FindSimilarFindingsRequest
+	82,  // 242: gibson.harness.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.GetAttackChainsRequest
+	86,  // 243: gibson.harness.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.GetRelatedFindingsRequest
+	88,  // 244: gibson.harness.HarnessCallbackService.StoreGraphNode:input_type -> gibson.harness.StoreGraphNodeRequest
+	90,  // 245: gibson.harness.HarnessCallbackService.CreateGraphRelationship:input_type -> gibson.harness.CreateGraphRelationshipRequest
+	93,  // 246: gibson.harness.HarnessCallbackService.StoreGraphBatch:input_type -> gibson.harness.StoreGraphBatchRequest
+	95,  // 247: gibson.harness.HarnessCallbackService.TraverseGraph:input_type -> gibson.harness.TraverseGraphRequest
+	99,  // 248: gibson.harness.HarnessCallbackService.GraphRAGHealth:input_type -> gibson.harness.GraphRAGHealthRequest
+	101, // 249: gibson.harness.HarnessCallbackService.StoreNode:input_type -> gibson.harness.StoreNodeRequest
+	103, // 250: gibson.harness.HarnessCallbackService.QueryNodes:input_type -> gibson.harness.QueryNodesRequest
+	105, // 251: gibson.harness.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.GetPlanContextRequest
+	108, // 252: gibson.harness.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.ReportStepHintsRequest
+	115, // 253: gibson.harness.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.RecordSpanRequest
+	117, // 254: gibson.harness.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.RecordSpansRequest
+	119, // 255: gibson.harness.HarnessCallbackService.GetCredential:input_type -> gibson.harness.GetCredentialRequest
+	124, // 256: gibson.harness.HarnessCallbackService.GetTaxonomySchema:input_type -> gibson.harness.GetTaxonomySchemaRequest
+	133, // 257: gibson.harness.HarnessCallbackService.GenerateNodeID:input_type -> gibson.harness.GenerateNodeIDRequest
+	135, // 258: gibson.harness.HarnessCallbackService.ValidateFinding:input_type -> gibson.harness.ValidateFindingRequest
+	136, // 259: gibson.harness.HarnessCallbackService.ValidateGraphNode:input_type -> gibson.harness.ValidateGraphNodeRequest
+	137, // 260: gibson.harness.HarnessCallbackService.ValidateRelationship:input_type -> gibson.harness.ValidateRelationshipRequest
+	16,  // 261: gibson.harness.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.LLMCompleteResponse
+	16,  // 262: gibson.harness.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.LLMCompleteResponse
+	15,  // 263: gibson.harness.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.LLMCompleteStructuredResponse
+	18,  // 264: gibson.harness.HarnessCallbackService.LLMStream:output_type -> gibson.harness.LLMStreamChunk
+	20,  // 265: gibson.harness.HarnessCallbackService.CallTool:output_type -> gibson.harness.CallToolResponse
+	22,  // 266: gibson.harness.HarnessCallbackService.ListTools:output_type -> gibson.harness.ListToolsResponse
+	30,  // 267: gibson.harness.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.QueryPluginResponse
+	32,  // 268: gibson.harness.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.ListPluginsResponse
+	35,  // 269: gibson.harness.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.DelegateToAgentResponse
+	37,  // 270: gibson.harness.HarnessCallbackService.ListAgents:output_type -> gibson.harness.ListAgentsResponse
+	40,  // 271: gibson.harness.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.SubmitFindingResponse
+	42,  // 272: gibson.harness.HarnessCallbackService.GetFindings:output_type -> gibson.harness.GetFindingsResponse
+	45,  // 273: gibson.harness.HarnessCallbackService.MemoryGet:output_type -> gibson.harness.MemoryGetResponse
+	47,  // 274: gibson.harness.HarnessCallbackService.MemorySet:output_type -> gibson.harness.MemorySetResponse
+	49,  // 275: gibson.harness.HarnessCallbackService.MemoryDelete:output_type -> gibson.harness.MemoryDeleteResponse
+	51,  // 276: gibson.harness.HarnessCallbackService.MemoryList:output_type -> gibson.harness.MemoryListResponse
+	53,  // 277: gibson.harness.HarnessCallbackService.MissionMemorySearch:output_type -> gibson.harness.MissionMemorySearchResponse
+	56,  // 278: gibson.harness.HarnessCallbackService.MissionMemoryHistory:output_type -> gibson.harness.MissionMemoryHistoryResponse
+	59,  // 279: gibson.harness.HarnessCallbackService.MissionMemoryGetPreviousRunValue:output_type -> gibson.harness.MissionMemoryGetPreviousRunValueResponse
+	61,  // 280: gibson.harness.HarnessCallbackService.MissionMemoryGetValueHistory:output_type -> gibson.harness.MissionMemoryGetValueHistoryResponse
+	64,  // 281: gibson.harness.HarnessCallbackService.MissionMemoryContinuityMode:output_type -> gibson.harness.MissionMemoryContinuityModeResponse
+	66,  // 282: gibson.harness.HarnessCallbackService.LongTermMemoryStore:output_type -> gibson.harness.LongTermMemoryStoreResponse
+	68,  // 283: gibson.harness.HarnessCallbackService.LongTermMemorySearch:output_type -> gibson.harness.LongTermMemorySearchResponse
+	71,  // 284: gibson.harness.HarnessCallbackService.LongTermMemoryDelete:output_type -> gibson.harness.LongTermMemoryDeleteResponse
+	73,  // 285: gibson.harness.HarnessCallbackService.GraphRAGQuery:output_type -> gibson.harness.GraphRAGQueryResponse
+	77,  // 286: gibson.harness.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.FindSimilarAttacksResponse
+	80,  // 287: gibson.harness.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.FindSimilarFindingsResponse
+	83,  // 288: gibson.harness.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.GetAttackChainsResponse
+	87,  // 289: gibson.harness.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.GetRelatedFindingsResponse
+	89,  // 290: gibson.harness.HarnessCallbackService.StoreGraphNode:output_type -> gibson.harness.StoreGraphNodeResponse
+	91,  // 291: gibson.harness.HarnessCallbackService.CreateGraphRelationship:output_type -> gibson.harness.CreateGraphRelationshipResponse
+	94,  // 292: gibson.harness.HarnessCallbackService.StoreGraphBatch:output_type -> gibson.harness.StoreGraphBatchResponse
+	96,  // 293: gibson.harness.HarnessCallbackService.TraverseGraph:output_type -> gibson.harness.TraverseGraphResponse
+	100, // 294: gibson.harness.HarnessCallbackService.GraphRAGHealth:output_type -> gibson.harness.GraphRAGHealthResponse
+	102, // 295: gibson.harness.HarnessCallbackService.StoreNode:output_type -> gibson.harness.StoreNodeResponse
+	104, // 296: gibson.harness.HarnessCallbackService.QueryNodes:output_type -> gibson.harness.QueryNodesResponse
+	106, // 297: gibson.harness.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.GetPlanContextResponse
+	109, // 298: gibson.harness.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.ReportStepHintsResponse
+	116, // 299: gibson.harness.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.RecordSpanResponse
+	118, // 300: gibson.harness.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.RecordSpansResponse
+	120, // 301: gibson.harness.HarnessCallbackService.GetCredential:output_type -> gibson.harness.GetCredentialResponse
+	125, // 302: gibson.harness.HarnessCallbackService.GetTaxonomySchema:output_type -> gibson.harness.GetTaxonomySchemaResponse
+	134, // 303: gibson.harness.HarnessCallbackService.GenerateNodeID:output_type -> gibson.harness.GenerateNodeIDResponse
+	138, // 304: gibson.harness.HarnessCallbackService.ValidateFinding:output_type -> gibson.harness.ValidationResponse
+	138, // 305: gibson.harness.HarnessCallbackService.ValidateGraphNode:output_type -> gibson.harness.ValidationResponse
+	138, // 306: gibson.harness.HarnessCallbackService.ValidateRelationship:output_type -> gibson.harness.ValidationResponse
+	261, // [261:307] is the sub-list for method output_type
+	215, // [215:261] is the sub-list for method input_type
+	215, // [215:215] is the sub-list for extension type_name
+	215, // [215:215] is the sub-list for extension extendee
+	0,   // [0:215] is the sub-list for field type_name
 }
 
 func init() { file_harness_callback_proto_init() }
@@ -10124,14 +10370,14 @@ func file_harness_callback_proto_init() {
 	file_harness_callback_proto_msgTypes[8].OneofWrappers = []any{}
 	file_harness_callback_proto_msgTypes[13].OneofWrappers = []any{}
 	file_harness_callback_proto_msgTypes[20].OneofWrappers = []any{}
-	file_harness_callback_proto_msgTypes[103].OneofWrappers = []any{
+	file_harness_callback_proto_msgTypes[107].OneofWrappers = []any{
 		(*AnyValue_StringValue)(nil),
 		(*AnyValue_BoolValue)(nil),
 		(*AnyValue_IntValue)(nil),
 		(*AnyValue_DoubleValue)(nil),
 		(*AnyValue_BytesValue)(nil),
 	}
-	file_harness_callback_proto_msgTypes[113].OneofWrappers = []any{
+	file_harness_callback_proto_msgTypes[117].OneofWrappers = []any{
 		(*Credential_ApiKey)(nil),
 		(*Credential_BearerToken)(nil),
 		(*Credential_Basic)(nil),
@@ -10144,7 +10390,7 @@ func file_harness_callback_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_harness_callback_proto_rawDesc), len(file_harness_callback_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   150,
+			NumMessages:   154,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

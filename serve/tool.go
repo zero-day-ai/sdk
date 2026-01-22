@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,6 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // SubprocessModeEnvVar is the environment variable that indicates subprocess execution mode.
@@ -139,15 +141,9 @@ func serveToolGRPC(t tool.Tool, opts ...Option) error {
 			metadata["tags"] = strings.Join(t.Tags(), ",")
 		}
 
-		// Serialize input schema
-		if inputSchemaBytes, err := json.Marshal(t.InputSchema()); err == nil {
-			metadata["input_schema"] = string(inputSchemaBytes)
-		}
-
-		// Serialize output schema
-		if outputSchemaBytes, err := json.Marshal(t.OutputSchema()); err == nil {
-			metadata["output_schema"] = string(outputSchemaBytes)
-		}
+		// Add proto message types
+		metadata["input_message_type"] = t.InputMessageType()
+		metadata["output_message_type"] = t.OutputMessageType()
 
 		// Create ServiceInfo struct (using map to avoid circular dependency)
 		serviceInfo = map[string]interface{}{
@@ -188,31 +184,17 @@ type toolServiceServer struct {
 }
 
 // GetDescriptor returns the tool's descriptor including name, version,
-// description, tags, and input/output schemas.
+// description, and tags. Input/output schemas are left empty as tools now use proto messages.
 func (s *toolServiceServer) GetDescriptor(ctx context.Context, req *proto.ToolGetDescriptorRequest) (*proto.ToolDescriptor, error) {
-	// Serialize input schema to JSON
-	inputSchemaJSON, err := json.Marshal(s.tool.InputSchema())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal input schema: %v", err)
-	}
-
-	// Serialize output schema to JSON
-	outputSchemaJSON, err := json.Marshal(s.tool.OutputSchema())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal output schema: %v", err)
-	}
-
 	return &proto.ToolDescriptor{
 		Name:        s.tool.Name(),
 		Description: s.tool.Description(),
 		Version:     s.tool.Version(),
 		Tags:        s.tool.Tags(),
-		InputSchema: &proto.JSONSchema{
-			Json: string(inputSchemaJSON),
-		},
-		OutputSchema: &proto.JSONSchema{
-			Json: string(outputSchemaJSON),
-		},
+		// InputSchema and OutputSchema are deprecated - tools use proto messages now
+		// Clients should use InputMessageType() and OutputMessageType() instead
+		InputSchema:  &proto.JSONSchema{Json: "{}"},
+		OutputSchema: &proto.JSONSchema{Json: "{}"},
 	}, nil
 }
 
@@ -220,12 +202,6 @@ func (s *toolServiceServer) GetDescriptor(ctx context.Context, req *proto.ToolGe
 // The input is serialized as JSON in the request and the output is
 // serialized as JSON in the response.
 func (s *toolServiceServer) Execute(ctx context.Context, req *proto.ToolExecuteRequest) (*proto.ToolExecuteResponse, error) {
-	// Parse input from JSON
-	var input map[string]any
-	if err := json.Unmarshal([]byte(req.InputJson), &input); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid input JSON: %v", err)
-	}
-
 	// Apply timeout if specified
 	if req.TimeoutMs > 0 {
 		var cancel context.CancelFunc
@@ -233,15 +209,36 @@ func (s *toolServiceServer) Execute(ctx context.Context, req *proto.ToolExecuteR
 		defer cancel()
 	}
 
-	// Execute the tool
-	output, err := s.tool.Execute(ctx, input)
+	// Get the tool's input message type
+	inputTypeName := s.tool.InputMessageType()
+	if inputTypeName == "" {
+		return nil, status.Errorf(codes.Unimplemented, "tool does not specify InputMessageType")
+	}
+
+	// Find the proto message type in the global registry
+	messageType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(inputTypeName))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find message type %q: %v", inputTypeName, err)
+	}
+
+	// Create a new instance of the proto message
+	protoReq := messageType.New().Interface()
+
+	// Unmarshal JSON input into the proto message
+	if err := protojson.Unmarshal([]byte(req.InputJson), protoReq); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid input JSON for type %s: %v", inputTypeName, err)
+	}
+
+	// Execute the tool using ExecuteProto
+	protoResp, err := s.tool.ExecuteProto(ctx, protoReq)
 
 	// Build response
 	resp := &proto.ToolExecuteResponse{}
 
-	// Serialize output as JSON
+	// Handle execution result
 	if err == nil {
-		outputJSON, jsonErr := json.Marshal(output)
+		// Marshal proto response to JSON
+		outputJSON, jsonErr := protojson.Marshal(protoResp)
 		if jsonErr != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal output: %v", jsonErr)
 		}

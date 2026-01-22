@@ -5,20 +5,21 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/types"
+	protolib "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // mockTool is a test implementation of the Tool interface.
 type mockTool struct {
-	name         string
-	version      string
-	description  string
-	tags         []string
-	inputSchema  schema.JSON
-	outputSchema schema.JSON
-	executeFunc  func(ctx context.Context, input map[string]any) (map[string]any, error)
-	healthFunc   func(ctx context.Context) types.HealthStatus
+	name              string
+	version           string
+	description       string
+	tags              []string
+	inputMessageType  string
+	outputMessageType string
+	executeProtoFunc  func(ctx context.Context, input protolib.Message) (protolib.Message, error)
+	healthFunc        func(ctx context.Context) types.HealthStatus
 }
 
 func (m *mockTool) Name() string {
@@ -37,19 +38,25 @@ func (m *mockTool) Tags() []string {
 	return m.tags
 }
 
-func (m *mockTool) InputSchema() schema.JSON {
-	return m.inputSchema
-}
-
-func (m *mockTool) OutputSchema() schema.JSON {
-	return m.outputSchema
-}
-
-func (m *mockTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
-	if m.executeFunc != nil {
-		return m.executeFunc(ctx, input)
+func (m *mockTool) InputMessageType() string {
+	if m.inputMessageType != "" {
+		return m.inputMessageType
 	}
-	return nil, errors.New("execute not implemented")
+	return "google.protobuf.Struct"
+}
+
+func (m *mockTool) OutputMessageType() string {
+	if m.outputMessageType != "" {
+		return m.outputMessageType
+	}
+	return "google.protobuf.Struct"
+}
+
+func (m *mockTool) ExecuteProto(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+	if m.executeProtoFunc != nil {
+		return m.executeProtoFunc(ctx, input)
+	}
+	return nil, errors.New("proto execution not implemented")
 }
 
 func (m *mockTool) Health(ctx context.Context) types.HealthStatus {
@@ -107,116 +114,109 @@ func TestMockTool_Tags(t *testing.T) {
 	}
 }
 
-func TestMockTool_InputSchema(t *testing.T) {
-	inputSchema := schema.Object(map[string]schema.JSON{
-		"message": schema.String(),
-	}, "message")
-
+func TestMockTool_InputMessageType(t *testing.T) {
 	tool := &mockTool{
-		inputSchema: inputSchema,
+		inputMessageType: "test.v1.TestRequest",
 	}
 
-	got := tool.InputSchema()
-	if got.Type != "object" {
-		t.Errorf("InputSchema().Type = %v, want %v", got.Type, "object")
+	got := tool.InputMessageType()
+	if got != "test.v1.TestRequest" {
+		t.Errorf("InputMessageType() = %v, want %v", got, "test.v1.TestRequest")
 	}
 }
 
-func TestMockTool_OutputSchema(t *testing.T) {
-	outputSchema := schema.Object(map[string]schema.JSON{
-		"result": schema.String(),
-	}, "result")
-
+func TestMockTool_OutputMessageType(t *testing.T) {
 	tool := &mockTool{
-		outputSchema: outputSchema,
+		outputMessageType: "test.v1.TestResponse",
 	}
 
-	got := tool.OutputSchema()
-	if got.Type != "object" {
-		t.Errorf("OutputSchema().Type = %v, want %v", got.Type, "object")
+	got := tool.OutputMessageType()
+	if got != "test.v1.TestResponse" {
+		t.Errorf("OutputMessageType() = %v, want %v", got, "test.v1.TestResponse")
 	}
 }
 
-func TestMockTool_Execute(t *testing.T) {
+func TestMockTool_ExecuteProto(t *testing.T) {
 	tests := []struct {
-		name        string
-		executeFunc func(ctx context.Context, input map[string]any) (map[string]any, error)
-		input       map[string]any
-		wantOutput  map[string]any
-		wantErr     bool
+		name             string
+		executeProtoFunc func(ctx context.Context, input protolib.Message) (protolib.Message, error)
+		input            protolib.Message
+		wantErr          bool
+		checkOutput      func(t *testing.T, output protolib.Message)
 	}{
 		{
 			name: "successful execution",
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
-				return map[string]any{"result": "success"}, nil
+			executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+				result, _ := structpb.NewStruct(map[string]any{"result": "success"})
+				return result, nil
 			},
-			input:      map[string]any{"message": "hello"},
-			wantOutput: map[string]any{"result": "success"},
-			wantErr:    false,
+			input: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"message": structpb.NewStringValue("hello"),
+				},
+			},
+			wantErr: false,
+			checkOutput: func(t *testing.T, output protolib.Message) {
+				st := output.(*structpb.Struct)
+				if st.Fields["result"].GetStringValue() != "success" {
+					t.Errorf("ExecuteProto() result = %v, want success", st.Fields["result"].GetStringValue())
+				}
+			},
 		},
 		{
 			name: "execution with error",
-			executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
+			executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
 				return nil, errors.New("execution failed")
 			},
-			input:      map[string]any{"message": "hello"},
-			wantOutput: nil,
-			wantErr:    true,
+			input:   &structpb.Struct{},
+			wantErr: true,
 		},
 		{
-			name:        "no execute function",
-			executeFunc: nil,
-			input:       map[string]any{"message": "hello"},
-			wantOutput:  nil,
-			wantErr:     true,
+			name:             "no execute function",
+			executeProtoFunc: nil,
+			input:            &structpb.Struct{},
+			wantErr:          true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tool := &mockTool{
-				executeFunc: tt.executeFunc,
+				executeProtoFunc: tt.executeProtoFunc,
 			}
 
-			got, err := tool.Execute(context.Background(), tt.input)
+			got, err := tool.ExecuteProto(context.Background(), tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ExecuteProto() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if !tt.wantErr {
-				if got == nil && tt.wantOutput != nil {
-					t.Errorf("Execute() = nil, want %v", tt.wantOutput)
-					return
-				}
-				if got != nil && tt.wantOutput != nil {
-					if got["result"] != tt.wantOutput["result"] {
-						t.Errorf("Execute() = %v, want %v", got, tt.wantOutput)
-					}
-				}
+			if !tt.wantErr && tt.checkOutput != nil {
+				tt.checkOutput(t, got)
 			}
 		})
 	}
 }
 
-func TestMockTool_Execute_ContextCancellation(t *testing.T) {
+func TestMockTool_ExecuteProto_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
 	tool := &mockTool{
-		executeFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
+		executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			default:
-				return map[string]any{"result": "success"}, nil
+				result, _ := structpb.NewStruct(map[string]any{"result": "success"})
+				return result, nil
 			}
 		},
 	}
 
-	_, err := tool.Execute(ctx, map[string]any{"message": "hello"})
+	_, err := tool.ExecuteProto(ctx, &structpb.Struct{})
 	if err != context.Canceled {
-		t.Errorf("Execute() with canceled context error = %v, want %v", err, context.Canceled)
+		t.Errorf("ExecuteProto() with canceled context error = %v, want %v", err, context.Canceled)
 	}
 }
 

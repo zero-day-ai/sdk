@@ -2,6 +2,7 @@ package serve
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/zero-day-ai/sdk/llm"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // Note: The serve package's streamingHarness implements agent.StreamingHarness
@@ -272,24 +274,41 @@ func (h *streamingHarness) SetMode(mode proto.AgentMode) {
 }
 
 // CallTool overrides the base harness CallTool to emit events automatically
-func (h *streamingHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+func (h *streamingHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
 	// Generate unique call ID
 	callID := uuid.New().String()
 
+	// Convert proto request to map for emission
+	var inputMap map[string]any
+	if request != nil {
+		// Serialize to JSON then to map for display
+		if jsonBytes, err := json.Marshal(request); err == nil {
+			_ = json.Unmarshal(jsonBytes, &inputMap)
+		}
+	}
+
 	// Emit tool call event before invoking
-	if err := h.EmitToolCall(name, input, callID); err != nil {
+	if err := h.EmitToolCall(name, inputMap, callID); err != nil {
 		h.logger.Warn("failed to emit tool call event", "error", err, "tool", name)
 	}
 
 	// Delegate to underlying harness
-	output, toolErr := h.Harness.CallTool(ctx, name, input)
+	toolErr := h.Harness.CallToolProto(ctx, name, request, response)
 
-	// Emit tool result event after invocation (using new signature)
-	if emitErr := h.EmitToolResult(output, toolErr, callID); emitErr != nil {
+	// Convert proto response to map for emission
+	var outputMap map[string]any
+	if response != nil {
+		if jsonBytes, err := json.Marshal(response); err == nil {
+			_ = json.Unmarshal(jsonBytes, &outputMap)
+		}
+	}
+
+	// Emit tool result event after invocation
+	if emitErr := h.EmitToolResult(outputMap, toolErr, callID); emitErr != nil {
 		h.logger.Warn("failed to emit tool result event", "error", emitErr, "tool", name)
 	}
 
-	return output, toolErr
+	return toolErr
 }
 
 // SubmitFinding overrides the base harness SubmitFinding to emit events automatically

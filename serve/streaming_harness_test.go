@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // mockBidiStream implements grpc.BidiStreamingServer for testing.
@@ -88,7 +91,7 @@ func (m *mockServerStream) RecvMsg(msg interface{}) error   { return nil }
 
 // mockStreamHarness is a minimal implementation of agent.Harness for testing.
 type mockStreamHarness struct {
-	callToolFunc      func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
+	callToolProtoFunc func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error
 	submitFindingFunc func(ctx context.Context, f *finding.Finding) error
 	completeFunc      func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
 	streamFunc        func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
@@ -125,24 +128,11 @@ func (m *mockStreamHarness) Stream(ctx context.Context, slot string, messages []
 	return ch, nil
 }
 
-func (m *mockStreamHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	if m.callToolFunc != nil {
-		return m.callToolFunc(ctx, name, input)
+func (m *mockStreamHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	if m.callToolProtoFunc != nil {
+		return m.callToolProtoFunc(ctx, name, request, response)
 	}
-	return map[string]any{"result": "success"}, nil
-}
-
-func (m *mockStreamHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	results := make([]agent.ToolResult, len(calls))
-	for i, call := range calls {
-		output, err := m.CallTool(ctx, call.Name, call.Input)
-		results[i] = agent.ToolResult{
-			Name:   call.Name,
-			Output: output,
-			Error:  err,
-		}
-	}
-	return results, nil
+	return nil
 }
 
 func (m *mockStreamHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
@@ -206,6 +196,10 @@ func (m *mockStreamHarness) TokenUsage() llm.TokenTracker {
 	return llm.NewTokenTracker()
 }
 
+func (m *mockStreamHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	return nil, nil
+}
+
 func (m *mockStreamHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return nil, nil
 }
@@ -232,6 +226,10 @@ func (m *mockStreamHarness) GetAttackChains(ctx context.Context, techniqueID str
 
 func (m *mockStreamHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return nil, nil
+}
+
+func (m *mockStreamHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	return "", nil
 }
 
 func (m *mockStreamHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
@@ -285,10 +283,6 @@ func (m *mockStreamHarness) GetPreviousRunFindings(ctx context.Context, filter f
 
 func (m *mockStreamHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return []*finding.Finding{}, nil
-}
-
-func (m *mockStreamHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
 }
 
 // MissionManager methods - stubs for testing
@@ -745,13 +739,13 @@ func TestEmitError(t *testing.T) {
 	}
 }
 
-// TestCallToolInterception verifies that CallTool emits tool call and result events.
+// TestCallToolInterception verifies that CallToolProto emits tool call and result events.
 func TestCallToolInterception(t *testing.T) {
 	toolCalled := false
 	baseHarness := &mockStreamHarness{
-		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+		callToolProtoFunc: func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
 			toolCalled = true
-			return map[string]any{"result": "success"}, nil
+			return nil
 		},
 	}
 
@@ -761,17 +755,15 @@ func TestCallToolInterception(t *testing.T) {
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
 	ctx := context.Background()
-	result, err := sh.CallTool(ctx, "kubectl", map[string]any{"command": "get"})
+	req := &toolspb.HttpxRequest{Targets: []string{"example.com"}}
+	resp := &toolspb.HttpxResponse{}
+	err := sh.CallToolProto(ctx, "httpx", req, resp)
 	if err != nil {
-		t.Errorf("CallTool() error = %v, want nil", err)
+		t.Errorf("CallToolProto() error = %v, want nil", err)
 	}
 
 	if !toolCalled {
-		t.Error("underlying CallTool was not called")
-	}
-
-	if result == nil {
-		t.Fatal("CallTool() returned nil result")
+		t.Error("underlying CallToolProto was not called")
 	}
 
 	msgs := stream.getSentMessages()
@@ -784,8 +776,8 @@ func TestCallToolInterception(t *testing.T) {
 	if !ok {
 		t.Errorf("first message type = %T, want *proto.AgentMessage_ToolCall", msgs[0].Payload)
 	} else {
-		if toolCall.ToolCall.ToolName != "kubectl" {
-			t.Errorf("toolName = %q, want 'kubectl'", toolCall.ToolCall.ToolName)
+		if toolCall.ToolCall.ToolName != "httpx" {
+			t.Errorf("toolName = %q, want 'httpx'", toolCall.ToolCall.ToolName)
 		}
 	}
 
@@ -811,8 +803,8 @@ func TestCallToolInterception(t *testing.T) {
 func TestCallToolInterceptionWithError(t *testing.T) {
 	expectedErr := errors.New("tool execution failed")
 	baseHarness := &mockStreamHarness{
-		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-			return nil, expectedErr
+		callToolProtoFunc: func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+			return expectedErr
 		},
 	}
 
@@ -822,9 +814,11 @@ func TestCallToolInterceptionWithError(t *testing.T) {
 	sh := NewStreamingHarness(baseHarness, stream, steeringCh, proto.AgentMode_AGENT_MODE_AUTONOMOUS)
 
 	ctx := context.Background()
-	_, err := sh.CallTool(ctx, "kubectl", map[string]any{"command": "get"})
+	req := &toolspb.HttpxRequest{Targets: []string{"example.com"}}
+	resp := &toolspb.HttpxResponse{}
+	err := sh.CallToolProto(ctx, "httpx", req, resp)
 	if err != expectedErr {
-		t.Errorf("CallTool() error = %v, want %v", err, expectedErr)
+		t.Errorf("CallToolProto() error = %v, want %v", err, expectedErr)
 	}
 
 	msgs := stream.getSentMessages()
@@ -1271,9 +1265,9 @@ func TestHarnessDelegation(t *testing.T) {
 func TestConcurrentEmitsAndDelegation(t *testing.T) {
 	var callCount int64
 	baseHarness := &mockStreamHarness{
-		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+		callToolProtoFunc: func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
 			atomic.AddInt64(&callCount, 1)
-			return map[string]any{"result": "ok"}, nil
+			return nil
 		},
 	}
 
@@ -1298,7 +1292,7 @@ func TestConcurrentEmitsAndDelegation(t *testing.T) {
 		// Call tool (triggers interception)
 		go func() {
 			defer wg.Done()
-			sh.CallTool(ctx, "tool", map[string]any{})
+			sh.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"example.com"}}, &toolspb.HttpxResponse{})
 		}()
 
 		// Emit status

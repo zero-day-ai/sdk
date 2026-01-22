@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/tool"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 )
 
 // FrameworkOption configures the Framework.
@@ -195,27 +197,29 @@ func WithToolTags(tags ...string) ToolOption {
 	}
 }
 
-// WithInputSchema sets the JSON schema for tool input validation.
-// The schema defines the expected structure and types of input parameters.
-func WithInputSchema(s schema.JSON) ToolOption {
+// WithInputMessageType sets the proto message type for tool input.
+// The messageType should be a fully-qualified proto message type name.
+// Example: "zero_day.tools.http.HttpRequest"
+func WithInputMessageType(messageType string) ToolOption {
 	return func(c *tool.Config) {
-		c.SetInputSchema(s)
+		c.SetInputMessageType(messageType)
 	}
 }
 
-// WithOutputSchema sets the JSON schema for tool output validation.
-// The schema defines the structure and types of tool outputs.
-func WithOutputSchema(s schema.JSON) ToolOption {
+// WithOutputMessageType sets the proto message type for tool output.
+// The messageType should be a fully-qualified proto message type name.
+// Example: "zero_day.tools.http.HttpResponse"
+func WithOutputMessageType(messageType string) ToolOption {
 	return func(c *tool.Config) {
-		c.SetOutputSchema(s)
+		c.SetOutputMessageType(messageType)
 	}
 }
 
-// WithExecuteHandler sets the function that executes the tool.
+// WithExecuteProtoHandler sets the function that executes the tool with proto messages.
 // This function implements the tool's core functionality and is required.
-func WithExecuteHandler(fn tool.ExecuteFunc) ToolOption {
+func WithExecuteProtoHandler(fn func(ctx context.Context, input proto.Message) (proto.Message, error)) ToolOption {
 	return func(c *tool.Config) {
-		c.SetExecuteFunc(fn)
+		c.SetExecuteProtoFunc(fn)
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -19,6 +20,7 @@ import (
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 )
 
 // RecordingHarness wraps an agent.Harness and records all operations as trajectory steps.
@@ -155,20 +157,20 @@ func (r *RecordingHarness) Stream(ctx context.Context, slot string, messages []l
 	return ch, err
 }
 
-// CallTool invokes a tool and records the invocation.
-func (r *RecordingHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
+// CallToolProto invokes a tool with proto messages and records the invocation.
+func (r *RecordingHarness) CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error {
 	startTime := time.Now()
 
 	// Delegate to inner harness
-	output, err := r.inner.CallTool(ctx, name, input)
+	err := r.inner.CallToolProto(ctx, name, request, response)
 
 	// Record the step
 	duration := time.Since(startTime)
 	step := TrajectoryStep{
 		Type:      "tool",
 		Name:      name,
-		Input:     input,
-		Output:    output,
+		Input:     request,
+		Output:    response,
 		StartTime: startTime,
 		Duration:  duration,
 	}
@@ -177,7 +179,7 @@ func (r *RecordingHarness) CallTool(ctx context.Context, name string, input map[
 	}
 	r.recordStep(step)
 
-	return output, err
+	return err
 }
 
 // ListTools returns descriptors for all available tools.
@@ -635,16 +637,16 @@ func (r *RecordingHarness) TokenUsage() llm.TokenTracker {
 	return r.inner.TokenUsage()
 }
 
-// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph and records it.
-func (r *RecordingHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
+// QueryNodes performs a query against the knowledge graph using proto messages and records it.
+func (r *RecordingHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
 	startTime := time.Now()
 
-	results, err := r.inner.QueryGraphRAG(ctx, query)
+	results, err := r.inner.QueryNodes(ctx, query)
 
 	duration := time.Since(startTime)
 	step := TrajectoryStep{
 		Type:      "graphrag",
-		Name:      "query",
+		Name:      "query_nodes",
 		Input:     query,
 		Output:    results,
 		StartTime: startTime,
@@ -761,11 +763,11 @@ func (r *RecordingHarness) GetRelatedFindings(ctx context.Context, findingID str
 	return findings, err
 }
 
-// StoreGraphNode stores a node in the knowledge graph and records the operation.
-func (r *RecordingHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
+// StoreNode stores a graph node using proto messages and records the operation.
+func (r *RecordingHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
 	startTime := time.Now()
 
-	nodeID, err := r.inner.StoreGraphNode(ctx, node)
+	nodeID, err := r.inner.StoreNode(ctx, node)
 
 	duration := time.Since(startTime)
 	step := TrajectoryStep{
@@ -782,77 +784,6 @@ func (r *RecordingHarness) StoreGraphNode(ctx context.Context, node graphrag.Gra
 	r.recordStep(step)
 
 	return nodeID, err
-}
-
-// CreateGraphRelationship creates a relationship between nodes and records the operation.
-func (r *RecordingHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
-	startTime := time.Now()
-
-	err := r.inner.CreateGraphRelationship(ctx, rel)
-
-	duration := time.Since(startTime)
-	step := TrajectoryStep{
-		Type:      "graphrag",
-		Name:      "create_relationship",
-		Input:     rel,
-		StartTime: startTime,
-		Duration:  duration,
-	}
-	if err != nil {
-		step.Error = err.Error()
-	}
-	r.recordStep(step)
-
-	return err
-}
-
-// StoreGraphBatch stores multiple nodes and relationships and records the operation.
-func (r *RecordingHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
-	startTime := time.Now()
-
-	nodeIDs, err := r.inner.StoreGraphBatch(ctx, batch)
-
-	duration := time.Since(startTime)
-	step := TrajectoryStep{
-		Type:      "graphrag",
-		Name:      "store_batch",
-		Input:     batch,
-		Output:    nodeIDs,
-		StartTime: startTime,
-		Duration:  duration,
-	}
-	if err != nil {
-		step.Error = err.Error()
-	}
-	r.recordStep(step)
-
-	return nodeIDs, err
-}
-
-// TraverseGraph walks the graph and records the operation.
-func (r *RecordingHarness) TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error) {
-	startTime := time.Now()
-
-	results, err := r.inner.TraverseGraph(ctx, startNodeID, opts)
-
-	duration := time.Since(startTime)
-	step := TrajectoryStep{
-		Type: "graphrag",
-		Name: "traverse",
-		Input: map[string]any{
-			"startNodeID": startNodeID,
-			"options":     opts,
-		},
-		Output:    results,
-		StartTime: startTime,
-		Duration:  duration,
-	}
-	if err != nil {
-		step.Error = err.Error()
-	}
-	r.recordStep(step)
-
-	return results, err
 }
 
 // GraphRAGHealth returns the health status of the GraphRAG subsystem.
@@ -969,30 +900,4 @@ func (r *RecordingHarness) GetAllRunFindings(ctx context.Context, filter finding
 	r.recordStep(step)
 
 	return findings, err
-}
-
-// QueryGraphRAGScoped executes a GraphRAG query with explicit scope and records it.
-func (r *RecordingHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	startTime := time.Now()
-
-	results, err := r.inner.QueryGraphRAGScoped(ctx, query, scope)
-
-	duration := time.Since(startTime)
-	step := TrajectoryStep{
-		Type: "graphrag",
-		Name: "query_scoped",
-		Input: map[string]any{
-			"query": query,
-			"scope": scope.String(),
-		},
-		Output:    results,
-		StartTime: startTime,
-		Duration:  duration,
-	}
-	if err != nil {
-		step.Error = err.Error()
-	}
-	r.recordStep(step)
-
-	return results, err
 }

@@ -960,3 +960,37 @@ func (c *CallbackClient) ValidateRelationship(ctx context.Context, req *proto.Va
 	}
 	return resp, nil
 }
+
+// ============================================================================
+// Proto-Canonical GraphRAG Operations
+// ============================================================================
+
+// StoreNode stores a graph node using proto-canonical types.
+func (c *CallbackClient) StoreNode(ctx context.Context, req *proto.StoreNodeRequest) (*proto.StoreNodeResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("StoreNode: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.StoreNode(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("StoreNode: %w", err)
+	}
+	return resp, nil
+}
+
+// QueryNodes queries the graph using proto-canonical types.
+func (c *CallbackClient) QueryNodes(ctx context.Context, req *proto.QueryNodesRequest) (*proto.QueryNodesResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("QueryNodes: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.QueryNodes(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("QueryNodes: %w", err)
+	}
+	return resp, nil
+}

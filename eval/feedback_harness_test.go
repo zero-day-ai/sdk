@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/llm"
 )
 
@@ -540,7 +541,7 @@ func TestFeedbackHarnessRecordingAccess(t *testing.T) {
 	// Perform operations
 	messages := []llm.Message{{Role: "user", Content: "test"}}
 	_, _ = fh.Complete(ctx, "primary", messages)
-	_, _ = fh.CallTool(ctx, "http-client", map[string]any{"url": "test"})
+	_ = fh.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"test"}}, &toolspb.HttpxResponse{})
 
 	// Access recording harness
 	recording := fh.RecordingHarness()
@@ -613,8 +614,7 @@ func TestFeedbackHarnessToolCallRecording(t *testing.T) {
 	defer fh.Close()
 
 	// Call tool
-	input := map[string]any{"url": "https://example.com"}
-	_, _ = fh.CallTool(ctx, "http-client", input)
+	_ = fh.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"https://example.com"}}, &toolspb.HttpxResponse{})
 
 	// Wait for evaluation
 	time.Sleep(100 * time.Millisecond)

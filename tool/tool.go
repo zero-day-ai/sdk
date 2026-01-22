@@ -3,12 +3,13 @@ package tool
 import (
 	"context"
 
-	"github.com/zero-day-ai/sdk/schema"
 	"github.com/zero-day-ai/sdk/types"
+	"google.golang.org/protobuf/proto"
 )
 
 // Tool is the interface for SDK tools.
-// Tools are executable components that perform specific operations with defined inputs and outputs.
+// Tools are executable components that perform specific operations with protocol buffer messages.
+// All tools must implement proto-based execution using InputMessageType, OutputMessageType, and ExecuteProto.
 type Tool interface {
 	// Name returns the unique identifier for this tool.
 	Name() string
@@ -22,16 +23,21 @@ type Tool interface {
 	// Tags returns a list of tags for categorizing and discovering this tool.
 	Tags() []string
 
-	// InputSchema returns the JSON schema defining the expected input structure.
-	InputSchema() schema.JSON
+	// InputMessageType returns the fully-qualified proto message type name for input.
+	// Example: "zero_day.tools.http.HttpRequest"
+	// This type name is used to dynamically create and unmarshal proto messages.
+	InputMessageType() string
 
-	// OutputSchema returns the JSON schema defining the output structure.
-	OutputSchema() schema.JSON
+	// OutputMessageType returns the fully-qualified proto message type name for output.
+	// Example: "zero_day.tools.http.HttpResponse"
+	// This type name is used to dynamically create and marshal proto messages.
+	OutputMessageType() string
 
-	// Execute runs the tool with the provided input and returns the output.
-	// The input must conform to the InputSchema, and output will conform to OutputSchema.
+	// ExecuteProto runs the tool with proto message input and returns proto message output.
+	// The input parameter must be a pointer to the proto message type specified by InputMessageType.
+	// Returns a pointer to the proto message type specified by OutputMessageType.
 	// Context is used for cancellation, deadlines, and request-scoped values.
-	Execute(ctx context.Context, input map[string]any) (map[string]any, error)
+	ExecuteProto(ctx context.Context, input proto.Message) (proto.Message, error)
 
 	// Health checks the operational status of the tool.
 	// This can be used to verify dependencies, resources, and readiness.

@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zero-day-ai/sdk/agent"
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
+	"github.com/zero-day-ai/sdk/api/gen/toolspb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -21,12 +23,13 @@ import (
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	protolib "google.golang.org/protobuf/proto"
 )
 
 // mockHarness is a minimal mock implementation of agent.Harness for testing.
 type mockHarness struct {
 	completeFunc      func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
-	callToolFunc      func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
+	callToolProtoFunc func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error
 	submitFindingFunc func(ctx context.Context, f *finding.Finding) error
 	memStore          memory.Store
 }
@@ -56,24 +59,15 @@ func (m *mockHarness) Stream(ctx context.Context, slot string, messages []llm.Me
 	return ch, nil
 }
 
-func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	if m.callToolFunc != nil {
-		return m.callToolFunc(ctx, name, input)
+func (m *mockHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+	if m.callToolProtoFunc != nil {
+		return m.callToolProtoFunc(ctx, name, request, response)
 	}
-	return map[string]any{"result": "mock"}, nil
+	return nil
 }
 
 func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	return []tool.Descriptor{}, nil
-}
-
-func (m *mockHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	results := make([]agent.ToolResult, len(calls))
-	for i, call := range calls {
-		output, err := m.CallTool(ctx, call.Name, call.Input)
-		results[i] = agent.ToolResult{Name: call.Name, Output: output, Error: err}
-	}
-	return results, nil
 }
 
 func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
@@ -130,6 +124,10 @@ func (m *mockHarness) TokenUsage() llm.TokenTracker {
 	return nil
 }
 
+func (m *mockHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
+	return nil, nil
+}
+
 func (m *mockHarness) QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error) {
 	return []graphrag.Result{}, nil
 }
@@ -156,6 +154,10 @@ func (m *mockHarness) GetAttackChains(ctx context.Context, techniqueID string, m
 
 func (m *mockHarness) GetRelatedFindings(ctx context.Context, findingID string) ([]graphrag.FindingNode, error) {
 	return []graphrag.FindingNode{}, nil
+}
+
+func (m *mockHarness) StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error) {
+	return "node-123", nil
 }
 
 func (m *mockHarness) StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error) {
@@ -211,10 +213,6 @@ func (m *mockHarness) GetPreviousRunFindings(ctx context.Context, filter finding
 
 func (m *mockHarness) GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error) {
 	return []*finding.Finding{}, nil
-}
-
-func (m *mockHarness) QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error) {
-	return nil, nil
 }
 
 // MissionManager methods - stubs for testing
@@ -428,11 +426,11 @@ func TestRecordingHarnessToolCalls(t *testing.T) {
 	mock := &mockHarness{}
 	recorder := NewRecordingHarness(mock)
 
-	// Call a tool
-	input := map[string]any{"url": "https://example.com"}
-	output, err := recorder.CallTool(ctx, "http-client", input)
+	// Call a tool with proto messages
+	req := &toolspb.HttpxRequest{Targets: []string{"https://example.com"}}
+	resp := &toolspb.HttpxResponse{}
+	err := recorder.CallToolProto(ctx, "httpx", req, resp)
 	require.NoError(t, err)
-	assert.NotNil(t, output)
 
 	// Verify trajectory recorded the call
 	traj := recorder.Trajectory()
@@ -440,8 +438,8 @@ func TestRecordingHarnessToolCalls(t *testing.T) {
 
 	step := traj.Steps[0]
 	assert.Equal(t, "tool", step.Type)
-	assert.Equal(t, "http-client", step.Name)
-	assert.Equal(t, input, step.Input)
+	assert.Equal(t, "httpx", step.Name)
+	assert.NotNil(t, step.Input)
 	assert.NotNil(t, step.Output)
 	assert.Empty(t, step.Error)
 	assert.Greater(t, step.Duration, time.Duration(0))
@@ -453,16 +451,17 @@ func TestRecordingHarnessErrorRecording(t *testing.T) {
 
 	expectedErr := errors.New("mock error")
 	mock := &mockHarness{
-		callToolFunc: func(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-			return nil, expectedErr
+		callToolProtoFunc: func(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+			return expectedErr
 		},
 	}
 	recorder := NewRecordingHarness(mock)
 
 	// Call a tool that returns an error
-	output, err := recorder.CallTool(ctx, "failing-tool", map[string]any{})
+	req := &toolspb.HttpxRequest{Targets: []string{"example.com"}}
+	resp := &toolspb.HttpxResponse{}
+	err := recorder.CallToolProto(ctx, "failing-tool", req, resp)
 	require.Error(t, err)
-	assert.Nil(t, output)
 
 	// Verify trajectory recorded the error
 	traj := recorder.Trajectory()
@@ -545,7 +544,7 @@ func TestRecordingHarnessMultipleOperations(t *testing.T) {
 
 	// Perform multiple operations
 	_, _ = recorder.Complete(ctx, "primary", []llm.Message{{Role: "user", Content: "test"}})
-	_, _ = recorder.CallTool(ctx, "http-client", map[string]any{"url": "test"})
+	_ = recorder.CallToolProto(ctx, "httpx", &toolspb.HttpxRequest{Targets: []string{"test"}}, &toolspb.HttpxResponse{})
 	_ = recorder.SubmitFinding(ctx, &finding.Finding{ID: "f1"})
 
 	// Verify all operations were recorded

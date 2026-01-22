@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	"github.com/zero-day-ai/sdk/finding"
 	"github.com/zero-day-ai/sdk/graphrag"
 	"github.com/zero-day-ai/sdk/llm"
@@ -15,6 +16,7 @@ import (
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 )
 
 // ToolCall represents a single tool invocation request for parallel execution
@@ -186,20 +188,13 @@ type Harness interface {
 	//
 	// These methods provide access to external tools (e.g., HTTP client, shell, browser).
 
-	// CallTool invokes a tool by name with the given input parameters.
-	// Returns the tool's output as a map or an error if the tool fails.
-	CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error)
+	// CallToolProto invokes a tool by name with proto message input/output.
+	// The request and response parameters should be pointers to proto message types.
+	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error
 
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.
 	ListTools(ctx context.Context) ([]tool.Descriptor, error)
-
-	// CallToolsParallel executes multiple tool calls concurrently.
-	// Results are returned in the same order as the input calls.
-	// Individual tool failures are captured in ToolResult.Error and do not
-	// abort other calls. The context timeout applies to the entire batch.
-	// maxConcurrency of 0 uses the default (10).
-	CallToolsParallel(ctx context.Context, calls []ToolCall, maxConcurrency int) ([]ToolResult, error)
 
 	// Plugin Access Methods
 	//
@@ -277,22 +272,8 @@ type Harness interface {
 	// These methods provide access to the GraphRAG knowledge graph for semantic search,
 	// pattern discovery, and relationship traversal.
 
-	// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
-	// Returns nodes matching the query criteria, ranked by combined relevance score.
-	// This method uses auto-routing to select semantic or structured query based on the Query fields.
-	QueryGraphRAG(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
-
-	// QuerySemantic performs a semantic query using vector embeddings.
-	// Use this when you want to search by meaning/content similarity.
-	// The query MUST have Text or Embedding set.
-	// Forces semantic search even if NodeTypes are specified.
-	QuerySemantic(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
-
-	// QueryStructured performs a structured query without semantic search.
-	// Use this when you want to filter by node types, properties, or mission scope.
-	// The query should have NodeTypes or other structural filters set.
-	// Forces structured query even if Text/Embedding are present.
-	QueryStructured(ctx context.Context, query graphrag.Query) ([]graphrag.Result, error)
+	// QueryNodes performs a query against the knowledge graph using proto messages.
+	QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error)
 
 	// FindSimilarAttacks searches for attack patterns semantically similar to the given content.
 	// Returns up to topK attack patterns ordered by similarity score.
@@ -315,38 +296,9 @@ type Harness interface {
 	// These methods enable agents to store arbitrary data in the knowledge graph
 	// with custom node types, properties, and relationships.
 
-	// StoreGraphNode stores an arbitrary node in the knowledge graph.
-	// The node will be enriched with mission context and timestamps.
-	// If Content is provided, embeddings will be automatically generated.
+	// StoreNode stores a graph node using proto messages.
 	// Returns the assigned node ID.
-	//
-	// DEPRECATED: Use StoreSemantic() or StoreStructured() for explicit intent.
-	StoreGraphNode(ctx context.Context, node graphrag.GraphNode) (string, error)
-
-	// StoreSemantic stores a node WITH semantic embeddings for semantic search.
-	// Use this when the node contains text content that should be semantically searchable.
-	// The Content field is required and will be embedded automatically.
-	// Returns the assigned node ID.
-	StoreSemantic(ctx context.Context, node graphrag.GraphNode) (string, error)
-
-	// StoreStructured stores a node WITHOUT semantic embeddings.
-	// Use this for pure metadata/structured data that doesn't need semantic search.
-	// The Content field is optional and won't be embedded even if provided.
-	// Returns the assigned node ID.
-	StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error)
-
-	// CreateGraphRelationship creates a relationship between two existing nodes.
-	// Both nodes must exist; returns an error if either node is not found.
-	CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error
-
-	// StoreGraphBatch stores multiple nodes and relationships atomically.
-	// Nodes are processed before relationships to ensure all targets exist.
-	// Returns all assigned node IDs in order.
-	StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error)
-
-	// TraverseGraph walks the graph from a starting node following relationships.
-	// Returns visited nodes with their paths and distances from the start.
-	TraverseGraph(ctx context.Context, startNodeID string, opts graphrag.TraversalOptions) ([]graphrag.TraversalResult, error)
+	StoreNode(ctx context.Context, node *graphragpb.GraphNode) (string, error)
 
 	// GraphRAGHealth returns the health status of the GraphRAG subsystem.
 	// Use this to check availability before performing GraphRAG operations.
@@ -392,11 +344,6 @@ type Harness interface {
 	// GetAllRunFindings returns findings from all runs of this mission.
 	// Useful for comprehensive analysis across the mission's history.
 	GetAllRunFindings(ctx context.Context, filter finding.Filter) ([]*finding.Finding, error)
-
-	// QueryGraphRAGScoped executes a GraphRAG query with explicit scope.
-	// This is a convenience method that sets scope before calling QueryGraphRAG.
-	// Scope can be: ScopeCurrentRun, ScopeSameMission, or ScopeAll.
-	QueryGraphRAGScoped(ctx context.Context, query graphrag.Query, scope graphrag.MissionScope) ([]graphrag.Result, error)
 
 	// Credential Access Methods
 	//
