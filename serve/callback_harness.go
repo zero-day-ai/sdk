@@ -466,50 +466,8 @@ func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []ll
 // Tool Operations
 // ============================================================================
 
-// CallTool invokes a tool by name with the given input parameters.
-func (h *CallbackHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	// Start span for tool call
-	ctx, span := h.tracer.Start(ctx, "gen_ai.tool",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gibson.tool.name", name),
-		),
-	)
-	defer span.End()
-
-	// Convert input to TypedValue map
-	protoReq := &proto.CallToolRequest{
-		Name:  name,
-		Input: ToTypedMap(input),
-	}
-
-	resp, err := h.client.CallTool(ctx, protoReq)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("call tool callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		err := fmt.Errorf("call tool error: %s", resp.Error.Message)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, resp.Error.Message)
-		return nil, err
-	}
-
-	// Convert output TypedValue to map[string]any
-	outputAny := FromTypedValue(resp.Output)
-	output, ok := outputAny.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("tool output is not a map: got %T", outputAny)
-	}
-
-	return output, nil
-}
-
-// CallToolProto invokes a tool using proto messages.
-// It serializes the proto request to JSON, calls the tool via CallTool,
-// and deserializes the response back into the proto response message.
+// CallToolProto invokes a tool using proto messages via the CallToolProto RPC.
+// This is the canonical way to execute tools - all tool calls should use this method.
 func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
 	// Start span for proto tool call
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
@@ -534,27 +492,27 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 		return fmt.Errorf("failed to marshal proto request to JSON: %w", err)
 	}
 
-	// Convert JSON to map[string]any for CallTool
-	var inputMap map[string]any
-	if err := json.Unmarshal(requestJSON, &inputMap); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to convert proto JSON to map")
-		return fmt.Errorf("failed to convert proto JSON to map: %w", err)
+	// Create the proto request
+	protoReq := &proto.CallToolProtoRequest{
+		Name:       name,
+		InputJson:  requestJSON,
+		InputType:  string(request.ProtoReflect().Descriptor().FullName()),
+		OutputType: string(response.ProtoReflect().Descriptor().FullName()),
 	}
 
-	// Call the underlying CallTool with the map input
-	output, err := h.CallTool(ctx, name, inputMap)
+	// Call via the callback client
+	resp, err := h.client.CallToolProto(ctx, protoReq)
 	if err != nil {
-		// Error already recorded in CallTool span
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("CallToolProto callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("CallToolProto error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
 		return err
-	}
-
-	// Convert output map back to JSON
-	outputJSON, err := json.Marshal(output)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal output to JSON")
-		return fmt.Errorf("failed to marshal tool output to JSON: %w", err)
 	}
 
 	// Use protojson unmarshaler for proper proto field mapping
@@ -563,67 +521,13 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 	}
 
 	// Unmarshal JSON into proto response
-	if err := unmarshaler.Unmarshal(outputJSON, response); err != nil {
+	if err := unmarshaler.Unmarshal(resp.OutputJson, response); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to unmarshal into proto response")
 		return fmt.Errorf("failed to unmarshal tool output into proto response: %w", err)
 	}
 
 	return nil
-}
-
-// CallToolsParallel executes multiple tool calls concurrently.
-func (h *CallbackHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	if len(calls) == 0 {
-		return []agent.ToolResult{}, nil
-	}
-
-	// Default concurrency
-	if maxConcurrency <= 0 {
-		maxConcurrency = 10
-	}
-
-	// Create results slice (same length as calls, preserves order)
-	results := make([]agent.ToolResult, len(calls))
-
-	// Semaphore for concurrency limiting
-	sem := make(chan struct{}, maxConcurrency)
-
-	// WaitGroup for completion tracking
-	var wg sync.WaitGroup
-
-	// Execute calls in parallel
-	for i, call := range calls {
-		wg.Add(1)
-		go func(idx int, c agent.ToolCall) {
-			defer wg.Done()
-
-			// Acquire semaphore slot
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				results[idx] = agent.ToolResult{
-					Name:  c.Name,
-					Error: ctx.Err(),
-				}
-				return
-			}
-
-			// Execute tool call using existing CallTool
-			output, err := h.CallTool(ctx, c.Name, c.Input)
-			results[idx] = agent.ToolResult{
-				Name:   c.Name,
-				Output: output,
-				Error:  err,
-			}
-		}(i, call)
-	}
-
-	// Wait for all goroutines to complete
-	wg.Wait()
-
-	return results, nil
 }
 
 // ListTools returns descriptors for all available tools.
@@ -1189,7 +1093,7 @@ func (h *CallbackHarness) StoreNode(ctx context.Context, node *graphragpb.GraphN
 	ctx, span := h.tracer.Start(ctx, "gibson.graphrag.store_node",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
-			attribute.String("gibson.graphrag.node_type", node.Type.String()),
+			attribute.String("gibson.graphrag.node_type", node.Type),
 		),
 	)
 	defer span.End()

@@ -190,9 +190,9 @@ func (q *Query) WithIncludeRunMetadata(include bool) *Query {
 //   - TopK is less than or equal to 0
 //   - MaxHops is less than 0
 //   - MinScore is not between 0 and 1
-//   - VectorWeight is negative
-//   - GraphWeight is negative
-//   - VectorWeight + GraphWeight does not equal 1.0
+//   - VectorWeight is negative (only for semantic queries)
+//   - GraphWeight is negative (only for semantic queries)
+//   - VectorWeight + GraphWeight does not equal 1.0 (only for semantic queries)
 func (q *Query) Validate() error {
 	// Check that exactly one of Text or Embedding is provided
 	hasText := q.Text != ""
@@ -222,21 +222,26 @@ func (q *Query) Validate() error {
 		return fmt.Errorf("MinScore must be between 0.0 and 1.0, got %f", q.MinScore)
 	}
 
-	// Validate VectorWeight
-	if q.VectorWeight < 0.0 {
-		return fmt.Errorf("VectorWeight must be non-negative, got %f", q.VectorWeight)
-	}
+	// Weight validation only applies to semantic queries (those with Text or Embedding).
+	// Structured queries (NodeTypes only) don't use vector search, so weights are irrelevant.
+	isSemanticQuery := hasText || hasEmbedding
+	if isSemanticQuery {
+		// Validate VectorWeight
+		if q.VectorWeight < 0.0 {
+			return fmt.Errorf("VectorWeight must be non-negative, got %f", q.VectorWeight)
+		}
 
-	// Validate GraphWeight
-	if q.GraphWeight < 0.0 {
-		return fmt.Errorf("GraphWeight must be non-negative, got %f", q.GraphWeight)
-	}
+		// Validate GraphWeight
+		if q.GraphWeight < 0.0 {
+			return fmt.Errorf("GraphWeight must be non-negative, got %f", q.GraphWeight)
+		}
 
-	// Validate that weights sum to 1.0 (with small epsilon for floating point)
-	const epsilon = 0.0001
-	weightSum := q.VectorWeight + q.GraphWeight
-	if weightSum < 1.0-epsilon || weightSum > 1.0+epsilon {
-		return fmt.Errorf("VectorWeight + GraphWeight must equal 1.0, got %f", weightSum)
+		// Validate that weights sum to 1.0 (with small epsilon for floating point)
+		const epsilon = 0.0001
+		weightSum := q.VectorWeight + q.GraphWeight
+		if weightSum < 1.0-epsilon || weightSum > 1.0+epsilon {
+			return fmt.Errorf("VectorWeight + GraphWeight must equal 1.0, got %f", weightSum)
+		}
 	}
 
 	// Validate RunNumber if set (nil is valid - means all runs)

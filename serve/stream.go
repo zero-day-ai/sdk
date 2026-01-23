@@ -22,7 +22,7 @@ import (
 //
 // Agents that do not implement this interface will still work with StreamExecute - the
 // framework will automatically wrap their Execute method and emit events by intercepting
-// harness method calls (CallTool, SubmitFinding, Complete, Stream).
+// harness method calls (CallToolProto, SubmitFinding, Complete, Stream).
 type StreamingAgent interface {
 	agent.Agent
 	// ExecuteStreaming runs the agent with streaming event emission support.
@@ -213,7 +213,7 @@ func (s *agentServiceServer) StreamExecute(stream proto.AgentService_StreamExecu
 	} else {
 		// Agent does not implement StreamingAgent - fall back to wrapped Execute
 		// The StreamingHarness will automatically emit events by intercepting:
-		// - CallTool -> emits ToolCallEvent before and ToolResultEvent after
+		// - CallToolProto -> emits ToolCallEvent before and ToolResultEvent after
 		// - SubmitFinding -> emits FindingEvent before delegating
 		// - Complete/Stream -> emits OutputChunk events for LLM responses
 		result, execErr = s.agent.Execute(ctx, streamingHarness, task)

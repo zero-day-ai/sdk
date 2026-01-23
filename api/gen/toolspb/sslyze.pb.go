@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -291,7 +292,9 @@ type SslyzeResponse struct {
 	// TotalTargets is the total number of targets scanned
 	TotalTargets int32 `protobuf:"varint,2,opt,name=total_targets,json=totalTargets,proto3" json:"total_targets,omitempty"`
 	// Duration is the scan duration in seconds
-	Duration      float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -345,6 +348,13 @@ func (x *SslyzeResponse) GetDuration() float64 {
 		return x.Duration
 	}
 	return 0
+}
+
+func (x *SslyzeResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // SslyzeResult represents a single sslyze scan result
@@ -1545,7 +1555,7 @@ var File_tools_sslyze_proto protoreflect.FileDescriptor
 
 const file_tools_sslyze_proto_rawDesc = "" +
 	"\n" +
-	"\x12tools/sslyze.proto\x12\fgibson.tools\"\xae\x06\n" +
+	"\x12tools/sslyze.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xae\x06\n" +
 	"\rSslyzeRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1b\n" +
@@ -1575,11 +1585,12 @@ const file_tools_sslyze_proto_rawDesc = "" +
 	"\x18certificate_transparency\x18\x16 \x01(\bR\x17certificateTransparency\x12\x18\n" +
 	"\atimeout\x18\x17 \x01(\x05R\atimeout\x12(\n" +
 	"\x10client_cert_path\x18\x18 \x01(\tR\x0eclientCertPath\x12&\n" +
-	"\x0fclient_key_path\x18\x19 \x01(\tR\rclientKeyPath\"\x87\x01\n" +
+	"\x0fclient_key_path\x18\x19 \x01(\tR\rclientKeyPath\"\xc7\x01\n" +
 	"\x0eSslyzeResponse\x124\n" +
 	"\aresults\x18\x01 \x03(\v2\x1a.gibson.tools.SslyzeResultR\aresults\x12#\n" +
 	"\rtotal_targets\x18\x02 \x01(\x05R\ftotalTargets\x12\x1a\n" +
-	"\bduration\x18\x03 \x01(\x01R\bduration\"\xc1\a\n" +
+	"\bduration\x18\x03 \x01(\x01R\bduration\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xc1\a\n" +
 	"\fSslyzeResult\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x0e\n" +
 	"\x02ip\x18\x02 \x01(\tR\x02ip\x12\x12\n" +
@@ -1717,32 +1728,34 @@ var file_tools_sslyze_proto_goTypes = []any{
 	(*EarlyDataResult)(nil),              // 15: gibson.tools.EarlyDataResult
 	(*HTTPSecurityHeaders)(nil),          // 16: gibson.tools.HTTPSecurityHeaders
 	nil,                                  // 17: gibson.tools.SslyzeResult.CipherSuitesEntry
+	(*graphragpb.DiscoveryResult)(nil),   // 18: gibson.graphrag.DiscoveryResult
 }
 var file_tools_sslyze_proto_depIdxs = []int32{
 	2,  // 0: gibson.tools.SslyzeResponse.results:type_name -> gibson.tools.SslyzeResult
-	3,  // 1: gibson.tools.SslyzeResult.certificate:type_name -> gibson.tools.SslyzeCertificateInfo
-	17, // 2: gibson.tools.SslyzeResult.cipher_suites:type_name -> gibson.tools.SslyzeResult.CipherSuitesEntry
-	7,  // 3: gibson.tools.SslyzeResult.heartbleed:type_name -> gibson.tools.VulnerabilityScanResult
-	8,  // 4: gibson.tools.SslyzeResult.compression:type_name -> gibson.tools.CompressionScanResult
-	9,  // 5: gibson.tools.SslyzeResult.fallback_scsv:type_name -> gibson.tools.FallbackSCSVResult
-	10, // 6: gibson.tools.SslyzeResult.renegotiation:type_name -> gibson.tools.RenegotiationScanResult
-	11, // 7: gibson.tools.SslyzeResult.session_resumption:type_name -> gibson.tools.SessionResumptionResult
-	14, // 8: gibson.tools.SslyzeResult.ocsp:type_name -> gibson.tools.OCSPResult
-	15, // 9: gibson.tools.SslyzeResult.early_data:type_name -> gibson.tools.EarlyDataResult
-	7,  // 10: gibson.tools.SslyzeResult.robot:type_name -> gibson.tools.VulnerabilityScanResult
-	16, // 11: gibson.tools.SslyzeResult.http_headers:type_name -> gibson.tools.HTTPSecurityHeaders
-	4,  // 12: gibson.tools.SslyzeCertificateInfo.chain_validation:type_name -> gibson.tools.ChainValidation
-	6,  // 13: gibson.tools.CipherSuiteList.accepted_ciphers:type_name -> gibson.tools.CipherSuite
-	6,  // 14: gibson.tools.CipherSuiteList.rejected_ciphers:type_name -> gibson.tools.CipherSuite
-	6,  // 15: gibson.tools.CipherSuiteList.preferred_cipher:type_name -> gibson.tools.CipherSuite
-	12, // 16: gibson.tools.SessionResumptionResult.session_id_resumption:type_name -> gibson.tools.SessionIdResumptionStats
-	13, // 17: gibson.tools.SessionResumptionResult.session_ticket_resumption:type_name -> gibson.tools.SessionTicketResumptionStats
-	5,  // 18: gibson.tools.SslyzeResult.CipherSuitesEntry.value:type_name -> gibson.tools.CipherSuiteList
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	18, // 1: gibson.tools.SslyzeResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3,  // 2: gibson.tools.SslyzeResult.certificate:type_name -> gibson.tools.SslyzeCertificateInfo
+	17, // 3: gibson.tools.SslyzeResult.cipher_suites:type_name -> gibson.tools.SslyzeResult.CipherSuitesEntry
+	7,  // 4: gibson.tools.SslyzeResult.heartbleed:type_name -> gibson.tools.VulnerabilityScanResult
+	8,  // 5: gibson.tools.SslyzeResult.compression:type_name -> gibson.tools.CompressionScanResult
+	9,  // 6: gibson.tools.SslyzeResult.fallback_scsv:type_name -> gibson.tools.FallbackSCSVResult
+	10, // 7: gibson.tools.SslyzeResult.renegotiation:type_name -> gibson.tools.RenegotiationScanResult
+	11, // 8: gibson.tools.SslyzeResult.session_resumption:type_name -> gibson.tools.SessionResumptionResult
+	14, // 9: gibson.tools.SslyzeResult.ocsp:type_name -> gibson.tools.OCSPResult
+	15, // 10: gibson.tools.SslyzeResult.early_data:type_name -> gibson.tools.EarlyDataResult
+	7,  // 11: gibson.tools.SslyzeResult.robot:type_name -> gibson.tools.VulnerabilityScanResult
+	16, // 12: gibson.tools.SslyzeResult.http_headers:type_name -> gibson.tools.HTTPSecurityHeaders
+	4,  // 13: gibson.tools.SslyzeCertificateInfo.chain_validation:type_name -> gibson.tools.ChainValidation
+	6,  // 14: gibson.tools.CipherSuiteList.accepted_ciphers:type_name -> gibson.tools.CipherSuite
+	6,  // 15: gibson.tools.CipherSuiteList.rejected_ciphers:type_name -> gibson.tools.CipherSuite
+	6,  // 16: gibson.tools.CipherSuiteList.preferred_cipher:type_name -> gibson.tools.CipherSuite
+	12, // 17: gibson.tools.SessionResumptionResult.session_id_resumption:type_name -> gibson.tools.SessionIdResumptionStats
+	13, // 18: gibson.tools.SessionResumptionResult.session_ticket_resumption:type_name -> gibson.tools.SessionTicketResumptionStats
+	5,  // 19: gibson.tools.SslyzeResult.CipherSuitesEntry.value:type_name -> gibson.tools.CipherSuiteList
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_tools_sslyze_proto_init() }

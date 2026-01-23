@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // HttpxRequest represents input for the httpx tool
 message HttpxRequest {
     // Targets is the list of URLs or hosts to scan (required)
@@ -54,6 +56,9 @@ message HttpxResponse {
 
     // Duration is the scan duration in seconds
     double duration = 5;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // HttpxResult represents a single httpx scan result

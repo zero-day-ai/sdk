@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // PayloadSearchRequest represents input for the payload_search tool
 message PayloadSearchRequest {
     // Query is the search query for full-text search across payload names and descriptions
@@ -30,6 +32,9 @@ message PayloadSearchResponse {
 
     // Count is the number of results returned
     int32 count = 2;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // Payload represents a single payload summary
@@ -90,6 +95,9 @@ message PayloadExecuteResponse {
 
     // SuggestedNext contains related payload IDs to try next
     repeated string suggested_next = 6;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // PayloadExecution contains execution details
@@ -165,6 +173,9 @@ message KnowledgeSearchResponse {
 
     // Count is the number of results returned
     int32 count = 2;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // KnowledgeResult represents a single knowledge search result

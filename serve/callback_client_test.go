@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zero-day-ai/sdk/api/gen/proto"
 	"google.golang.org/grpc"
 )
 
@@ -157,11 +156,6 @@ func TestCallbackClientNotConnected(t *testing.T) {
 	_, err = client.LLMComplete(ctx, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not connected")
-
-	// CallTool should fail when closed (reconnect will fail because client is closed)
-	_, err = client.CallTool(ctx, &proto.CallToolRequest{Name: "test"})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "closed")
 }
 
 // TestCallbackClient_ConnectWithKeepalive tests that Connect configures keepalive parameters.
@@ -241,14 +235,6 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 				return err
 			},
 			expectedMsg: "LLMStream: client not connected",
-		},
-		{
-			name: "CallTool",
-			call: func() error {
-				_, err := client.CallTool(ctx, nil)
-				return err
-			},
-			expectedMsg: "CallTool: client not connected",
 		},
 		{
 			name: "ListTools",

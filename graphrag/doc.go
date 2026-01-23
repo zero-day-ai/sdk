@@ -153,7 +153,7 @@
 //	    graphrag.RelTypeHasSubdomain,  // type-safe constant
 //	)
 //
-// See taxonomy_generated.go for the complete list with documentation.
+// See constants_generated.go for the complete list with documentation.
 //
 // # Batch Operations
 //
@@ -195,7 +195,7 @@
 //
 // ## Using Generated Constants
 //
-// Instead of string literals, use the generated constants from taxonomy_generated.go:
+// Instead of string literals, use the generated constants from constants_generated.go:
 //
 //	// Instead of this:
 //	node := graphrag.NewGraphNode("domain")  // string literal
@@ -259,7 +259,7 @@
 //   - technique: MITRE ATT&CK or Arcanum techniques
 //   - tactic: MITRE ATT&CK tactics
 //
-// See taxonomy_generated.go for the complete list with documentation.
+// See constants_generated.go for the complete list with documentation.
 //
 // # Hybrid Scoring
 //

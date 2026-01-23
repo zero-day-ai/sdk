@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/enum"
 	"github.com/zero-day-ai/sdk/tool"
 	"github.com/zero-day-ai/sdk/types"
 	"google.golang.org/grpc"
@@ -510,4 +511,161 @@ func TestToolConstants(t *testing.T) {
 	assert.Equal(t, "GIBSON_TOOL_MODE", SubprocessModeEnvVar)
 	assert.Equal(t, "subprocess", SubprocessModeValue)
 	assert.Equal(t, "--schema", SchemaFlag)
+}
+
+// TestToolExecute_WithEnumNormalization verifies that tools with registered enum mappings
+// receive normalized values according to the enum registry.
+func TestToolExecute_WithEnumNormalization(t *testing.T) {
+	// Clear registry before and after test for isolation
+	enum.Clear()
+	defer enum.Clear()
+
+	// Register enum mappings for a test tool
+	// Use camelCase field names to match proto conventions
+	enum.Register("test-tool-enum", "scanType", map[string]string{
+		"syn":     "SYN_SCAN",
+		"connect": "CONNECT_SCAN",
+		"udp":     "UDP_SCAN",
+	})
+	enum.Register("test-tool-enum", "verbosity", map[string]string{
+		"low":    "VERBOSITY_LOW",
+		"medium": "VERBOSITY_MEDIUM",
+		"high":   "VERBOSITY_HIGH",
+	})
+
+	// Create a mock tool that captures the received input
+	var receivedInput *proto.TypedMap
+	mockT := &mockTool{
+		name:    "test-tool-enum",
+		version: "1.0.0",
+		executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+			// Capture input to verify normalization
+			inputMap, ok := input.(*proto.TypedMap)
+			require.True(t, ok, "input should be TypedMap")
+			receivedInput = inputMap
+
+			// Return success response
+			return &proto.TypedMap{
+				Entries: map[string]*proto.TypedValue{
+					"result": {
+						Kind: &proto.TypedValue_StringValue{StringValue: "normalized"},
+					},
+				},
+			}, nil
+		},
+	}
+
+	conn, cleanup := setupToolTestServer(t, mockT)
+	defer cleanup()
+
+	client := proto.NewToolServiceClient(conn)
+
+	// Send request with shorthand enum values
+	inputJSON, err := json.Marshal(map[string]any{
+		"entries": map[string]any{
+			"scanType": map[string]any{
+				"stringValue": "syn", // Should be normalized to "SYN_SCAN"
+			},
+			"verbosity": map[string]any{
+				"stringValue": "high", // Should be normalized to "VERBOSITY_HIGH"
+			},
+			"target": map[string]any{
+				"stringValue": "localhost",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	resp, err := client.Execute(context.Background(), &proto.ToolExecuteRequest{
+		InputJson: string(inputJSON),
+	})
+
+	require.NoError(t, err)
+	assert.Nil(t, resp.Error)
+
+	// Verify that the tool received normalized enum values
+	require.NotNil(t, receivedInput, "tool should have received input")
+	assert.NotNil(t, receivedInput.Entries["scanType"])
+	assert.Equal(t, "SYN_SCAN", receivedInput.Entries["scanType"].GetStringValue(),
+		"scanType should be normalized to SYN_SCAN")
+	assert.NotNil(t, receivedInput.Entries["verbosity"])
+	assert.Equal(t, "VERBOSITY_HIGH", receivedInput.Entries["verbosity"].GetStringValue(),
+		"verbosity should be normalized to VERBOSITY_HIGH")
+
+	// Verify non-enum fields pass through unchanged
+	assert.NotNil(t, receivedInput.Entries["target"])
+	assert.Equal(t, "localhost", receivedInput.Entries["target"].GetStringValue(),
+		"non-enum field should pass through unchanged")
+}
+
+// TestToolExecute_WithoutEnumMappings verifies that tools without enum mappings
+// receive input values unchanged (pass-through behavior).
+func TestToolExecute_WithoutEnumMappings(t *testing.T) {
+	// Clear registry before and after test for isolation
+	enum.Clear()
+	defer enum.Clear()
+
+	// No enum mappings registered for this tool
+
+	// Create a mock tool that captures the received input
+	var receivedInput *proto.TypedMap
+	mockT := &mockTool{
+		name:    "test-tool-no-enum",
+		version: "1.0.0",
+		executeProtoFunc: func(ctx context.Context, input protolib.Message) (protolib.Message, error) {
+			// Capture input to verify it passes through unchanged
+			inputMap, ok := input.(*proto.TypedMap)
+			require.True(t, ok, "input should be TypedMap")
+			receivedInput = inputMap
+
+			// Return success response
+			return &proto.TypedMap{
+				Entries: map[string]*proto.TypedValue{
+					"result": {
+						Kind: &proto.TypedValue_StringValue{StringValue: "passthrough"},
+					},
+				},
+			}, nil
+		},
+	}
+
+	conn, cleanup := setupToolTestServer(t, mockT)
+	defer cleanup()
+
+	client := proto.NewToolServiceClient(conn)
+
+	// Send request with shorthand values
+	inputJSON, err := json.Marshal(map[string]any{
+		"entries": map[string]any{
+			"scanType": map[string]any{
+				"stringValue": "syn", // Should pass through unchanged
+			},
+			"verbosity": map[string]any{
+				"stringValue": "high", // Should pass through unchanged
+			},
+			"target": map[string]any{
+				"stringValue": "localhost",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	resp, err := client.Execute(context.Background(), &proto.ToolExecuteRequest{
+		InputJson: string(inputJSON),
+	})
+
+	require.NoError(t, err)
+	assert.Nil(t, resp.Error)
+
+	// Verify that the tool received original values unchanged
+	require.NotNil(t, receivedInput, "tool should have received input")
+	assert.NotNil(t, receivedInput.Entries["scanType"])
+	assert.Equal(t, "syn", receivedInput.Entries["scanType"].GetStringValue(),
+		"scanType should pass through unchanged")
+	assert.NotNil(t, receivedInput.Entries["verbosity"])
+	assert.Equal(t, "high", receivedInput.Entries["verbosity"].GetStringValue(),
+		"verbosity should pass through unchanged")
+	assert.NotNil(t, receivedInput.Entries["target"])
+	assert.Equal(t, "localhost", receivedInput.Entries["target"].GetStringValue(),
+		"target should pass through unchanged")
 }

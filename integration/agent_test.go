@@ -415,15 +415,7 @@ func (m *mockHarness) CallToolProto(ctx context.Context, name string, request pr
 	return errors.New("not implemented")
 }
 
-func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	return nil, errors.New("not implemented")
-}
-
 func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
 	return nil, errors.New("not implemented")
 }
 

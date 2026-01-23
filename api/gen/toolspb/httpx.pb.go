@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -169,7 +170,9 @@ type HttpxResponse struct {
 	// TotalFailed is the number of failed requests
 	TotalFailed int32 `protobuf:"varint,4,opt,name=total_failed,json=totalFailed,proto3" json:"total_failed,omitempty"`
 	// Duration is the scan duration in seconds
-	Duration      float64 `protobuf:"fixed64,5,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration float64 `protobuf:"fixed64,5,opt,name=duration,proto3" json:"duration,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -237,6 +240,13 @@ func (x *HttpxResponse) GetDuration() float64 {
 		return x.Duration
 	}
 	return 0
+}
+
+func (x *HttpxResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // HttpxResult represents a single httpx scan result
@@ -687,7 +697,7 @@ var File_tools_httpx_proto protoreflect.FileDescriptor
 
 const file_tools_httpx_proto_rawDesc = "" +
 	"\n" +
-	"\x11tools/httpx.proto\x12\fgibson.tools\"\xe5\x02\n" +
+	"\x11tools/httpx.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xe5\x02\n" +
 	"\fHttpxRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x1f\n" +
 	"\vtech_detect\x18\x02 \x01(\bR\n" +
@@ -705,13 +715,14 @@ const file_tools_httpx_proto_rawDesc = "" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12\x1d\n" +
 	"\n" +
-	"output_all\x18\v \x01(\bR\toutputAll\"\xcd\x01\n" +
+	"output_all\x18\v \x01(\bR\toutputAll\"\x8d\x02\n" +
 	"\rHttpxResponse\x123\n" +
 	"\aresults\x18\x01 \x03(\v2\x19.gibson.tools.HttpxResultR\aresults\x12#\n" +
 	"\rtotal_scanned\x18\x02 \x01(\x05R\ftotalScanned\x12#\n" +
 	"\rtotal_success\x18\x03 \x01(\x05R\ftotalSuccess\x12!\n" +
 	"\ftotal_failed\x18\x04 \x01(\x05R\vtotalFailed\x12\x1a\n" +
-	"\bduration\x18\x05 \x01(\x01R\bduration\"\x9d\x05\n" +
+	"\bduration\x18\x05 \x01(\x01R\bduration\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\x9d\x05\n" +
 	"\vHttpxResult\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1f\n" +
 	"\vstatus_code\x18\x02 \x01(\x05R\n" +
@@ -780,23 +791,25 @@ func file_tools_httpx_proto_rawDescGZIP() []byte {
 
 var file_tools_httpx_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_tools_httpx_proto_goTypes = []any{
-	(*HttpxRequest)(nil),  // 0: gibson.tools.HttpxRequest
-	(*HttpxResponse)(nil), // 1: gibson.tools.HttpxResponse
-	(*HttpxResult)(nil),   // 2: gibson.tools.HttpxResult
-	(*Technology)(nil),    // 3: gibson.tools.Technology
-	(*TLSInfo)(nil),       // 4: gibson.tools.TLSInfo
-	nil,                   // 5: gibson.tools.HttpxResult.HeadersEntry
+	(*HttpxRequest)(nil),               // 0: gibson.tools.HttpxRequest
+	(*HttpxResponse)(nil),              // 1: gibson.tools.HttpxResponse
+	(*HttpxResult)(nil),                // 2: gibson.tools.HttpxResult
+	(*Technology)(nil),                 // 3: gibson.tools.Technology
+	(*TLSInfo)(nil),                    // 4: gibson.tools.TLSInfo
+	nil,                                // 5: gibson.tools.HttpxResult.HeadersEntry
+	(*graphragpb.DiscoveryResult)(nil), // 6: gibson.graphrag.DiscoveryResult
 }
 var file_tools_httpx_proto_depIdxs = []int32{
 	2, // 0: gibson.tools.HttpxResponse.results:type_name -> gibson.tools.HttpxResult
-	3, // 1: gibson.tools.HttpxResult.technologies:type_name -> gibson.tools.Technology
-	5, // 2: gibson.tools.HttpxResult.headers:type_name -> gibson.tools.HttpxResult.HeadersEntry
-	4, // 3: gibson.tools.HttpxResult.tls:type_name -> gibson.tools.TLSInfo
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6, // 1: gibson.tools.HttpxResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3, // 2: gibson.tools.HttpxResult.technologies:type_name -> gibson.tools.Technology
+	5, // 3: gibson.tools.HttpxResult.headers:type_name -> gibson.tools.HttpxResult.HeadersEntry
+	4, // 4: gibson.tools.HttpxResult.tls:type_name -> gibson.tools.TLSInfo
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_tools_httpx_proto_init() }

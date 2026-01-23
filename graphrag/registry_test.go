@@ -24,28 +24,22 @@ func TestNewDefaultNodeTypeRegistry(t *testing.T) {
 		graphrag.NodeTypeEndpoint,
 		graphrag.NodeTypeDomain,
 		graphrag.NodeTypeSubdomain,
-		graphrag.NodeTypeApi,
 		graphrag.NodeTypeTechnology,
 		graphrag.NodeTypeCertificate,
-		graphrag.NodeTypeCloudAsset,
 
 		// Finding types
 		graphrag.NodeTypeFinding,
 		graphrag.NodeTypeEvidence,
-		graphrag.NodeTypeMitigation,
 
 		// Execution types
 		graphrag.NodeTypeMission,
+		graphrag.NodeTypeMissionRun,
 		graphrag.NodeTypeAgentRun,
 		graphrag.NodeTypeToolExecution,
 		graphrag.NodeTypeLlmCall,
 
 		// Attack types
 		graphrag.NodeTypeTechnique,
-		graphrag.NodeTypeTactic,
-
-		// Intelligence types
-		graphrag.NodeTypeIntelligence,
 	}
 
 	for _, nodeType := range expectedTypes {
@@ -66,42 +60,37 @@ func TestGetIdentifyingProperties_ValidTypes(t *testing.T) {
 	}{
 		{
 			nodeType:      graphrag.NodeTypeHost,
-			expectedProps: []string{graphrag.PropIP},
+			expectedProps: []string{"ip"},
 			description:   "Host identified by IP address",
 		},
 		{
 			nodeType:      graphrag.NodeTypePort,
-			expectedProps: []string{graphrag.PropHostID, graphrag.PropNumber, graphrag.PropProtocol},
+			expectedProps: []string{"host_id", "number", "protocol"},
 			description:   "Port identified by host_id, port number, and protocol",
 		},
 		{
 			nodeType:      graphrag.NodeTypeService,
-			expectedProps: []string{graphrag.PropPortID, graphrag.PropName},
+			expectedProps: []string{"port_id", "name"},
 			description:   "Service identified by port_id and service name",
 		},
 		{
 			nodeType:      graphrag.NodeTypeEndpoint,
-			expectedProps: []string{"service_id", graphrag.PropURL, graphrag.PropMethod},
+			expectedProps: []string{"service_id", "url", "method"},
 			description:   "Endpoint identified by service_id, URL, and HTTP method",
 		},
 		{
 			nodeType:      graphrag.NodeTypeDomain,
-			expectedProps: []string{graphrag.PropName},
+			expectedProps: []string{"name"},
 			description:   "Domain identified by name",
 		},
 		{
 			nodeType:      graphrag.NodeTypeSubdomain,
-			expectedProps: []string{graphrag.PropParentDomain, graphrag.PropName},
+			expectedProps: []string{"parent_domain", "name"},
 			description:   "Subdomain identified by parent_domain and name",
 		},
 		{
-			nodeType:      graphrag.NodeTypeApi,
-			expectedProps: []string{graphrag.PropBaseURL},
-			description:   "API identified by base_url",
-		},
-		{
 			nodeType:      graphrag.NodeTypeTechnology,
-			expectedProps: []string{graphrag.PropName, "version"},
+			expectedProps: []string{"name", "version"},
 			description:   "Technology identified by name and version",
 		},
 		{
@@ -110,13 +99,8 @@ func TestGetIdentifyingProperties_ValidTypes(t *testing.T) {
 			description:   "Certificate identified by fingerprint",
 		},
 		{
-			nodeType:      graphrag.NodeTypeCloudAsset,
-			expectedProps: []string{"provider", "resource_id"},
-			description:   "Cloud asset identified by provider and resource_id",
-		},
-		{
 			nodeType:      graphrag.NodeTypeFinding,
-			expectedProps: []string{graphrag.PropMissionID, "fingerprint"},
+			expectedProps: []string{"mission_id", "fingerprint"},
 			description:   "Finding identified by mission_id and fingerprint",
 		},
 		{
@@ -125,44 +109,34 @@ func TestGetIdentifyingProperties_ValidTypes(t *testing.T) {
 			description:   "Evidence identified by finding_id, type, and fingerprint",
 		},
 		{
-			nodeType:      graphrag.NodeTypeMitigation,
-			expectedProps: []string{"finding_id", graphrag.PropTitle},
-			description:   "Mitigation identified by finding_id and title",
-		},
-		{
 			nodeType:      graphrag.NodeTypeMission,
-			expectedProps: []string{graphrag.PropName, graphrag.PropTimestamp},
+			expectedProps: []string{"name", "timestamp"},
 			description:   "Mission identified by name and timestamp",
 		},
 		{
+			nodeType:      graphrag.NodeTypeMissionRun,
+			expectedProps: []string{"mission_id", "run_number"},
+			description:   "Mission run identified by mission_id and run_number",
+		},
+		{
 			nodeType:      graphrag.NodeTypeAgentRun,
-			expectedProps: []string{graphrag.PropMissionID, graphrag.PropAgentName, graphrag.PropRunNumber},
-			description:   "Agent run identified by mission_id, agent_name, and run_number",
+			expectedProps: []string{"mission_run_id", "agent_name"},
+			description:   "Agent run identified by mission_run_id and agent_name",
 		},
 		{
 			nodeType:      graphrag.NodeTypeToolExecution,
-			expectedProps: []string{graphrag.PropAgentRunID, graphrag.PropToolName, "sequence"},
+			expectedProps: []string{"agent_run_id", "tool_name", "sequence"},
 			description:   "Tool execution identified by agent_run_id, tool_name, and sequence",
 		},
 		{
 			nodeType:      graphrag.NodeTypeLlmCall,
-			expectedProps: []string{graphrag.PropAgentRunID, "sequence"},
+			expectedProps: []string{"agent_run_id", "sequence"},
 			description:   "LLM call identified by agent_run_id and sequence",
 		},
 		{
 			nodeType:      graphrag.NodeTypeTechnique,
-			expectedProps: []string{"id"},
-			description:   "Technique identified by id",
-		},
-		{
-			nodeType:      graphrag.NodeTypeTactic,
-			expectedProps: []string{"id"},
-			description:   "Tactic identified by id",
-		},
-		{
-			nodeType:      graphrag.NodeTypeIntelligence,
-			expectedProps: []string{graphrag.PropMissionID, graphrag.PropTitle, graphrag.PropTimestamp},
-			description:   "Intelligence identified by mission_id, title, and timestamp",
+			expectedProps: []string{"technique_id"},
+			description:   "Technique identified by technique_id",
 		},
 	}
 
@@ -227,44 +201,43 @@ func TestValidateProperties_ValidProperties(t *testing.T) {
 	}{
 		{
 			nodeType:   graphrag.NodeTypeHost,
-			properties: map[string]any{graphrag.PropIP: "10.0.0.1"},
+			properties: map[string]any{"ip": "10.0.0.1"},
 		},
 		{
 			nodeType: graphrag.NodeTypePort,
 			properties: map[string]any{
-				graphrag.PropHostID:   "host-123",
-				graphrag.PropNumber:   443,
-				graphrag.PropProtocol: "tcp",
+				"host_id":  "host-123",
+				"number":   443,
+				"protocol": "tcp",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeService,
 			properties: map[string]any{
-				graphrag.PropPortID: "port-123",
-				graphrag.PropName:   "https",
+				"port_id": "port-123",
+				"name":    "https",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeEndpoint,
 			properties: map[string]any{
-				"service_id":        "service-123",
-				graphrag.PropURL:    "/api/users",
-				graphrag.PropMethod: "GET",
+				"service_id": "service-123",
+				"url":        "/api/users",
+				"method":     "GET",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeFinding,
 			properties: map[string]any{
-				graphrag.PropMissionID: "mission-123",
-				"fingerprint":          "abc123def456",
+				"mission_id":  "mission-123",
+				"fingerprint": "abc123def456",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeAgentRun,
 			properties: map[string]any{
-				graphrag.PropMissionID: "mission-123",
-				graphrag.PropAgentName: "recon-agent",
-				graphrag.PropRunNumber: 1,
+				"mission_run_id": "run-123",
+				"agent_name":     "recon-agent",
 			},
 		},
 	}
@@ -293,47 +266,46 @@ func TestValidateProperties_MissingProperties(t *testing.T) {
 			name:            "Host missing IP",
 			nodeType:        graphrag.NodeTypeHost,
 			properties:      map[string]any{},
-			expectedMissing: []string{graphrag.PropIP},
+			expectedMissing: []string{"ip"},
 		},
 		{
 			name:     "Port missing host_id",
 			nodeType: graphrag.NodeTypePort,
 			properties: map[string]any{
-				graphrag.PropNumber:   443,
-				graphrag.PropProtocol: "tcp",
+				"number":   443,
+				"protocol": "tcp",
 			},
-			expectedMissing: []string{graphrag.PropHostID},
+			expectedMissing: []string{"host_id"},
 		},
 		{
 			name:     "Port missing protocol and number",
 			nodeType: graphrag.NodeTypePort,
 			properties: map[string]any{
-				graphrag.PropHostID: "host-123",
+				"host_id": "host-123",
 			},
-			expectedMissing: []string{graphrag.PropNumber, graphrag.PropProtocol},
+			expectedMissing: []string{"number", "protocol"},
 		},
 		{
 			name:            "Service missing all properties",
 			nodeType:        graphrag.NodeTypeService,
 			properties:      map[string]any{},
-			expectedMissing: []string{graphrag.PropPortID, graphrag.PropName},
+			expectedMissing: []string{"port_id", "name"},
 		},
 		{
 			name:     "Finding missing fingerprint",
 			nodeType: graphrag.NodeTypeFinding,
 			properties: map[string]any{
-				graphrag.PropMissionID: "mission-123",
+				"mission_id": "mission-123",
 			},
 			expectedMissing: []string{"fingerprint"},
 		},
 		{
-			name:     "Agent run missing run_number",
+			name:     "Agent run missing agent_name",
 			nodeType: graphrag.NodeTypeAgentRun,
 			properties: map[string]any{
-				graphrag.PropMissionID: "mission-123",
-				graphrag.PropAgentName: "recon-agent",
+				"mission_run_id": "run-123",
 			},
-			expectedMissing: []string{graphrag.PropRunNumber},
+			expectedMissing: []string{"agent_name"},
 		},
 	}
 
@@ -364,28 +336,28 @@ func TestValidateProperties_NilAndEmptyValues(t *testing.T) {
 		{
 			name: "Nil IP value",
 			properties: map[string]any{
-				graphrag.PropIP: nil,
+				"ip": nil,
 			},
-			expectedMissing: []string{graphrag.PropIP},
+			expectedMissing: []string{"ip"},
 		},
 		{
 			name: "Empty string IP",
 			properties: map[string]any{
-				graphrag.PropIP: "",
+				"ip": "",
 			},
-			expectedMissing: []string{graphrag.PropIP},
+			expectedMissing: []string{"ip"},
 		},
 		{
 			name: "Whitespace-only IP",
 			properties: map[string]any{
-				graphrag.PropIP: "   ",
+				"ip": "   ",
 			},
-			expectedMissing: []string{graphrag.PropIP},
+			expectedMissing: []string{"ip"},
 		},
 		{
 			name: "Valid IP",
 			properties: map[string]any{
-				graphrag.PropIP: "10.0.0.1",
+				"ip": "10.0.0.1",
 			},
 			expectedMissing: nil,
 		},
@@ -427,9 +399,9 @@ func TestAllNodeTypes(t *testing.T) {
 	types := registry.AllNodeTypes()
 	require.NotEmpty(t, types, "Should have registered node types")
 
-	// Verify at least the expected count
-	assert.GreaterOrEqual(t, len(types), 20,
-		"Should have at least 20 node types registered")
+	// Verify at least the expected count (16 types in new taxonomy)
+	assert.GreaterOrEqual(t, len(types), 16,
+		"Should have at least 16 node types registered")
 
 	// Verify sorted order
 	for i := 1; i < len(types); i++ {
@@ -502,8 +474,8 @@ func TestConcurrentAccess(t *testing.T) {
 				registry.GetIdentifyingProperties(graphrag.NodeTypePort)
 				registry.AllNodeTypes()
 				registry.ValidateProperties(graphrag.NodeTypeService, map[string]any{
-					graphrag.PropPortID: "port-123",
-					graphrag.PropName:   "https",
+					"port_id": "port-123",
+					"name":    "https",
 				})
 			}
 			done <- true
@@ -531,7 +503,7 @@ func TestGetIdentifyingProperties_ReturnsCopy(t *testing.T) {
 	// Get properties again and verify they're unchanged
 	props2, err := registry.GetIdentifyingProperties(graphrag.NodeTypeHost)
 	require.NoError(t, err)
-	assert.Equal(t, graphrag.PropIP, props2[0],
+	assert.Equal(t, "ip", props2[0],
 		"Internal registry should not be affected by external modifications")
 }
 

@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // SslyzeRequest represents input for the sslyze tool
 message SslyzeRequest {
     // Targets is the list of hosts or URLs to scan (required)
@@ -90,6 +92,9 @@ message SslyzeResponse {
 
     // Duration is the scan duration in seconds
     double duration = 3;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // SslyzeResult represents a single sslyze scan result

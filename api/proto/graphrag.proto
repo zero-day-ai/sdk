@@ -1,523 +1,246 @@
+// GraphRAG query and result types for proto-canonical operations.
+// This file provides types for the QueryNodes and StoreNode RPCs.
+
 syntax = "proto3";
 package gibson.graphrag;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/graphragpb";
 
-import "google/protobuf/timestamp.proto";
-
-// NodeType enum defines all canonical node types in the GraphRAG taxonomy.
-// This is the single source of truth for node types, replacing the string constants
-// in sdk/graphrag/taxonomy_generated.go.
-enum NodeType {
-    // Sentinel value - must be first
-    NODE_TYPE_UNSPECIFIED = 0;
-
-    // ========== Core Execution Types ==========
-    // Single execution run of an agent within a mission
-    NODE_TYPE_AGENT_RUN = 1;
-    // Top-level security assessment or penetration testing mission
-    NODE_TYPE_MISSION = 2;
-    // A single execution of a mission pipeline
-    NODE_TYPE_MISSION_RUN = 3;
-    // Execution of a security tool (nmap, nuclei, sqlmap, etc.)
-    NODE_TYPE_TOOL_EXECUTION = 4;
-    // Call to a large language model for analysis, planning, or decision-making
-    NODE_TYPE_LLM_CALL = 5;
-    // LLM-generated analysis report
-    NODE_TYPE_INTELLIGENCE = 6;
-
-    // ========== Asset Discovery Types ==========
-    // Root domain entity representing a registered domain name
-    NODE_TYPE_DOMAIN = 10;
-    // Subdomain discovered under a root domain
-    NODE_TYPE_SUBDOMAIN = 11;
-    // IP address or hostname representing a network host
-    NODE_TYPE_HOST = 12;
-    // Network port on a host
-    NODE_TYPE_PORT = 13;
-    // Service running on a network port
-    NODE_TYPE_SERVICE = 14;
-    // TLS/SSL certificate discovered on a host or service
-    NODE_TYPE_CERTIFICATE = 15;
-    // Software, framework, or technology stack component detected on an asset
-    NODE_TYPE_TECHNOLOGY = 16;
-
-    // ========== Network Infrastructure Types ==========
-    // DNS record (A, AAAA, CNAME, MX, TXT, etc.)
-    NODE_TYPE_DNS_RECORD = 20;
-    // Network firewall or security appliance
-    NODE_TYPE_FIREWALL = 21;
-    // Individual firewall rule or ACL entry
-    NODE_TYPE_FIREWALL_RULE = 22;
-    // Network router device
-    NODE_TYPE_ROUTER = 23;
-    // Network routing table entry
-    NODE_TYPE_ROUTE = 24;
-    // Load balancer distributing traffic across backends
-    NODE_TYPE_LOAD_BALANCER = 25;
-    // HTTP/SOCKS proxy or reverse proxy
-    NODE_TYPE_PROXY = 26;
-    // VPN gateway or endpoint
-    NODE_TYPE_VPN = 27;
-    // Network segment or subnet
-    NODE_TYPE_NETWORK = 28;
-    // Virtual LAN
-    NODE_TYPE_VLAN = 29;
-    // Network interface card or virtual NIC
-    NODE_TYPE_NETWORK_INTERFACE = 30;
-    // Security zone or trust boundary
-    NODE_TYPE_NETWORK_ZONE = 31;
-    // Network access control list
-    NODE_TYPE_NETWORK_ACL = 32;
-    // NAT gateway for outbound traffic
-    NODE_TYPE_NAT_GATEWAY = 33;
-    // BGP peering relationship
-    NODE_TYPE_BGP_PEER = 34;
-
-    // ========== Web/API Types ==========
-    // Web API service with multiple endpoints
-    NODE_TYPE_API = 40;
-    // Web endpoint or URL discovered through crawling or fuzzing
-    NODE_TYPE_ENDPOINT = 41;
-    // RESTful or GraphQL API endpoint
-    NODE_TYPE_API_ENDPOINT = 42;
-    // Query parameter or path parameter
-    NODE_TYPE_PARAMETER = 43;
-    // HTTP header
-    NODE_TYPE_HEADER = 44;
-    // HTTP cookie
-    NODE_TYPE_COOKIE = 45;
-    // HTML form element
-    NODE_TYPE_FORM = 46;
-    // Individual form input field
-    NODE_TYPE_FORM_FIELD = 47;
-    // WebSocket connection endpoint
-    NODE_TYPE_WEBSOCKET = 48;
-    // GraphQL schema definition
-    NODE_TYPE_GRAPHQL_SCHEMA = 49;
-    // GraphQL query operation
-    NODE_TYPE_GRAPHQL_QUERY = 50;
-    // GraphQL mutation operation
-    NODE_TYPE_GRAPHQL_MUTATION = 51;
-    // RESTful resource endpoint
-    NODE_TYPE_REST_RESOURCE = 52;
-    // HTTP method (GET, POST, etc.)
-    NODE_TYPE_HTTP_METHOD = 53;
-    // MIME content type
-    NODE_TYPE_CONTENT_TYPE = 54;
-    // CORS policy configuration
-    NODE_TYPE_CORS_POLICY = 55;
-    // Rate limiting configuration
-    NODE_TYPE_RATE_LIMIT = 56;
-    // HTTP request body schema
-    NODE_TYPE_REQUEST_BODY = 57;
-
-    // ========== Identity & Access Types ==========
-    // User account or identity
-    NODE_TYPE_USER = 60;
-    // User group or organizational unit
-    NODE_TYPE_GROUP = 61;
-    // Access control role
-    NODE_TYPE_ROLE = 62;
-    // Individual permission or capability
-    NODE_TYPE_PERMISSION = 63;
-    // Access control or security policy
-    NODE_TYPE_POLICY = 64;
-    // Username/password or authentication credential
-    NODE_TYPE_CREDENTIAL = 65;
-    // API key for authentication
-    NODE_TYPE_API_KEY = 66;
-    // Bearer token or session token
-    NODE_TYPE_TOKEN = 67;
-    // OAuth 2.0 client registration
-    NODE_TYPE_OAUTH_CLIENT = 68;
-    // OAuth 2.0 scope definition
-    NODE_TYPE_OAUTH_SCOPE = 69;
-    // SAML identity provider
-    NODE_TYPE_SAML_PROVIDER = 70;
-    // Generic identity provider (OIDC, LDAP, etc.)
-    NODE_TYPE_IDENTITY_PROVIDER = 71;
-    // Service account for machine-to-machine auth
-    NODE_TYPE_SERVICE_ACCOUNT = 72;
-    // User session or login session
-    NODE_TYPE_SESSION = 73;
-    // Cloud provider access key (AWS, GCP, Azure)
-    NODE_TYPE_ACCESS_KEY = 74;
-    // Multi-factor authentication device
-    NODE_TYPE_MFA_DEVICE = 75;
-
-    // ========== AI/LLM Types ==========
-    // Large language model (GPT-4, Claude, etc.)
-    NODE_TYPE_LLM = 80;
-    // Deployed LLM instance or endpoint
-    NODE_TYPE_LLM_DEPLOYMENT = 81;
-    // LLM prompt template
-    NODE_TYPE_PROMPT = 82;
-    // System-level LLM instruction
-    NODE_TYPE_SYSTEM_PROMPT = 83;
-    // LLM safety guardrail or content filter
-    NODE_TYPE_GUARDRAIL = 84;
-    // Content moderation filter
-    NODE_TYPE_CONTENT_FILTER = 85;
-    // LLM completion response
-    NODE_TYPE_LLM_RESPONSE = 86;
-    // Token consumption metrics
-    NODE_TYPE_TOKEN_USAGE = 87;
-    // Text embedding model
-    NODE_TYPE_EMBEDDING_MODEL = 88;
-    // Fine-tuned model variant
-    NODE_TYPE_FINE_TUNE = 89;
-    // Model version registry
-    NODE_TYPE_MODEL_REGISTRY = 90;
-    // Specific model version
-    NODE_TYPE_MODEL_VERSION = 91;
-    // Model inference API endpoint
-    NODE_TYPE_INFERENCE_ENDPOINT = 92;
-    // Batch inference job
-    NODE_TYPE_BATCH_JOB = 93;
-    // Model training run
-    NODE_TYPE_TRAINING_RUN = 94;
-    // Training or evaluation dataset
-    NODE_TYPE_DATASET = 95;
-
-    // ========== Cloud Provider Types ==========
-    // Cloud infrastructure resource (AWS, GCP, Azure)
-    NODE_TYPE_CLOUD_ASSET = 100;
-    // Cloud provider account
-    NODE_TYPE_CLOUD_ACCOUNT = 101;
-    // Virtual Private Cloud
-    NODE_TYPE_CLOUD_VPC = 102;
-    // Cloud subnet
-    NODE_TYPE_CLOUD_SUBNET = 103;
-    // Cloud security group or firewall
-    NODE_TYPE_CLOUD_SECURITY_GROUP = 104;
-    // Cloud compute instance (EC2, GCE, Azure VM)
-    NODE_TYPE_CLOUD_INSTANCE = 105;
-    // Serverless function (Lambda, Cloud Functions)
-    NODE_TYPE_CLOUD_FUNCTION = 106;
-
-    // ========== Container Types ==========
-    // Running container instance
-    NODE_TYPE_CONTAINER = 110;
-    // Container image
-    NODE_TYPE_CONTAINER_IMAGE = 111;
-    // Container registry (Docker Hub, ECR, GCR)
-    NODE_TYPE_CONTAINER_REGISTRY = 112;
-
-    // ========== Kubernetes Types ==========
-    // Kubernetes cluster
-    NODE_TYPE_K8S_CLUSTER = 120;
-    // Kubernetes namespace
-    NODE_TYPE_K8S_NAMESPACE = 121;
-    // Kubernetes pod
-    NODE_TYPE_K8S_POD = 122;
-    // Kubernetes deployment
-    NODE_TYPE_K8S_DEPLOYMENT = 123;
-    // Kubernetes service
-    NODE_TYPE_K8S_SERVICE = 124;
-    // Kubernetes secret
-    NODE_TYPE_K8S_SECRET = 125;
-
-    // ========== Security Finding Types ==========
-    // Security finding, vulnerability, or security issue discovered during assessment
-    NODE_TYPE_FINDING = 130;
-    // Supporting evidence for a security finding (requests, responses, screenshots, logs)
-    NODE_TYPE_EVIDENCE = 131;
-    // Security control, patch, or remediation measure for a finding
-    NODE_TYPE_MITIGATION = 132;
-    // Attack tactic representing a high-level adversary goal
-    NODE_TYPE_TACTIC = 133;
-    // Attack technique from Gibson taxonomy
-    NODE_TYPE_TECHNIQUE = 134;
-}
-
-// RelationType enum defines all canonical relationship types in the GraphRAG taxonomy.
-// This is the single source of truth for relationship types.
-enum RelationType {
-    // Sentinel value - must be first
-    RELATION_TYPE_UNSPECIFIED = 0;
-
-    // ========== Core Execution Relationships ==========
-    // Agent run is part of a mission
-    RELATION_TYPE_PART_OF = 1;
-    // Direct link to mission for traceability
-    RELATION_TYPE_PART_OF_MISSION = 2;
-    // Mission or agent delegates work to another agent run
-    RELATION_TYPE_DELEGATED_TO = 3;
-    // Tool execution was performed by an agent run
-    RELATION_TYPE_EXECUTED_BY = 4;
-    // Agent run discovered an asset
-    RELATION_TYPE_DISCOVERED = 5;
-    // Tool execution produced a finding
-    RELATION_TYPE_PRODUCED = 6;
-    // LLM call was made by an agent run
-    RELATION_TYPE_MADE_CALL = 7;
-    // Intelligence was generated by an LLM call
-    RELATION_TYPE_GENERATED_BY = 8;
-    // Intelligence report analyzes assets or findings
-    RELATION_TYPE_ANALYZES = 9;
-    // Entity belongs to a parent entity (MissionRun -> Mission, discovered nodes -> MissionRun)
-    RELATION_TYPE_BELONGS_TO = 10;
-
-    // ========== Asset Hierarchy Relationships ==========
-    // Domain has a subdomain
-    RELATION_TYPE_HAS_SUBDOMAIN = 20;
-    // Domain or subdomain resolves to an IP address (host)
-    RELATION_TYPE_RESOLVES_TO = 21;
-    // Host has an open port
-    RELATION_TYPE_HAS_PORT = 22;
-    // Port runs a specific service
-    RELATION_TYPE_RUNS_SERVICE = 23;
-    // Service has a web endpoint or URL
-    RELATION_TYPE_HAS_ENDPOINT = 24;
-    // Service or endpoint uses a specific technology or framework
-    RELATION_TYPE_USES_TECHNOLOGY = 25;
-    // Host serves a TLS/SSL certificate
-    RELATION_TYPE_SERVES_CERTIFICATE = 26;
-    // Cloud asset hosts a service or host instance
-    RELATION_TYPE_HOSTS = 27;
-
-    // ========== Finding Relationships ==========
-    // Finding affects a specific asset (endpoint, service, host, or technology)
-    RELATION_TYPE_AFFECTS = 30;
-    // Finding exploits a vulnerability in a specific technology or service
-    RELATION_TYPE_EXPLOITS = 31;
-    // Finding demonstrates the use of a specific attack technique
-    RELATION_TYPE_USES_TECHNIQUE = 32;
-    // Finding is supported by evidence (request, response, screenshot, etc.)
-    RELATION_TYPE_HAS_EVIDENCE = 33;
-    // Finding leads to another finding in an attack chain
-    RELATION_TYPE_LEADS_TO = 34;
-    // Finding is similar to another finding (bidirectional)
-    RELATION_TYPE_SIMILAR_TO = 35;
-    // Mitigation addresses a specific finding
-    RELATION_TYPE_MITIGATES = 36;
-
-    // ========== Network Relationships ==========
-    // Router routes traffic to destination
-    RELATION_TYPE_ROUTES_TO = 40;
-    // Firewall filters traffic
-    RELATION_TYPE_FILTERS = 41;
-    // VPN or tunnel terminates at endpoint
-    RELATION_TYPE_TERMINATES_AT = 42;
-    // BGP or routing peer relationship
-    RELATION_TYPE_PEERS_WITH = 43;
-    // Load balancer distributes to backend
-    RELATION_TYPE_LOAD_BALANCES = 44;
-    // Proxy forwards to backend
-    RELATION_TYPE_PROXIES_TO = 45;
-
-    // ========== Web/API Relationships ==========
-    // Endpoint has query or path parameter
-    RELATION_TYPE_HAS_PARAMETER = 50;
-    // Request has HTTP header
-    RELATION_TYPE_HAS_HEADER = 51;
-    // Request has cookie
-    RELATION_TYPE_HAS_COOKIE = 52;
-    // Endpoint accepts content type
-    RELATION_TYPE_ACCEPTS_CONTENT = 53;
-    // Endpoint returns content type
-    RELATION_TYPE_RETURNS_CONTENT = 54;
-
-    // ========== Identity Relationships ==========
-    // Group has user member
-    RELATION_TYPE_HAS_MEMBER = 60;
-    // Role or user has permission
-    RELATION_TYPE_HAS_PERMISSION = 61;
-    // Policy grants access to resource
-    RELATION_TYPE_GRANTS_ACCESS = 62;
-    // User authenticates via provider
-    RELATION_TYPE_AUTHENTICATES_VIA = 63;
-    // User or service assumes role
-    RELATION_TYPE_ASSUMES_ROLE = 64;
-
-    // ========== Kubernetes Relationships ==========
-    // Resource deployed in namespace
-    RELATION_TYPE_DEPLOYED_IN = 70;
-    // Volume mounted by pod
-    RELATION_TYPE_MOUNTED_BY = 71;
-    // Resource bound to another
-    RELATION_TYPE_BOUND_TO = 72;
-
-    // ========== Cloud Relationships ==========
-    // Resource hosted in VPC
-    RELATION_TYPE_HOSTED_IN_VPC = 80;
-    // Resource in subnet
-    RELATION_TYPE_IN_SUBNET = 81;
-    // Resource protected by security group
-    RELATION_TYPE_PROTECTED_BY_SG = 82;
-    // Data encrypted by KMS key
-    RELATION_TYPE_ENCRYPTED_BY = 83;
-}
-
-// QueryScope defines the scope for GraphRAG queries.
-enum QueryScope {
-    // Sentinel value - must be first
-    QUERY_SCOPE_UNSPECIFIED = 0;
-
-    // Query only data from the current mission run (default)
-    QUERY_SCOPE_MISSION_RUN = 1;
-
-    // Query all data from all runs of the current mission (historical)
-    QUERY_SCOPE_MISSION = 2;
-
-    // Query all data across all missions (cross-mission analysis)
-    QUERY_SCOPE_GLOBAL = 3;
-}
-
-// Technology represents a software, framework, or technology stack component.
-message Technology {
-    // Name is the technology name (e.g., "nginx", "Apache", "PostgreSQL")
-    string name = 1;
-
-    // Version is the technology version (e.g., "1.18.0", "2.4.41")
-    string version = 2;
-
-    // Category is the technology category (e.g., "web-server", "database", "framework")
-    string category = 3;
-
-    // Vendor is the technology vendor or maintainer
-    string vendor = 4;
-
-    // CPE is the Common Platform Enumeration identifier
-    string cpe = 5;
-
-    // License is the software license
-    string license = 6;
-
-    // EOL is the end-of-life date
-    string eol = 7;
-}
-
-// Host represents a network host in the knowledge graph.
-message Host {
-    // IP is the IP address of the host (IPv4 or IPv6) - identifying property
-    string ip = 1;
-
-    // Hostname is the DNS hostname or FQDN of the host
-    string hostname = 2;
-
-    // State represents the host's current state (up, down, unknown)
-    string state = 3;
-
-    // OS is the operating system detected on the host
-    string os = 4;
-}
-
-// Port represents a network port on a host.
-message Port {
-    // HostID is the IP address of the host this port belongs to - identifying property
-    string host_id = 1;
-
-    // Number is the port number (1-65535) - identifying property
-    int32 number = 2;
-
-    // Protocol is the transport protocol (tcp, udp, sctp) - identifying property
-    string protocol = 3;
-
-    // State represents the port's current state (open, closed, filtered)
-    string state = 4;
-}
-
-// Service represents a service running on a network port.
-message Service {
-    // PortID is the composite identifier for the port this service runs on
-    // Format: "{host_id}:{number}:{protocol}" - identifying property
-    string port_id = 1;
-
-    // Name is the service name or protocol identifier - identifying property
-    string name = 2;
-
-    // Version is the detected version of the service
-    string version = 3;
-
-    // Banner is the service banner or identification string
-    string banner = 4;
-}
-
-// Endpoint represents a web endpoint or URL.
-message Endpoint {
-    // ServiceID is the composite identifier for the service this endpoint belongs to
-    // Format: "{port_id}:{service_name}" - identifying property
-    string service_id = 1;
-
-    // Path is the URL path - identifying property
-    string path = 2;
-
-    // Method is the HTTP method (GET, POST, etc.) - identifying property
-    string method = 3;
-
-    // StatusCode is the HTTP status code
-    int32 status_code = 4;
-
-    // ContentType is the response content type
-    string content_type = 5;
-}
-
-// GraphNode is a container message for storing nodes with type, content, and properties.
-message GraphNode {
-    // Type is the node type from the NodeType enum
-    NodeType type = 1;
-
-    // Content is the text content for semantic search (optional for structured nodes)
-    string content = 2;
-
-    // Properties contains all node properties as key-value pairs
-    map<string, string> properties = 3;
-
-    // Metadata contains additional custom metadata
-    map<string, string> metadata = 4;
-
-    // Timestamp when the node was created
-    google.protobuf.Timestamp created_at = 5;
-}
-
-// GraphQuery represents a query for GraphRAG data.
+// GraphQuery represents a query against the knowledge graph using proto-canonical types.
 message GraphQuery {
-    // Scope defines the query scope (mission_run, mission, global)
-    QueryScope scope = 1;
-
-    // NodeTypes filters results to specific node types
-    repeated NodeType node_types = 2;
-
-    // Text is the query text for semantic search
-    string text = 3;
-
-    // MinScore is the minimum similarity score (0.0-1.0)
-    double min_score = 4;
-
-    // TopK limits the number of results returned
-    int32 top_k = 5;
-
-    // Filters contains additional property-based filters
-    map<string, string> filters = 6;
+  string text = 1;
+  repeated float embedding = 2;
+  int32 top_k = 3;
+  repeated string node_types = 4;
+  double min_score = 5;
+  double max_score = 6;
+  string mission_id = 7;
+  string mission_run_id = 8;
+  QueryScope scope = 9;
+  map<string, string> filters = 10;
+  double vector_weight = 11;
+  double graph_weight = 12;
 }
 
-// QueryResult represents a single result from a GraphRAG query.
+// QueryScope defines the scope of a graph query.
+enum QueryScope {
+  QUERY_SCOPE_UNSPECIFIED = 0;
+  QUERY_SCOPE_MISSION = 1;
+  QUERY_SCOPE_MISSION_RUN = 2;
+  QUERY_SCOPE_GLOBAL = 3;
+}
+
+// QueryResult represents a single result from a graph query.
 message QueryResult {
-    // Node is the matching graph node
-    GraphNode node = 1;
-
-    // Score is the similarity score (0.0-1.0)
-    double score = 2;
-
-    // NodeID is the internal node ID in the graph database
-    string node_id = 3;
+  GraphNode node = 1;
+  double score = 2;
+  double vector_score = 3;
+  double graph_score = 4;
+  repeated string path = 5;
+  int32 distance = 6;
 }
 
-// GraphRelationship represents a relationship between two nodes.
-message GraphRelationship {
-    // FromID is the source node ID
-    string from_id = 1;
+// GraphNode represents a node in the knowledge graph.
+// This is the proto-canonical representation for storage and query operations.
+message GraphNode {
+  string id = 1;
+  string type = 2;  // Node type (e.g., "host", "port", "finding")
+  map<string, Value> properties = 3;
 
-    // ToID is the destination node ID
-    string to_id = 2;
+  // Content for semantic search (optional)
+  string content = 4;
 
-    // Type is the relationship type from the RelationType enum
-    RelationType type = 3;
+  // Scoping fields (injected by harness)
+  string mission_id = 10;
+  string mission_run_id = 11;
+  string agent_run_id = 12;
+  string discovered_by = 13;
+  int64 discovered_at = 14;
 
-    // Properties contains relationship properties as key-value pairs
-    map<string, string> properties = 4;
+  // Timestamps
+  int64 created_at = 20;
+  int64 updated_at = 21;
 
-    // Timestamp when the relationship was created
-    google.protobuf.Timestamp created_at = 5;
+  // Parent reference
+  optional string parent_id = 30;
+  optional string parent_type = 31;
+  optional string parent_relationship = 32;
+}
+
+// Value represents a dynamic property value.
+message Value {
+  oneof kind {
+    string string_value = 1;
+    int64 int_value = 2;
+    double double_value = 3;
+    bool bool_value = 4;
+    bytes bytes_value = 5;
+    int64 timestamp_value = 6;
+    ListValue list_value = 7;
+    MapValue map_value = 8;
+  }
+}
+
+message ListValue {
+  repeated Value values = 1;
+}
+
+message MapValue {
+  map<string, Value> fields = 1;
+}
+
+// Relationship represents a connection between two nodes.
+message Relationship {
+  string id = 1;
+  string from_id = 2;
+  string to_id = 3;
+  string type = 4;
+  map<string, Value> properties = 5;
+  double weight = 6;
+
+  // Scoping
+  string mission_id = 10;
+  string mission_run_id = 11;
+
+  // Timestamps
+  int64 created_at = 20;
+}
+
+// ==================== DISCOVERY RESULT ====================
+
+// DiscoveryResult is a standardized container for tool-discovered entities.
+// Tools populate this message and Gibson automatically persists to the graph.
+message DiscoveryResult {
+  // Asset discoveries
+  repeated Host hosts = 1;
+  repeated Port ports = 2;
+  repeated Service services = 3;
+  repeated Endpoint endpoints = 4;
+  repeated Domain domains = 5;
+  repeated Subdomain subdomains = 6;
+  repeated Technology technologies = 7;
+  repeated Certificate certificates = 8;
+
+  // Security findings
+  repeated Finding findings = 9;
+  repeated Evidence evidence = 10;
+
+  // Custom extensions
+  repeated CustomNode custom_nodes = 20;
+  repeated ExplicitRelationship explicit_relationships = 21;
+}
+
+// Host discovered by a tool.
+message Host {
+  string ip = 1;
+  optional string hostname = 2;
+  optional string state = 3;
+  optional string os = 4;
+  optional string os_version = 5;
+  optional string mac_address = 6;
+}
+
+// Port discovered on a host.
+message Port {
+  string host_id = 1;  // Links to parent host (ip or hostname)
+  int32 number = 2;
+  string protocol = 3;
+  optional string state = 4;
+  optional string reason = 5;
+}
+
+// Service running on a port.
+message Service {
+  string port_id = 1;  // Composite: host_id:number:protocol
+  string name = 2;
+  optional string product = 3;
+  optional string version = 4;
+  optional string extra_info = 5;
+  optional string banner = 6;
+  optional string cpe = 7;
+}
+
+// Endpoint (URL) on a service.
+message Endpoint {
+  string service_id = 1;
+  string url = 2;
+  optional string method = 3;
+  optional int32 status_code = 4;
+  optional string content_type = 5;
+  optional int64 content_length = 6;
+  optional string title = 7;
+}
+
+// Domain discovered.
+message Domain {
+  string name = 1;
+  optional string registrar = 2;
+  optional int64 created_date = 3;
+  optional int64 expiry_date = 4;
+}
+
+// Subdomain under a domain.
+message Subdomain {
+  string parent_domain = 1;
+  string name = 2;
+  optional string full_name = 3;
+}
+
+// Technology detected.
+message Technology {
+  string name = 1;
+  optional string version = 2;
+  optional string category = 3;
+  optional int32 confidence = 4;
+  optional string cpe = 5;
+}
+
+// Certificate discovered.
+message Certificate {
+  optional string subject = 1;
+  optional string issuer = 2;
+  optional string serial_number = 3;
+  optional int64 not_before = 4;
+  optional int64 not_after = 5;
+  optional string fingerprint_sha256 = 6;
+  optional string san = 7;
+}
+
+// Finding (vulnerability or security issue).
+message Finding {
+  string title = 1;
+  optional string description = 2;
+  string severity = 3;
+  optional double confidence = 4;
+  optional string category = 5;
+  optional string remediation = 6;
+  optional double cvss_score = 7;
+  optional string cve_ids = 8;
+}
+
+// Evidence for a finding.
+message Evidence {
+  string finding_id = 1;
+  string type = 2;
+  optional string content = 3;
+  optional string url = 4;
+}
+
+// CustomNode for entities not in standard taxonomy.
+message CustomNode {
+  string node_type = 1;
+  map<string, string> id_properties = 2;
+  map<string, string> properties = 3;
+  optional string parent_type = 4;
+  map<string, string> parent_id = 5;
+  optional string relationship_type = 6;
+}
+
+// ExplicitRelationship for custom connections.
+message ExplicitRelationship {
+  string from_type = 1;
+  map<string, string> from_id = 2;
+  string to_type = 3;
+  map<string, string> to_id = 4;
+  string relationship_type = 5;
+  map<string, string> properties = 6;
 }

@@ -1,0 +1,652 @@
+# Gibson Taxonomy - Core Types
+# Version: 3.0.0
+# This file is the single source of truth for all taxonomy definitions.
+# Generated code is produced by taxonomy-gen from this file.
+
+version: "3.0.0"
+kind: core
+
+# ==================== NODE TYPES ====================
+node_types:
+  # -------------------- EXECUTION TYPES --------------------
+  - name: mission
+    category: execution
+    description: "Top-level security assessment mission"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Mission name"
+      - name: target
+        type: string
+        required: true
+        description: "Primary target (URL, IP range, etc.)"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed, cancelled]
+        description: "Current mission status"
+      - name: description
+        type: string
+        description: "Mission description"
+      - name: started_at
+        type: timestamp
+        description: "When the mission started"
+      - name: completed_at
+        type: timestamp
+        description: "When the mission completed"
+    parent: null
+    identifying_properties: [name, target]
+    validations:
+      - rule: "size(self.name) > 0"
+        message: "mission name cannot be empty"
+      - rule: "size(self.target) > 0"
+        message: "mission target cannot be empty"
+
+  - name: mission_run
+    category: execution
+    description: "Single execution of a mission pipeline"
+    properties:
+      - name: run_number
+        type: int32
+        required: true
+        description: "Run number within the mission"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed]
+        description: "Current run status"
+      - name: started_at
+        type: timestamp
+        description: "When the run started"
+      - name: completed_at
+        type: timestamp
+        description: "When the run completed"
+    parent:
+      type: mission
+      relationship: HAS_RUN
+      required: true
+    identifying_properties: [run_number]
+
+  - name: agent_run
+    category: execution
+    description: "Single execution of an agent within a mission"
+    properties:
+      - name: agent_name
+        type: string
+        required: true
+        description: "Name of the agent"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed]
+        description: "Current agent run status"
+      - name: started_at
+        type: timestamp
+        description: "When the agent run started"
+      - name: completed_at
+        type: timestamp
+        description: "When the agent run completed"
+      - name: error_message
+        type: string
+        description: "Error message if failed"
+    parent:
+      type: mission_run
+      relationship: CONTAINS_AGENT_RUN
+      required: true
+    identifying_properties: [agent_name]
+
+  - name: tool_execution
+    category: execution
+    description: "Execution of a security tool"
+    properties:
+      - name: tool_name
+        type: string
+        required: true
+        description: "Name of the tool"
+      - name: command
+        type: string
+        description: "Command that was executed"
+      - name: exit_code
+        type: int32
+        description: "Exit code of the tool"
+      - name: started_at
+        type: timestamp
+        description: "When the tool started"
+      - name: completed_at
+        type: timestamp
+        description: "When the tool completed"
+      - name: stdout
+        type: string
+        description: "Standard output"
+      - name: stderr
+        type: string
+        description: "Standard error"
+    parent:
+      type: agent_run
+      relationship: EXECUTED_TOOL
+      required: true
+    identifying_properties: [tool_name, started_at]
+
+  - name: llm_call
+    category: execution
+    description: "Call to a large language model"
+    properties:
+      - name: model
+        type: string
+        required: true
+        description: "Model identifier"
+      - name: provider
+        type: string
+        description: "LLM provider (anthropic, openai, etc.)"
+      - name: slot_name
+        type: string
+        description: "LLM slot name"
+      - name: prompt_tokens
+        type: int32
+        description: "Number of prompt tokens"
+      - name: completion_tokens
+        type: int32
+        description: "Number of completion tokens"
+      - name: total_tokens
+        type: int32
+        description: "Total tokens used"
+      - name: latency_ms
+        type: int64
+        description: "Latency in milliseconds"
+      - name: started_at
+        type: timestamp
+        description: "When the call started"
+    parent:
+      type: agent_run
+      relationship: MADE_CALL
+      required: true
+
+  # -------------------- ASSET TYPES --------------------
+  - name: domain
+    category: asset
+    description: "Root domain entity (e.g., example.com)"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Domain name"
+      - name: registrar
+        type: string
+        description: "Domain registrar"
+      - name: created_date
+        type: timestamp
+        description: "Domain creation date"
+      - name: expiry_date
+        type: timestamp
+        description: "Domain expiry date"
+      - name: nameservers
+        type: string
+        description: "Comma-separated nameservers"
+    parent: null
+    identifying_properties: [name]
+    validations:
+      - rule: "size(self.name) > 0"
+        message: "domain name cannot be empty"
+
+  - name: subdomain
+    category: asset
+    description: "Subdomain under a root domain"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Subdomain name (e.g., 'api' for api.example.com)"
+      - name: full_name
+        type: string
+        description: "Full subdomain (e.g., api.example.com)"
+    parent:
+      type: domain
+      relationship: HAS_SUBDOMAIN
+      required: true
+    identifying_properties: [name]
+
+  - name: host
+    category: asset
+    description: "IP address or hostname"
+    properties:
+      - name: ip
+        type: string
+        description: "IP address (IPv4 or IPv6)"
+      - name: hostname
+        type: string
+        description: "Hostname or FQDN"
+      - name: os
+        type: string
+        description: "Operating system"
+      - name: os_version
+        type: string
+        description: "OS version"
+      - name: mac_address
+        type: string
+        description: "MAC address"
+      - name: state
+        type: string
+        enum: [up, down, unknown]
+        description: "Host state"
+    parent: null
+    identifying_properties: [ip]
+    validations:
+      - rule: "has(self.ip) || has(self.hostname)"
+        message: "host requires either ip or hostname"
+
+  - name: port
+    category: asset
+    description: "Network port on a host"
+    properties:
+      - name: number
+        type: int32
+        required: true
+        description: "Port number"
+      - name: protocol
+        type: string
+        required: true
+        enum: [tcp, udp, sctp]
+        description: "Transport protocol"
+      - name: state
+        type: string
+        enum: [open, closed, filtered, "open|filtered", "closed|filtered", unknown]
+        description: "Port state"
+      - name: reason
+        type: string
+        description: "Reason for state determination"
+    parent:
+      type: host
+      relationship: HAS_PORT
+      required: true
+    identifying_properties: [number, protocol]
+    validations:
+      - rule: "self.number >= 1 && self.number <= 65535"
+        message: "port number must be between 1 and 65535"
+
+  - name: service
+    category: asset
+    description: "Service running on a port"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Service name"
+      - name: product
+        type: string
+        description: "Product name"
+      - name: version
+        type: string
+        description: "Service version"
+      - name: extra_info
+        type: string
+        description: "Additional service info"
+      - name: banner
+        type: string
+        description: "Service banner"
+      - name: cpe
+        type: string
+        description: "CPE identifier"
+    parent:
+      type: port
+      relationship: RUNS_SERVICE
+      required: true
+    identifying_properties: [name]
+
+  - name: endpoint
+    category: asset
+    description: "Web endpoint or URL"
+    properties:
+      - name: url
+        type: string
+        required: true
+        description: "Full URL"
+      - name: method
+        type: string
+        enum: [GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS]
+        description: "HTTP method"
+      - name: status_code
+        type: int32
+        description: "HTTP status code"
+      - name: content_type
+        type: string
+        description: "Response content type"
+      - name: content_length
+        type: int64
+        description: "Response content length"
+      - name: title
+        type: string
+        description: "Page title"
+    parent:
+      type: service
+      relationship: HAS_ENDPOINT
+      required: true
+    identifying_properties: [url, method]
+    validations:
+      - rule: "size(self.url) > 0"
+        message: "endpoint URL cannot be empty"
+
+  - name: technology
+    category: asset
+    description: "Technology/framework detected"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Technology name"
+      - name: version
+        type: string
+        description: "Version"
+      - name: category
+        type: string
+        description: "Technology category"
+      - name: confidence
+        type: int32
+        description: "Detection confidence (0-100)"
+      - name: cpe
+        type: string
+        description: "CPE identifier"
+    parent: null
+    identifying_properties: [name, version]
+
+  - name: certificate
+    category: asset
+    description: "TLS/SSL certificate"
+    properties:
+      - name: subject
+        type: string
+        description: "Certificate subject"
+      - name: issuer
+        type: string
+        description: "Certificate issuer"
+      - name: serial_number
+        type: string
+        description: "Serial number"
+      - name: not_before
+        type: timestamp
+        description: "Valid from"
+      - name: not_after
+        type: timestamp
+        description: "Valid until"
+      - name: fingerprint_sha256
+        type: string
+        description: "SHA-256 fingerprint"
+      - name: san
+        type: string
+        description: "Subject Alternative Names (comma-separated)"
+    parent: null
+    identifying_properties: [fingerprint_sha256]
+
+  # -------------------- FINDING TYPES --------------------
+  - name: finding
+    category: finding
+    description: "Security vulnerability or issue"
+    properties:
+      - name: title
+        type: string
+        required: true
+        description: "Finding title"
+      - name: description
+        type: string
+        description: "Detailed description"
+      - name: severity
+        type: string
+        required: true
+        enum: [critical, high, medium, low, info]
+        description: "Severity level"
+      - name: confidence
+        type: float64
+        description: "Confidence score (0.0-1.0)"
+      - name: category
+        type: string
+        description: "Finding category"
+      - name: subcategory
+        type: string
+        description: "Finding subcategory"
+      - name: remediation
+        type: string
+        description: "Remediation advice"
+      - name: cvss_score
+        type: float64
+        description: "CVSS score (0.0-10.0)"
+      - name: cve_ids
+        type: string
+        description: "CVE IDs (comma-separated)"
+      - name: cwe_ids
+        type: string
+        description: "CWE IDs (comma-separated)"
+    parent: null
+    identifying_properties: [title]
+    validations:
+      - rule: "size(self.title) > 0"
+        message: "finding title cannot be empty"
+      - rule: "!has(self.confidence) || (self.confidence >= 0.0 && self.confidence <= 1.0)"
+        message: "confidence must be between 0.0 and 1.0"
+      - rule: "!has(self.cvss_score) || (self.cvss_score >= 0.0 && self.cvss_score <= 10.0)"
+        message: "CVSS score must be between 0.0 and 10.0"
+
+  - name: evidence
+    category: finding
+    description: "Supporting evidence for a finding"
+    properties:
+      - name: type
+        type: string
+        required: true
+        enum: [request, response, screenshot, log, code, config, other]
+        description: "Evidence type"
+      - name: content
+        type: string
+        description: "Evidence content"
+      - name: content_type
+        type: string
+        description: "MIME type of content"
+      - name: url
+        type: string
+        description: "URL related to evidence"
+    parent:
+      type: finding
+      relationship: HAS_EVIDENCE
+      required: true
+
+  # -------------------- ATTACK TYPES --------------------
+  - name: technique
+    category: attack
+    description: "Attack technique (MITRE/Gibson)"
+    properties:
+      - name: technique_id
+        type: string
+        required: true
+        description: "Technique ID (e.g., GIB-T1001)"
+      - name: name
+        type: string
+        required: true
+        description: "Technique name"
+      - name: taxonomy
+        type: string
+        enum: [mitre_attack, mitre_atlas, gibson]
+        description: "Source taxonomy"
+      - name: tactic
+        type: string
+        description: "Associated tactic"
+      - name: description
+        type: string
+        description: "Technique description"
+      - name: url
+        type: string
+        description: "Reference URL"
+    parent: null
+    identifying_properties: [technique_id]
+
+# ==================== RELATIONSHIP TYPES ====================
+relationship_types:
+  # Execution hierarchy
+  - name: HAS_RUN
+    description: "Mission has a mission run"
+    from_types: [mission]
+    to_types: [mission_run]
+    cardinality: one_to_many
+
+  - name: CONTAINS_AGENT_RUN
+    description: "Mission run contains agent run"
+    from_types: [mission_run]
+    to_types: [agent_run]
+    cardinality: one_to_many
+
+  - name: EXECUTED_TOOL
+    description: "Agent run executed a tool"
+    from_types: [agent_run]
+    to_types: [tool_execution]
+    cardinality: one_to_many
+
+  - name: MADE_CALL
+    description: "Agent run made an LLM call"
+    from_types: [agent_run]
+    to_types: [llm_call]
+    cardinality: one_to_many
+
+  - name: DELEGATED_TO
+    description: "Agent run delegated to another agent"
+    from_types: [agent_run]
+    to_types: [agent_run]
+    cardinality: many_to_many
+
+  # Asset hierarchy
+  - name: HAS_SUBDOMAIN
+    description: "Domain has subdomain"
+    from_types: [domain]
+    to_types: [subdomain]
+    cardinality: one_to_many
+
+  - name: RESOLVES_TO
+    description: "Domain/subdomain resolves to host"
+    from_types: [domain, subdomain]
+    to_types: [host]
+    cardinality: many_to_many
+
+  - name: HAS_PORT
+    description: "Host has port"
+    from_types: [host]
+    to_types: [port]
+    cardinality: one_to_many
+
+  - name: RUNS_SERVICE
+    description: "Port runs service"
+    from_types: [port]
+    to_types: [service]
+    cardinality: one_to_many
+
+  - name: HAS_ENDPOINT
+    description: "Service has endpoint"
+    from_types: [service]
+    to_types: [endpoint]
+    cardinality: one_to_many
+
+  - name: USES_TECHNOLOGY
+    description: "Asset uses technology"
+    from_types: [host, service, endpoint]
+    to_types: [technology]
+    cardinality: many_to_many
+
+  - name: SERVES_CERTIFICATE
+    description: "Host serves certificate"
+    from_types: [host]
+    to_types: [certificate]
+    cardinality: many_to_many
+
+  # Discovery
+  - name: DISCOVERED
+    description: "Agent run discovered an asset"
+    from_types: [agent_run]
+    to_types: ["*"]
+    cardinality: one_to_many
+    properties:
+      - name: discovered_at
+        type: timestamp
+        description: "When the asset was discovered"
+      - name: discovery_method
+        type: string
+        description: "How the asset was discovered"
+
+  # Findings
+  - name: AFFECTS
+    description: "Finding affects an asset"
+    from_types: [finding]
+    to_types: [host, port, service, endpoint, technology]
+    cardinality: many_to_many
+
+  - name: HAS_EVIDENCE
+    description: "Finding has evidence"
+    from_types: [finding]
+    to_types: [evidence]
+    cardinality: one_to_many
+
+  - name: USES_TECHNIQUE
+    description: "Finding uses attack technique"
+    from_types: [finding]
+    to_types: [technique]
+    cardinality: many_to_many
+
+  - name: LEADS_TO
+    description: "Finding leads to another finding (attack chain)"
+    from_types: [finding]
+    to_types: [finding]
+    cardinality: many_to_many
+
+# ==================== GIBSON ATTACK TECHNIQUES ====================
+techniques:
+  - id: GIB-T1001
+    name: "Direct Prompt Injection"
+    taxonomy: gibson
+    tactic: initial_access
+    description: "Inject malicious content directly into the prompt"
+
+  - id: GIB-T1002
+    name: "Indirect Prompt Injection"
+    taxonomy: gibson
+    tactic: initial_access
+    description: "Inject via external data sources (RAG, tools, web content)"
+
+  - id: GIB-T1003
+    name: "Jailbreak - Roleplay"
+    taxonomy: gibson
+    tactic: defense_evasion
+    description: "Bypass restrictions via roleplay scenarios"
+
+  - id: GIB-T1004
+    name: "Jailbreak - DAN"
+    taxonomy: gibson
+    tactic: defense_evasion
+    description: "Do Anything Now and variants"
+
+  - id: GIB-T1005
+    name: "System Prompt Extraction"
+    taxonomy: gibson
+    tactic: discovery
+    description: "Extract hidden system prompt"
+
+  - id: GIB-T1006
+    name: "RAG Poisoning"
+    taxonomy: gibson
+    tactic: persistence
+    description: "Inject malicious content into knowledge base"
+
+  - id: GIB-T1007
+    name: "Context Manipulation"
+    taxonomy: gibson
+    tactic: defense_evasion
+    description: "Manipulate conversation context to bypass restrictions"
+
+  - id: GIB-T1008
+    name: "Token Smuggling"
+    taxonomy: gibson
+    tactic: defense_evasion
+    description: "Use encoding/tokenization tricks to hide malicious content"
+
+  - id: GIB-T1009
+    name: "Tool Abuse"
+    taxonomy: gibson
+    tactic: execution
+    description: "Abuse tool/function calling capabilities"
+
+  - id: GIB-T1010
+    name: "Data Exfiltration"
+    taxonomy: gibson
+    tactic: exfiltration
+    description: "Extract sensitive data through LLM responses"

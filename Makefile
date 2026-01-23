@@ -1,7 +1,7 @@
 # Gibson SDK Makefile
 # The SDK is a library - no binary to compile, but we build examples and run tests
 
-.PHONY: all bin test test-race test-coverage lint fmt vet tidy clean deps check proto proto-deps proto-clean help
+.PHONY: all bin test test-race test-coverage lint fmt vet tidy clean deps check proto proto-deps proto-clean taxonomy-gen generate help
 
 # Go parameters
 GOCMD=go
@@ -15,9 +15,13 @@ BIN_DIR=bin
 EXAMPLES_DIR=examples
 PROTO_DIR=api/proto
 PROTO_OUT=api/gen
-GRAPHRAGPB_OUT=$(PROTO_OUT)/graphragpb
+TAXONOMYPB_OUT=$(PROTO_OUT)/taxonomypb
 WORKFLOWPB_OUT=$(PROTO_OUT)/workflowpb
 TOOLSPB_OUT=$(PROTO_OUT)/toolspb
+
+# Taxonomy generation
+TAXONOMY_YAML=taxonomy/core.yaml
+TAXONOMY_GEN_CMD=go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen
 
 # Example binaries to build
 EXAMPLES=minimal-agent custom-tool custom-plugin
@@ -127,10 +131,15 @@ proto: proto-deps
 	@echo "Generating Go code from proto files..."
 	@mkdir -p $(GRAPHRAGPB_OUT) $(WORKFLOWPB_OUT) $(TOOLSPB_OUT) $(PROTO_OUT)/proto
 	$(eval PROTOBUF_DIR := $(shell go list -m -f '{{.Dir}}' google.golang.org/protobuf))
-	@echo "  Generating graphrag.proto..."
-	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
-		--go_out=$(GRAPHRAGPB_OUT) --go_opt=paths=source_relative \
-		$(PROTO_DIR)/graphrag.proto
+	@echo "  Generating taxonomy.proto..."
+	@mkdir -p $(TAXONOMYPB_OUT)
+	@if [ -f "$(PROTO_DIR)/taxonomy.proto" ]; then \
+		protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+			--go_out=$(TAXONOMYPB_OUT) --go_opt=paths=source_relative \
+			$(PROTO_DIR)/taxonomy.proto; \
+	else \
+		echo "    taxonomy.proto not found - run 'make taxonomy-gen' first"; \
+	fi
 	@echo "  Generating workflow.proto..."
 	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
 		--go_out=$(WORKFLOWPB_OUT) --go_opt=paths=source_relative \
@@ -157,10 +166,37 @@ proto: proto-deps
 
 proto-clean:
 	@echo "Cleaning generated proto files..."
-	@rm -rf $(PROTO_OUT)/graphragpb/*.pb.go
+	@rm -rf $(PROTO_OUT)/taxonomypb/*.pb.go
 	@rm -rf $(PROTO_OUT)/workflowpb/*.pb.go
 	@rm -rf $(PROTO_OUT)/toolspb/*.pb.go
 	@rm -rf $(PROTO_OUT)/proto/*.pb.go
+
+# Taxonomy generation from YAML
+taxonomy-gen:
+	@echo "Generating taxonomy from YAML..."
+	@mkdir -p $(TAXONOMYPB_OUT) graphrag/domain graphrag/validation
+	$(TAXONOMY_GEN_CMD) \
+		--base $(TAXONOMY_YAML) \
+		--output-proto $(PROTO_DIR)/taxonomy.proto \
+		--output-domain graphrag/domain/domain_generated.go \
+		--output-validators graphrag/validation/validators_generated.go \
+		--output-constants graphrag/constants_generated.go \
+		--package domain
+	@echo "Taxonomy generation complete"
+
+# Generate taxonomy proto
+taxonomy-proto: taxonomy-gen proto-deps
+	@echo "Generating Go code from taxonomy.proto..."
+	@mkdir -p $(TAXONOMYPB_OUT)
+	$(eval PROTOBUF_DIR := $(shell go list -m -f '{{.Dir}}' google.golang.org/protobuf))
+	@protoc --proto_path=$(PROTO_DIR) --proto_path=$(PROTOBUF_DIR) \
+		--go_out=$(TAXONOMYPB_OUT) --go_opt=paths=source_relative \
+		$(PROTO_DIR)/taxonomy.proto
+	@echo "Taxonomy proto generation complete"
+
+# Full generate: YAML -> Proto -> Go code
+generate: taxonomy-gen taxonomy-proto
+	@echo "All generation complete!"
 
 # Help target
 help:
@@ -181,6 +217,9 @@ help:
 	@echo "  make proto         - Generate Go code from proto files"
 	@echo "  make proto-deps    - Install protoc plugins"
 	@echo "  make proto-clean   - Remove generated proto files"
+	@echo "  make taxonomy-gen  - Generate taxonomy from YAML (proto, domain, validators)"
+	@echo "  make taxonomy-proto- Generate Go code from taxonomy.proto"
+	@echo "  make generate      - Full generation: YAML -> Proto -> Go"
 	@echo "  make help          - Show this help message"
 	@echo ""
 	@echo "Note: The SDK is a library. 'make bin' builds the example applications."

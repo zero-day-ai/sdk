@@ -41,6 +41,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/zero-day-ai/sdk/enum"
 	"github.com/zero-day-ai/sdk/tool"
 )
 
@@ -74,8 +75,12 @@ func RunSubprocess(t tool.Tool) error {
 //   - version: Tool version
 //   - description: Tool description
 //   - tags: Tool tags
-//   - input_schema: JSON schema for input
-//   - output_schema: JSON schema for output
+//   - input_message_type: Proto message type for input
+//   - output_message_type: Proto message type for output
+//   - enum_mappings: (optional) Registered enum mappings for the tool
+//
+// The enum_mappings field is only included if the tool has registered
+// explicit mappings via enum.Register() or enum.RegisterBatch().
 //
 // Example:
 //
@@ -93,6 +98,12 @@ func OutputSchema(t tool.Tool) error {
 		"tags":                t.Tags(),
 		"input_message_type":  t.InputMessageType(),
 		"output_message_type": t.OutputMessageType(),
+	}
+
+	// Add enum mappings if registered for this tool
+	enumMappings := enum.GetMappings(t.Name())
+	if enumMappings != nil && len(enumMappings) > 0 {
+		schema["enum_mappings"] = enumMappings
 	}
 
 	// Marshal schema to JSON

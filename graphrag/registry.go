@@ -97,7 +97,7 @@ type NodeTypeRegistry interface {
 
 // DefaultNodeTypeRegistry is the default implementation of NodeTypeRegistry.
 // It uses an in-memory map to store the identifying properties for each canonical node type
-// from the GraphRAG taxonomy (taxonomy_generated.go).
+// from the GraphRAG taxonomy (constants_generated.go).
 //
 // This implementation is thread-safe and can be used concurrently.
 type DefaultNodeTypeRegistry struct {
@@ -151,34 +151,28 @@ func NewDefaultNodeTypeRegistry() *DefaultNodeTypeRegistry {
 	}
 
 	// Asset Node Types
-	r.register(NodeTypeHost, []string{PropIP})
-	r.register(NodeTypePort, []string{PropHostID, PropNumber, PropProtocol})
-	r.register(NodeTypeService, []string{PropPortID, PropName})
-	r.register(NodeTypeEndpoint, []string{"service_id", PropURL, PropMethod})
-	r.register(NodeTypeDomain, []string{PropName})
-	r.register(NodeTypeSubdomain, []string{PropParentDomain, PropName})
-	r.register(NodeTypeApi, []string{PropBaseURL})
-	r.register(NodeTypeTechnology, []string{PropName, "version"})
+	r.register(NodeTypeHost, []string{"ip"})
+	r.register(NodeTypePort, []string{"host_id", "number", "protocol"})
+	r.register(NodeTypeService, []string{"port_id", "name"})
+	r.register(NodeTypeEndpoint, []string{"service_id", "url", "method"})
+	r.register(NodeTypeDomain, []string{"name"})
+	r.register(NodeTypeSubdomain, []string{"parent_domain", "name"})
+	r.register(NodeTypeTechnology, []string{"name", "version"})
 	r.register(NodeTypeCertificate, []string{"fingerprint"})
-	r.register(NodeTypeCloudAsset, []string{"provider", "resource_id"})
 
 	// Finding Node Types
-	r.register(NodeTypeFinding, []string{PropMissionID, "fingerprint"})
+	r.register(NodeTypeFinding, []string{"mission_id", "fingerprint"})
 	r.register(NodeTypeEvidence, []string{"finding_id", "type", "fingerprint"})
-	r.register(NodeTypeMitigation, []string{"finding_id", PropTitle})
 
 	// Execution Node Types
-	r.register(NodeTypeMission, []string{PropName, PropTimestamp})
-	r.register(NodeTypeAgentRun, []string{PropMissionID, PropAgentName, PropRunNumber})
-	r.register(NodeTypeToolExecution, []string{PropAgentRunID, PropToolName, "sequence"})
-	r.register(NodeTypeLlmCall, []string{PropAgentRunID, "sequence"})
+	r.register(NodeTypeMission, []string{"name", "timestamp"})
+	r.register(NodeTypeMissionRun, []string{"mission_id", "run_number"})
+	r.register(NodeTypeAgentRun, []string{"mission_run_id", "agent_name"})
+	r.register(NodeTypeToolExecution, []string{"agent_run_id", "tool_name", "sequence"})
+	r.register(NodeTypeLlmCall, []string{"agent_run_id", "sequence"})
 
 	// Attack Node Types
-	r.register(NodeTypeTechnique, []string{"id"})
-	r.register(NodeTypeTactic, []string{"id"})
-
-	// Intelligence Node Types
-	r.register(NodeTypeIntelligence, []string{PropMissionID, PropTitle, PropTimestamp})
+	r.register(NodeTypeTechnique, []string{"technique_id"})
 
 	return r
 }

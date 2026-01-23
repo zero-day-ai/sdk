@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -147,7 +148,9 @@ type WappalyzerResponse struct {
 	// TotalTargets is the total number of targets analyzed
 	TotalTargets int32 `protobuf:"varint,2,opt,name=total_targets,json=totalTargets,proto3" json:"total_targets,omitempty"`
 	// Duration is the analysis duration in seconds
-	Duration      float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -201,6 +204,13 @@ func (x *WappalyzerResponse) GetDuration() float64 {
 		return x.Duration
 	}
 	return 0
+}
+
+func (x *WappalyzerResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // WappalyzerResult represents a single wappalyzer analysis result
@@ -462,7 +472,7 @@ var File_tools_wappalyzer_proto protoreflect.FileDescriptor
 
 const file_tools_wappalyzer_proto_rawDesc = "" +
 	"\n" +
-	"\x16tools/wappalyzer.proto\x12\fgibson.tools\"\x81\x03\n" +
+	"\x16tools/wappalyzer.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\x81\x03\n" +
 	"\x11WappalyzerRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x18\n" +
 	"\atimeout\x18\x02 \x01(\x05R\atimeout\x12\x1b\n" +
@@ -476,11 +486,12 @@ const file_tools_wappalyzer_proto_rawDesc = "" +
 	"\x0ffollow_redirect\x18\t \x01(\bR\x0efollowRedirect\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcf\x01\n" +
 	"\x12WappalyzerResponse\x128\n" +
 	"\aresults\x18\x01 \x03(\v2\x1e.gibson.tools.WappalyzerResultR\aresults\x12#\n" +
 	"\rtotal_targets\x18\x02 \x01(\x05R\ftotalTargets\x12\x1a\n" +
-	"\bduration\x18\x03 \x01(\x01R\bduration\"\xaf\x01\n" +
+	"\bduration\x18\x03 \x01(\x01R\bduration\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xaf\x01\n" +
 	"\x10WappalyzerResult\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12D\n" +
 	"\ftechnologies\x18\x02 \x03(\v2 .gibson.tools.DetectedTechnologyR\ftechnologies\x12-\n" +
@@ -520,23 +531,25 @@ func file_tools_wappalyzer_proto_rawDescGZIP() []byte {
 
 var file_tools_wappalyzer_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_tools_wappalyzer_proto_goTypes = []any{
-	(*WappalyzerRequest)(nil),  // 0: gibson.tools.WappalyzerRequest
-	(*WappalyzerResponse)(nil), // 1: gibson.tools.WappalyzerResponse
-	(*WappalyzerResult)(nil),   // 2: gibson.tools.WappalyzerResult
-	(*DetectedTechnology)(nil), // 3: gibson.tools.DetectedTechnology
-	(*TechnologyCategory)(nil), // 4: gibson.tools.TechnologyCategory
-	nil,                        // 5: gibson.tools.WappalyzerRequest.HeadersEntry
+	(*WappalyzerRequest)(nil),          // 0: gibson.tools.WappalyzerRequest
+	(*WappalyzerResponse)(nil),         // 1: gibson.tools.WappalyzerResponse
+	(*WappalyzerResult)(nil),           // 2: gibson.tools.WappalyzerResult
+	(*DetectedTechnology)(nil),         // 3: gibson.tools.DetectedTechnology
+	(*TechnologyCategory)(nil),         // 4: gibson.tools.TechnologyCategory
+	nil,                                // 5: gibson.tools.WappalyzerRequest.HeadersEntry
+	(*graphragpb.DiscoveryResult)(nil), // 6: gibson.graphrag.DiscoveryResult
 }
 var file_tools_wappalyzer_proto_depIdxs = []int32{
 	5, // 0: gibson.tools.WappalyzerRequest.headers:type_name -> gibson.tools.WappalyzerRequest.HeadersEntry
 	2, // 1: gibson.tools.WappalyzerResponse.results:type_name -> gibson.tools.WappalyzerResult
-	3, // 2: gibson.tools.WappalyzerResult.technologies:type_name -> gibson.tools.DetectedTechnology
-	4, // 3: gibson.tools.DetectedTechnology.categories:type_name -> gibson.tools.TechnologyCategory
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6, // 2: gibson.tools.WappalyzerResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3, // 3: gibson.tools.WappalyzerResult.technologies:type_name -> gibson.tools.DetectedTechnology
+	4, // 4: gibson.tools.DetectedTechnology.categories:type_name -> gibson.tools.TechnologyCategory
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_tools_wappalyzer_proto_init() }

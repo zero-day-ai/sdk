@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -118,7 +119,9 @@ type PayloadSearchResponse struct {
 	// Results contains the matching payloads
 	Results []*Payload `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	// Count is the number of results returned
-	Count         int32 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	Count int32 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -165,6 +168,13 @@ func (x *PayloadSearchResponse) GetCount() int32 {
 		return x.Count
 	}
 	return 0
+}
+
+func (x *PayloadSearchResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // Payload represents a single payload summary
@@ -355,6 +365,8 @@ type PayloadExecuteResponse struct {
 	SuggestedFinding *SuggestedFinding `protobuf:"bytes,5,opt,name=suggested_finding,json=suggestedFinding,proto3" json:"suggested_finding,omitempty"`
 	// SuggestedNext contains related payload IDs to try next
 	SuggestedNext []string `protobuf:"bytes,6,rep,name=suggested_next,json=suggestedNext,proto3" json:"suggested_next,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -427,6 +439,13 @@ func (x *PayloadExecuteResponse) GetSuggestedFinding() *SuggestedFinding {
 func (x *PayloadExecuteResponse) GetSuggestedNext() []string {
 	if x != nil {
 		return x.SuggestedNext
+	}
+	return nil
+}
+
+func (x *PayloadExecuteResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
 	}
 	return nil
 }
@@ -747,7 +766,9 @@ type KnowledgeSearchResponse struct {
 	// Results contains the matching knowledge chunks
 	Results []*KnowledgeResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	// Count is the number of results returned
-	Count         int32 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	Count int32 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -794,6 +815,13 @@ func (x *KnowledgeSearchResponse) GetCount() int32 {
 		return x.Count
 	}
 	return 0
+}
+
+func (x *KnowledgeSearchResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // KnowledgeResult represents a single knowledge search result
@@ -982,7 +1010,7 @@ var File_tools_builtins_proto protoreflect.FileDescriptor
 
 const file_tools_builtins_proto_rawDesc = "" +
 	"\n" +
-	"\x14tools/builtins.proto\x12\fgibson.tools\"\xb3\x01\n" +
+	"\x14tools/builtins.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xb3\x01\n" +
 	"\x14PayloadSearchRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1e\n" +
 	"\n" +
@@ -992,10 +1020,11 @@ const file_tools_builtins_proto_rawDesc = "" +
 	"\vtarget_type\x18\x04 \x01(\tR\n" +
 	"targetType\x12\x1a\n" +
 	"\bseverity\x18\x05 \x01(\tR\bseverity\x12\x14\n" +
-	"\x05limit\x18\x06 \x01(\x05R\x05limit\"^\n" +
+	"\x05limit\x18\x06 \x01(\x05R\x05limit\"\x9e\x01\n" +
 	"\x15PayloadSearchResponse\x12/\n" +
 	"\aresults\x18\x01 \x03(\v2\x15.gibson.tools.PayloadR\aresults\x12\x14\n" +
-	"\x05count\x18\x02 \x01(\x05R\x05count\"\xd0\x01\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xd0\x01\n" +
 	"\aPayload\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1016,7 +1045,7 @@ const file_tools_builtins_proto_rawDesc = "" +
 	"\atimeout\x18\x04 \x01(\x05R\atimeout\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd1\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x91\x03\n" +
 	"\x16PayloadExecuteResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1e\n" +
 	"\n" +
@@ -1025,7 +1054,8 @@ const file_tools_builtins_proto_rawDesc = "" +
 	"\texecution\x18\x03 \x01(\v2\x1e.gibson.tools.PayloadExecutionR\texecution\x12K\n" +
 	"\x12indicators_matched\x18\x04 \x03(\v2\x1c.gibson.tools.IndicatorMatchR\x11indicatorsMatched\x12K\n" +
 	"\x11suggested_finding\x18\x05 \x01(\v2\x1e.gibson.tools.SuggestedFindingR\x10suggestedFinding\x12%\n" +
-	"\x0esuggested_next\x18\x06 \x03(\tR\rsuggestedNext\"\x9c\x01\n" +
+	"\x0esuggested_next\x18\x06 \x03(\tR\rsuggestedNext\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\x9c\x01\n" +
 	"\x10PayloadExecution\x12\x1f\n" +
 	"\vduration_ms\x18\x01 \x01(\x03R\n" +
 	"durationMs\x12\x1a\n" +
@@ -1051,10 +1081,11 @@ const file_tools_builtins_proto_rawDesc = "" +
 	"\afilters\x18\x05 \x03(\v21.gibson.tools.KnowledgeSearchRequest.FiltersEntryR\afilters\x1a:\n" +
 	"\fFiltersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa8\x01\n" +
 	"\x17KnowledgeSearchResponse\x127\n" +
 	"\aresults\x18\x01 \x03(\v2\x1d.gibson.tools.KnowledgeResultR\aresults\x12\x14\n" +
-	"\x05count\x18\x02 \x01(\x05R\x05count\"\xbc\x01\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xbc\x01\n" +
 	"\x0fKnowledgeResult\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -1086,35 +1117,39 @@ func file_tools_builtins_proto_rawDescGZIP() []byte {
 
 var file_tools_builtins_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_tools_builtins_proto_goTypes = []any{
-	(*PayloadSearchRequest)(nil),    // 0: gibson.tools.PayloadSearchRequest
-	(*PayloadSearchResponse)(nil),   // 1: gibson.tools.PayloadSearchResponse
-	(*Payload)(nil),                 // 2: gibson.tools.Payload
-	(*PayloadExecuteRequest)(nil),   // 3: gibson.tools.PayloadExecuteRequest
-	(*PayloadExecuteResponse)(nil),  // 4: gibson.tools.PayloadExecuteResponse
-	(*PayloadExecution)(nil),        // 5: gibson.tools.PayloadExecution
-	(*IndicatorMatch)(nil),          // 6: gibson.tools.IndicatorMatch
-	(*SuggestedFinding)(nil),        // 7: gibson.tools.SuggestedFinding
-	(*KnowledgeSearchRequest)(nil),  // 8: gibson.tools.KnowledgeSearchRequest
-	(*KnowledgeSearchResponse)(nil), // 9: gibson.tools.KnowledgeSearchResponse
-	(*KnowledgeResult)(nil),         // 10: gibson.tools.KnowledgeResult
-	(*KnowledgeMetadata)(nil),       // 11: gibson.tools.KnowledgeMetadata
-	nil,                             // 12: gibson.tools.PayloadExecuteRequest.ParametersEntry
-	nil,                             // 13: gibson.tools.KnowledgeSearchRequest.FiltersEntry
+	(*PayloadSearchRequest)(nil),       // 0: gibson.tools.PayloadSearchRequest
+	(*PayloadSearchResponse)(nil),      // 1: gibson.tools.PayloadSearchResponse
+	(*Payload)(nil),                    // 2: gibson.tools.Payload
+	(*PayloadExecuteRequest)(nil),      // 3: gibson.tools.PayloadExecuteRequest
+	(*PayloadExecuteResponse)(nil),     // 4: gibson.tools.PayloadExecuteResponse
+	(*PayloadExecution)(nil),           // 5: gibson.tools.PayloadExecution
+	(*IndicatorMatch)(nil),             // 6: gibson.tools.IndicatorMatch
+	(*SuggestedFinding)(nil),           // 7: gibson.tools.SuggestedFinding
+	(*KnowledgeSearchRequest)(nil),     // 8: gibson.tools.KnowledgeSearchRequest
+	(*KnowledgeSearchResponse)(nil),    // 9: gibson.tools.KnowledgeSearchResponse
+	(*KnowledgeResult)(nil),            // 10: gibson.tools.KnowledgeResult
+	(*KnowledgeMetadata)(nil),          // 11: gibson.tools.KnowledgeMetadata
+	nil,                                // 12: gibson.tools.PayloadExecuteRequest.ParametersEntry
+	nil,                                // 13: gibson.tools.KnowledgeSearchRequest.FiltersEntry
+	(*graphragpb.DiscoveryResult)(nil), // 14: gibson.graphrag.DiscoveryResult
 }
 var file_tools_builtins_proto_depIdxs = []int32{
 	2,  // 0: gibson.tools.PayloadSearchResponse.results:type_name -> gibson.tools.Payload
-	12, // 1: gibson.tools.PayloadExecuteRequest.parameters:type_name -> gibson.tools.PayloadExecuteRequest.ParametersEntry
-	5,  // 2: gibson.tools.PayloadExecuteResponse.execution:type_name -> gibson.tools.PayloadExecution
-	6,  // 3: gibson.tools.PayloadExecuteResponse.indicators_matched:type_name -> gibson.tools.IndicatorMatch
-	7,  // 4: gibson.tools.PayloadExecuteResponse.suggested_finding:type_name -> gibson.tools.SuggestedFinding
-	13, // 5: gibson.tools.KnowledgeSearchRequest.filters:type_name -> gibson.tools.KnowledgeSearchRequest.FiltersEntry
-	10, // 6: gibson.tools.KnowledgeSearchResponse.results:type_name -> gibson.tools.KnowledgeResult
-	11, // 7: gibson.tools.KnowledgeResult.metadata:type_name -> gibson.tools.KnowledgeMetadata
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	14, // 1: gibson.tools.PayloadSearchResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	12, // 2: gibson.tools.PayloadExecuteRequest.parameters:type_name -> gibson.tools.PayloadExecuteRequest.ParametersEntry
+	5,  // 3: gibson.tools.PayloadExecuteResponse.execution:type_name -> gibson.tools.PayloadExecution
+	6,  // 4: gibson.tools.PayloadExecuteResponse.indicators_matched:type_name -> gibson.tools.IndicatorMatch
+	7,  // 5: gibson.tools.PayloadExecuteResponse.suggested_finding:type_name -> gibson.tools.SuggestedFinding
+	14, // 6: gibson.tools.PayloadExecuteResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	13, // 7: gibson.tools.KnowledgeSearchRequest.filters:type_name -> gibson.tools.KnowledgeSearchRequest.FiltersEntry
+	10, // 8: gibson.tools.KnowledgeSearchResponse.results:type_name -> gibson.tools.KnowledgeResult
+	14, // 9: gibson.tools.KnowledgeSearchResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	11, // 10: gibson.tools.KnowledgeResult.metadata:type_name -> gibson.tools.KnowledgeMetadata
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_tools_builtins_proto_init() }

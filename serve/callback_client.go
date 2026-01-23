@@ -325,20 +325,20 @@ func (c *CallbackClient) LLMStream(ctx context.Context, req *proto.LLMStreamRequ
 // Tool Operations
 // ============================================================================
 
-// CallTool invokes a tool via the orchestrator.
-func (c *CallbackClient) CallTool(ctx context.Context, req *proto.CallToolRequest) (*proto.CallToolResponse, error) {
+// CallToolProto invokes a tool via the orchestrator using proto-serialized JSON.
+func (c *CallbackClient) CallToolProto(ctx context.Context, req *proto.CallToolProtoRequest) (*proto.CallToolProtoResponse, error) {
 	// Try to reconnect if not connected
 	if !c.IsConnected() {
 		if err := c.Connect(ctx); err != nil {
-			return nil, fmt.Errorf("CallTool: client not connected and reconnect failed: %w", err)
+			return nil, fmt.Errorf("CallToolProto: client not connected and reconnect failed: %w", err)
 		}
 	}
 
 	req.Context = c.contextInfo()
 	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.CallTool(ctx, req)
+	resp, err := c.client.CallToolProto(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("CallTool: %w", err)
+		return nil, fmt.Errorf("CallToolProto: %w", err)
 	}
 	return resp, nil
 }

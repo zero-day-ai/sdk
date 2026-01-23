@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // ScanType defines the type of nmap scan to perform
 enum ScanType {
     // Sentinel value - must be first
@@ -168,6 +170,9 @@ message NmapResponse {
 
     // EndTime is the scan end timestamp
     int64 end_time = 9;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // NmapHost represents a single scanned host

@@ -140,8 +140,8 @@ func TestLocalHarness_ToolOperations_NotAvailable(t *testing.T) {
 	h := newLocalHarness()
 	ctx := context.Background()
 
-	// CallTool should return error
-	_, err := h.CallTool(ctx, "http-client", map[string]any{})
+	// CallToolProto should return error
+	err := h.CallToolProto(ctx, "http-client", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not available in standalone mode")
 

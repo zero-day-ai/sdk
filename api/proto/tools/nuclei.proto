@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // NucleiRequest represents input for the nuclei tool
 message NucleiRequest {
     // Targets is the list of URLs or hosts to scan (required)
@@ -99,6 +101,9 @@ message NucleiResponse {
 
     // TemplatesExecuted is the number of templates executed
     int32 templates_executed = 6;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // TemplateMatch represents a single nuclei template match

@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -327,7 +328,9 @@ type TestsslResponse struct {
 	// TotalTargets is the total number of targets tested
 	TotalTargets int32 `protobuf:"varint,2,opt,name=total_targets,json=totalTargets,proto3" json:"total_targets,omitempty"`
 	// Duration is the test duration in seconds
-	Duration      float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -381,6 +384,13 @@ func (x *TestsslResponse) GetDuration() float64 {
 		return x.Duration
 	}
 	return 0
+}
+
+func (x *TestsslResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // TestsslResult represents a single testssl.sh test result
@@ -1032,7 +1042,7 @@ var File_tools_testssl_proto protoreflect.FileDescriptor
 
 const file_tools_testssl_proto_rawDesc = "" +
 	"\n" +
-	"\x13tools/testssl.proto\x12\fgibson.tools\"\xfe\x06\n" +
+	"\x13tools/testssl.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xfe\x06\n" +
 	"\x0eTestsslRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1c\n" +
@@ -1064,11 +1074,12 @@ const file_tools_testssl_proto_rawDesc = "" +
 	"\vserver_name\x18\x1b \x01(\tR\n" +
 	"serverName\x12\x18\n" +
 	"\atimeout\x18\x1c \x01(\x05R\atimeout\x12\x14\n" +
-	"\x05quiet\x18\x1d \x01(\bR\x05quiet\"\x89\x01\n" +
+	"\x05quiet\x18\x1d \x01(\bR\x05quiet\"\xc9\x01\n" +
 	"\x0fTestsslResponse\x125\n" +
 	"\aresults\x18\x01 \x03(\v2\x1b.gibson.tools.TestsslResultR\aresults\x12#\n" +
 	"\rtotal_targets\x18\x02 \x01(\x05R\ftotalTargets\x12\x1a\n" +
-	"\bduration\x18\x03 \x01(\x01R\bduration\"\x93\x04\n" +
+	"\bduration\x18\x03 \x01(\x01R\bduration\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\x93\x04\n" +
 	"\rTestsslResult\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x0e\n" +
 	"\x02ip\x18\x02 \x01(\tR\x02ip\x12\x12\n" +
@@ -1151,29 +1162,31 @@ func file_tools_testssl_proto_rawDescGZIP() []byte {
 
 var file_tools_testssl_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_tools_testssl_proto_goTypes = []any{
-	(*TestsslRequest)(nil),      // 0: gibson.tools.TestsslRequest
-	(*TestsslResponse)(nil),     // 1: gibson.tools.TestsslResponse
-	(*TestsslResult)(nil),       // 2: gibson.tools.TestsslResult
-	(*SSLInfo)(nil),             // 3: gibson.tools.SSLInfo
-	(*ProtocolResult)(nil),      // 4: gibson.tools.ProtocolResult
-	(*CipherResult)(nil),        // 5: gibson.tools.CipherResult
-	(*VulnerabilityResult)(nil), // 6: gibson.tools.VulnerabilityResult
-	(*CertificateInfo)(nil),     // 7: gibson.tools.CertificateInfo
-	nil,                         // 8: gibson.tools.TestsslResult.HeadersEntry
+	(*TestsslRequest)(nil),             // 0: gibson.tools.TestsslRequest
+	(*TestsslResponse)(nil),            // 1: gibson.tools.TestsslResponse
+	(*TestsslResult)(nil),              // 2: gibson.tools.TestsslResult
+	(*SSLInfo)(nil),                    // 3: gibson.tools.SSLInfo
+	(*ProtocolResult)(nil),             // 4: gibson.tools.ProtocolResult
+	(*CipherResult)(nil),               // 5: gibson.tools.CipherResult
+	(*VulnerabilityResult)(nil),        // 6: gibson.tools.VulnerabilityResult
+	(*CertificateInfo)(nil),            // 7: gibson.tools.CertificateInfo
+	nil,                                // 8: gibson.tools.TestsslResult.HeadersEntry
+	(*graphragpb.DiscoveryResult)(nil), // 9: gibson.graphrag.DiscoveryResult
 }
 var file_tools_testssl_proto_depIdxs = []int32{
 	2, // 0: gibson.tools.TestsslResponse.results:type_name -> gibson.tools.TestsslResult
-	3, // 1: gibson.tools.TestsslResult.ssl_info:type_name -> gibson.tools.SSLInfo
-	4, // 2: gibson.tools.TestsslResult.protocols:type_name -> gibson.tools.ProtocolResult
-	5, // 3: gibson.tools.TestsslResult.ciphers:type_name -> gibson.tools.CipherResult
-	6, // 4: gibson.tools.TestsslResult.vulnerabilities:type_name -> gibson.tools.VulnerabilityResult
-	8, // 5: gibson.tools.TestsslResult.headers:type_name -> gibson.tools.TestsslResult.HeadersEntry
-	7, // 6: gibson.tools.TestsslResult.certificate:type_name -> gibson.tools.CertificateInfo
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	9, // 1: gibson.tools.TestsslResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3, // 2: gibson.tools.TestsslResult.ssl_info:type_name -> gibson.tools.SSLInfo
+	4, // 3: gibson.tools.TestsslResult.protocols:type_name -> gibson.tools.ProtocolResult
+	5, // 4: gibson.tools.TestsslResult.ciphers:type_name -> gibson.tools.CipherResult
+	6, // 5: gibson.tools.TestsslResult.vulnerabilities:type_name -> gibson.tools.VulnerabilityResult
+	8, // 6: gibson.tools.TestsslResult.headers:type_name -> gibson.tools.TestsslResult.HeadersEntry
+	7, // 7: gibson.tools.TestsslResult.certificate:type_name -> gibson.tools.CertificateInfo
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_tools_testssl_proto_init() }

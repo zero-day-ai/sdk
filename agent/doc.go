@@ -18,7 +18,7 @@
 //
 // Harness Interface - The runtime environment provided to agents:
 //   - LLM access (Complete, CompleteWithTools, Stream)
-//   - Tool access (CallTool, ListTools)
+//   - Tool access (CallToolProto, ListTools)
 //   - Plugin access (QueryPlugin, ListPlugins)
 //   - Agent delegation (DelegateToAgent, ListAgents)
 //   - Finding management (SubmitFinding, GetFindings)
@@ -126,11 +126,10 @@
 //		llm.WithMaxTokens(1000),
 //	)
 //
-//	// Tool calling
-//	result, err := harness.CallTool(ctx, "http-client", map[string]any{
-//		"url": "https://target.example.com",
-//		"method": "POST",
-//	})
+//	// Tool calling (proto-based)
+//	req := &toolspb.HTTPRequest{Url: "https://target.example.com", Method: "POST"}
+//	resp := &toolspb.HTTPResponse{}
+//	err := harness.CallToolProto(ctx, "http-client", req, resp)
 //
 //	// Finding submission
 //	finding := createFinding()

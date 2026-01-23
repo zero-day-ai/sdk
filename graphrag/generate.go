@@ -1,5 +1,7 @@
+// Package graphrag provides the GraphRAG knowledge graph system.
+//
+// This file contains the go:generate directive for taxonomy code generation.
+// Run `go generate ./...` from the SDK root to regenerate taxonomy code.
 package graphrag
 
-// This file contains go:generate directives for code generation.
-
-//go:generate go run ../../gibson/cmd/taxonomy-gen/main.go -output taxonomy_generated.go
+//go:generate go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen --base ../taxonomy/core.yaml --output-proto ../api/proto/taxonomy.proto --output-domain domain/domain_generated.go --output-validators validation/validators_generated.go --output-constants constants_generated.go --package domain

@@ -2,7 +2,6 @@ package serve
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/zero-day-ai/sdk/api/gen/proto"
+	"github.com/zero-day-ai/sdk/enum"
 	"github.com/zero-day-ai/sdk/tool"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -225,8 +225,8 @@ func (s *toolServiceServer) Execute(ctx context.Context, req *proto.ToolExecuteR
 	// Create a new instance of the proto message
 	protoReq := messageType.New().Interface()
 
-	// Preprocess JSON to normalize enum values (e.g., "ping" -> "SCAN_TYPE_PING")
-	normalizedJSON := normalizeEnumValues(req.InputJson, messageType)
+	// Apply enum normalization using the centralized enum.Normalize function
+	normalizedJSON := enum.Normalize(s.tool.Name(), req.InputJson)
 
 	// Unmarshal JSON input into the proto message with lenient settings
 	unmarshaler := protojson.UnmarshalOptions{
@@ -271,82 +271,4 @@ func (s *toolServiceServer) Health(ctx context.Context, req *proto.ToolHealthReq
 		Message:   health.Message,
 		CheckedAt: time.Now().UnixMilli(),
 	}, nil
-}
-
-// normalizeEnumValues preprocesses JSON input to convert shorthand enum values
-// (e.g., "ping") to their full proto enum names (e.g., "SCAN_TYPE_PING").
-// This allows agents to use human-friendly enum values in tool calls.
-func normalizeEnumValues(inputJSON string, messageType protoreflect.MessageType) string {
-	// Parse JSON into a map for manipulation
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(inputJSON), &data); err != nil {
-		// If we can't parse it, return as-is and let protojson handle the error
-		return inputJSON
-	}
-
-	// Get the message descriptor to find enum fields
-	md := messageType.Descriptor()
-	fields := md.Fields()
-
-	// Iterate over fields and normalize enum values
-	for i := 0; i < fields.Len(); i++ {
-		field := fields.Get(i)
-		if field.Kind() != protoreflect.EnumKind {
-			continue
-		}
-
-		// Get the JSON field name (uses proto json_name or field name)
-		jsonName := field.JSONName()
-		protoName := string(field.Name())
-
-		// Check both json name and proto name
-		var value interface{}
-		var fieldKey string
-		if v, ok := data[jsonName]; ok {
-			value = v
-			fieldKey = jsonName
-		} else if v, ok := data[protoName]; ok {
-			value = v
-			fieldKey = protoName
-		} else {
-			continue
-		}
-
-		// If value is a string, try to normalize it
-		strValue, ok := value.(string)
-		if !ok {
-			continue
-		}
-
-		// Get the enum descriptor
-		enumDesc := field.Enum()
-		enumValues := enumDesc.Values()
-
-		// Check if the value is already a valid enum name
-		if enumValues.ByName(protoreflect.Name(strValue)) != nil {
-			continue // Already valid
-		}
-
-		// Try to find a matching enum value by suffix
-		// e.g., "ping" -> "SCAN_TYPE_PING", "syn" -> "SCAN_TYPE_SYN"
-		upperValue := strings.ToUpper(strValue)
-		for j := 0; j < enumValues.Len(); j++ {
-			enumValue := enumValues.Get(j)
-			enumName := string(enumValue.Name())
-
-			// Check if enum name ends with _VALUE (e.g., SCAN_TYPE_PING ends with _PING)
-			if strings.HasSuffix(enumName, "_"+upperValue) {
-				data[fieldKey] = enumName
-				break
-			}
-		}
-	}
-
-	// Re-serialize to JSON
-	result, err := json.Marshal(data)
-	if err != nil {
-		return inputJSON
-	}
-
-	return string(result)
 }

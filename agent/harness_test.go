@@ -19,6 +19,7 @@ import (
 	"github.com/zero-day-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/protobuf/proto"
 )
 
 // mockHarness is a test implementation of the Harness interface.
@@ -26,7 +27,7 @@ type mockHarness struct {
 	completeFunc          func(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
 	completeWithToolsFunc func(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error)
 	streamFunc            func(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
-	callToolFunc          func(ctx context.Context, name string, input map[string]any) (map[string]any, error)
+	callToolProtoFunc     func(ctx context.Context, name string, request proto.Message, response proto.Message) error
 	listToolsFunc         func(ctx context.Context) ([]tool.Descriptor, error)
 	queryPluginFunc       func(ctx context.Context, name string, method string, params map[string]any) (any, error)
 	listPluginsFunc       func(ctx context.Context) ([]plugin.Descriptor, error)
@@ -80,11 +81,11 @@ func (m *mockHarness) CompleteStructuredAny(ctx context.Context, slot string, me
 	return m.CompleteStructured(ctx, slot, messages, schema)
 }
 
-func (m *mockHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	if m.callToolFunc != nil {
-		return m.callToolFunc(ctx, name, input)
+func (m *mockHarness) CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error {
+	if m.callToolProtoFunc != nil {
+		return m.callToolProtoFunc(ctx, name, request, response)
 	}
-	return map[string]any{"result": "success"}, nil
+	return nil
 }
 
 func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
@@ -95,19 +96,6 @@ func (m *mockHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) 
 		{Name: "tool1", Description: "Test tool 1"},
 		{Name: "tool2", Description: "Test tool 2"},
 	}, nil
-}
-
-func (m *mockHarness) CallToolsParallel(ctx context.Context, calls []ToolCall, maxConcurrency int) ([]ToolResult, error) {
-	results := make([]ToolResult, len(calls))
-	for i, call := range calls {
-		output, err := m.CallTool(ctx, call.Name, call.Input)
-		results[i] = ToolResult{
-			Name:   call.Name,
-			Output: output,
-			Error:  err,
-		}
-	}
-	return results, nil
 }
 
 func (m *mockHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
@@ -524,16 +512,13 @@ func TestMockHarness_Stream(t *testing.T) {
 	}
 }
 
-func TestMockHarness_CallTool(t *testing.T) {
+func TestMockHarness_CallToolProto(t *testing.T) {
 	harness := &mockHarness{}
 	ctx := context.Background()
 
-	result, err := harness.CallTool(ctx, "test-tool", map[string]any{"param": "value"})
+	err := harness.CallToolProto(ctx, "test-tool", nil, nil)
 	if err != nil {
-		t.Errorf("CallTool() error = %v", err)
-	}
-	if result == nil {
-		t.Fatal("CallTool() returned nil")
+		t.Errorf("CallToolProto() error = %v", err)
 	}
 }
 

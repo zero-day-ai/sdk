@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // TestsslRequest represents input for the testssl.sh tool
 message TestsslRequest {
     // Targets is the list of hosts or URLs to test (required)
@@ -102,6 +104,9 @@ message TestsslResponse {
 
     // Duration is the test duration in seconds
     double duration = 3;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // TestsslResult represents a single testssl.sh test result

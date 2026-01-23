@@ -16,7 +16,7 @@ service HarnessCallbackService {
     rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamChunk);
 
     // Tool Operations
-    rpc CallTool(CallToolRequest) returns (CallToolResponse);
+    rpc CallToolProto(CallToolProtoRequest) returns (CallToolProtoResponse);
     rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
 
     // Plugin Operations
@@ -226,14 +226,22 @@ message LLMStreamChunk {
 // Tool Operations
 // ============================================================================
 
-message CallToolRequest {
+// CallToolProtoRequest invokes a tool using proto-serialized JSON input/output.
+message CallToolProtoRequest {
     ContextInfo context = 1;
     string name = 2;
-    map<string, gibson.common.TypedValue> input = 3;
+    // JSON-serialized proto request message
+    bytes input_json = 3;
+    // Fully qualified proto message type name for input (e.g., "gibson.tool.nmap.NmapRequest")
+    string input_type = 4;
+    // Fully qualified proto message type name for output (e.g., "gibson.tool.nmap.NmapResponse")
+    string output_type = 5;
 }
 
-message CallToolResponse {
-    gibson.common.TypedValue output = 1;
+// CallToolProtoResponse returns the tool output as proto-serialized JSON.
+message CallToolProtoResponse {
+    // JSON-serialized proto response message
+    bytes output_json = 1;
     HarnessError error = 2;
 }
 

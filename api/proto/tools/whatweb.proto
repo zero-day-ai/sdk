@@ -2,6 +2,8 @@ syntax = "proto3";
 package gibson.tools;
 option go_package = "github.com/zero-day-ai/sdk/api/gen/toolspb";
 
+import "graphrag.proto";
+
 // WhatwebRequest represents input for the whatweb tool
 message WhatwebRequest {
     // Targets is the list of URLs or hosts to analyze (required)
@@ -51,6 +53,9 @@ message WhatwebResponse {
 
     // Duration is the analysis duration in seconds
     double duration = 3;
+
+    // Discovery result for automatic graph storage
+    gibson.graphrag.DiscoveryResult discovery = 100;
 }
 
 // WhatwebResult represents a single whatweb analysis result

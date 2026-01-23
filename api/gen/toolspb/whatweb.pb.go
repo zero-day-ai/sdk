@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -174,7 +175,9 @@ type WhatwebResponse struct {
 	// TotalTargets is the total number of targets analyzed
 	TotalTargets int32 `protobuf:"varint,2,opt,name=total_targets,json=totalTargets,proto3" json:"total_targets,omitempty"`
 	// Duration is the analysis duration in seconds
-	Duration      float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration float64 `protobuf:"fixed64,3,opt,name=duration,proto3" json:"duration,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -228,6 +231,13 @@ func (x *WhatwebResponse) GetDuration() float64 {
 		return x.Duration
 	}
 	return 0
+}
+
+func (x *WhatwebResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // WhatwebResult represents a single whatweb analysis result
@@ -534,7 +544,7 @@ var File_tools_whatweb_proto protoreflect.FileDescriptor
 
 const file_tools_whatweb_proto_rawDesc = "" +
 	"\n" +
-	"\x13tools/whatweb.proto\x12\fgibson.tools\"\xed\x03\n" +
+	"\x13tools/whatweb.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xed\x03\n" +
 	"\x0eWhatwebRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x1e\n" +
 	"\n" +
@@ -554,11 +564,12 @@ const file_tools_whatweb_proto_rawDesc = "" +
 	"\burl_grep\x18\f \x01(\tR\aurlGrep\x1a@\n" +
 	"\x12CustomHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x89\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc9\x01\n" +
 	"\x0fWhatwebResponse\x125\n" +
 	"\aresults\x18\x01 \x03(\v2\x1b.gibson.tools.WhatwebResultR\aresults\x12#\n" +
 	"\rtotal_targets\x18\x02 \x01(\x05R\ftotalTargets\x12\x1a\n" +
-	"\bduration\x18\x03 \x01(\x01R\bduration\"\xd4\x02\n" +
+	"\bduration\x18\x03 \x01(\x01R\bduration\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xd4\x02\n" +
 	"\rWhatwebResult\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1f\n" +
 	"\vstatus_code\x18\x02 \x01(\x05R\n" +
@@ -610,27 +621,29 @@ func file_tools_whatweb_proto_rawDescGZIP() []byte {
 
 var file_tools_whatweb_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_tools_whatweb_proto_goTypes = []any{
-	(*WhatwebRequest)(nil),       // 0: gibson.tools.WhatwebRequest
-	(*WhatwebResponse)(nil),      // 1: gibson.tools.WhatwebResponse
-	(*WhatwebResult)(nil),        // 2: gibson.tools.WhatwebResult
-	(*WhatwebPlugin)(nil),        // 3: gibson.tools.WhatwebPlugin
-	(*WhatwebRequestConfig)(nil), // 4: gibson.tools.WhatwebRequestConfig
-	nil,                          // 5: gibson.tools.WhatwebRequest.CustomHeadersEntry
-	nil,                          // 6: gibson.tools.WhatwebRequestConfig.HeadersEntry
-	nil,                          // 7: gibson.tools.WhatwebRequestConfig.CookiesEntry
+	(*WhatwebRequest)(nil),             // 0: gibson.tools.WhatwebRequest
+	(*WhatwebResponse)(nil),            // 1: gibson.tools.WhatwebResponse
+	(*WhatwebResult)(nil),              // 2: gibson.tools.WhatwebResult
+	(*WhatwebPlugin)(nil),              // 3: gibson.tools.WhatwebPlugin
+	(*WhatwebRequestConfig)(nil),       // 4: gibson.tools.WhatwebRequestConfig
+	nil,                                // 5: gibson.tools.WhatwebRequest.CustomHeadersEntry
+	nil,                                // 6: gibson.tools.WhatwebRequestConfig.HeadersEntry
+	nil,                                // 7: gibson.tools.WhatwebRequestConfig.CookiesEntry
+	(*graphragpb.DiscoveryResult)(nil), // 8: gibson.graphrag.DiscoveryResult
 }
 var file_tools_whatweb_proto_depIdxs = []int32{
 	5, // 0: gibson.tools.WhatwebRequest.custom_headers:type_name -> gibson.tools.WhatwebRequest.CustomHeadersEntry
 	2, // 1: gibson.tools.WhatwebResponse.results:type_name -> gibson.tools.WhatwebResult
-	3, // 2: gibson.tools.WhatwebResult.plugins:type_name -> gibson.tools.WhatwebPlugin
-	4, // 3: gibson.tools.WhatwebResult.request_config:type_name -> gibson.tools.WhatwebRequestConfig
-	6, // 4: gibson.tools.WhatwebRequestConfig.headers:type_name -> gibson.tools.WhatwebRequestConfig.HeadersEntry
-	7, // 5: gibson.tools.WhatwebRequestConfig.cookies:type_name -> gibson.tools.WhatwebRequestConfig.CookiesEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	8, // 2: gibson.tools.WhatwebResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3, // 3: gibson.tools.WhatwebResult.plugins:type_name -> gibson.tools.WhatwebPlugin
+	4, // 4: gibson.tools.WhatwebResult.request_config:type_name -> gibson.tools.WhatwebRequestConfig
+	6, // 5: gibson.tools.WhatwebRequestConfig.headers:type_name -> gibson.tools.WhatwebRequestConfig.HeadersEntry
+	7, // 6: gibson.tools.WhatwebRequestConfig.cookies:type_name -> gibson.tools.WhatwebRequestConfig.CookiesEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_tools_whatweb_proto_init() }

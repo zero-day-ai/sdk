@@ -273,7 +273,7 @@ func (h *streamingHarness) SetMode(mode proto.AgentMode) {
 	h.mode = mode
 }
 
-// CallTool overrides the base harness CallTool to emit events automatically
+// CallToolProto overrides the base harness CallToolProto to emit events automatically
 func (h *streamingHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
 	// Generate unique call ID
 	callID := uuid.New().String()

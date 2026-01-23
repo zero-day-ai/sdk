@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -447,7 +448,9 @@ type NmapResponse struct {
 	// StartTime is the scan start timestamp
 	StartTime int64 `protobuf:"varint,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	// EndTime is the scan end timestamp
-	EndTime       int64 `protobuf:"varint,9,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	EndTime int64 `protobuf:"varint,9,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -543,6 +546,13 @@ func (x *NmapResponse) GetEndTime() int64 {
 		return x.EndTime
 	}
 	return 0
+}
+
+func (x *NmapResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // NmapHost represents a single scanned host
@@ -1140,7 +1150,7 @@ var File_tools_nmap_proto protoreflect.FileDescriptor
 
 const file_tools_nmap_proto_rawDesc = "" +
 	"\n" +
-	"\x10tools/nmap.proto\x12\fgibson.tools\"\x98\x06\n" +
+	"\x10tools/nmap.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\x98\x06\n" +
 	"\vNmapRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x14\n" +
 	"\x05ports\x18\x02 \x01(\tR\x05ports\x123\n" +
@@ -1173,7 +1183,7 @@ const file_tools_nmap_proto_rawDesc = "" +
 	"\x04ipv6\x18\x16 \x01(\bR\x04ipv6\x12\x1e\n" +
 	"\n" +
 	"privileged\x18\x17 \x01(\bR\n" +
-	"privileged\"\xad\x02\n" +
+	"privileged\"\xed\x02\n" +
 	"\fNmapResponse\x12,\n" +
 	"\x05hosts\x18\x01 \x03(\v2\x16.gibson.tools.NmapHostR\x05hosts\x12\x1f\n" +
 	"\vtotal_hosts\x18\x02 \x01(\x05R\n" +
@@ -1186,7 +1196,8 @@ const file_tools_nmap_proto_rawDesc = "" +
 	"\x04args\x18\a \x01(\tR\x04args\x12\x1d\n" +
 	"\n" +
 	"start_time\x18\b \x01(\x03R\tstartTime\x12\x19\n" +
-	"\bend_time\x18\t \x01(\x03R\aendTime\"\xbd\x03\n" +
+	"\bend_time\x18\t \x01(\x03R\aendTime\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xbd\x03\n" +
 	"\bNmapHost\x12\x0e\n" +
 	"\x02ip\x18\x01 \x01(\tR\x02ip\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x14\n" +
@@ -1291,36 +1302,38 @@ func file_tools_nmap_proto_rawDescGZIP() []byte {
 var file_tools_nmap_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_tools_nmap_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_tools_nmap_proto_goTypes = []any{
-	(ScanType)(0),        // 0: gibson.tools.ScanType
-	(TimingTemplate)(0),  // 1: gibson.tools.TimingTemplate
-	(*NmapRequest)(nil),  // 2: gibson.tools.NmapRequest
-	(*NmapResponse)(nil), // 3: gibson.tools.NmapResponse
-	(*NmapHost)(nil),     // 4: gibson.tools.NmapHost
-	(*NmapPort)(nil),     // 5: gibson.tools.NmapPort
-	(*NmapService)(nil),  // 6: gibson.tools.NmapService
-	(*OSMatch)(nil),      // 7: gibson.tools.OSMatch
-	(*OSClass)(nil),      // 8: gibson.tools.OSClass
-	(*NmapScript)(nil),   // 9: gibson.tools.NmapScript
-	nil,                  // 10: gibson.tools.NmapHost.ScriptsEntry
-	nil,                  // 11: gibson.tools.NmapPort.ScriptsEntry
-	nil,                  // 12: gibson.tools.NmapScript.ElementsEntry
+	(ScanType)(0),                      // 0: gibson.tools.ScanType
+	(TimingTemplate)(0),                // 1: gibson.tools.TimingTemplate
+	(*NmapRequest)(nil),                // 2: gibson.tools.NmapRequest
+	(*NmapResponse)(nil),               // 3: gibson.tools.NmapResponse
+	(*NmapHost)(nil),                   // 4: gibson.tools.NmapHost
+	(*NmapPort)(nil),                   // 5: gibson.tools.NmapPort
+	(*NmapService)(nil),                // 6: gibson.tools.NmapService
+	(*OSMatch)(nil),                    // 7: gibson.tools.OSMatch
+	(*OSClass)(nil),                    // 8: gibson.tools.OSClass
+	(*NmapScript)(nil),                 // 9: gibson.tools.NmapScript
+	nil,                                // 10: gibson.tools.NmapHost.ScriptsEntry
+	nil,                                // 11: gibson.tools.NmapPort.ScriptsEntry
+	nil,                                // 12: gibson.tools.NmapScript.ElementsEntry
+	(*graphragpb.DiscoveryResult)(nil), // 13: gibson.graphrag.DiscoveryResult
 }
 var file_tools_nmap_proto_depIdxs = []int32{
 	0,  // 0: gibson.tools.NmapRequest.scan_type:type_name -> gibson.tools.ScanType
 	1,  // 1: gibson.tools.NmapRequest.timing:type_name -> gibson.tools.TimingTemplate
 	4,  // 2: gibson.tools.NmapResponse.hosts:type_name -> gibson.tools.NmapHost
-	5,  // 3: gibson.tools.NmapHost.ports:type_name -> gibson.tools.NmapPort
-	7,  // 4: gibson.tools.NmapHost.os_matches:type_name -> gibson.tools.OSMatch
-	10, // 5: gibson.tools.NmapHost.scripts:type_name -> gibson.tools.NmapHost.ScriptsEntry
-	6,  // 6: gibson.tools.NmapPort.service:type_name -> gibson.tools.NmapService
-	11, // 7: gibson.tools.NmapPort.scripts:type_name -> gibson.tools.NmapPort.ScriptsEntry
-	8,  // 8: gibson.tools.OSMatch.classes:type_name -> gibson.tools.OSClass
-	12, // 9: gibson.tools.NmapScript.elements:type_name -> gibson.tools.NmapScript.ElementsEntry
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	13, // 3: gibson.tools.NmapResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	5,  // 4: gibson.tools.NmapHost.ports:type_name -> gibson.tools.NmapPort
+	7,  // 5: gibson.tools.NmapHost.os_matches:type_name -> gibson.tools.OSMatch
+	10, // 6: gibson.tools.NmapHost.scripts:type_name -> gibson.tools.NmapHost.ScriptsEntry
+	6,  // 7: gibson.tools.NmapPort.service:type_name -> gibson.tools.NmapService
+	11, // 8: gibson.tools.NmapPort.scripts:type_name -> gibson.tools.NmapPort.ScriptsEntry
+	8,  // 9: gibson.tools.OSMatch.classes:type_name -> gibson.tools.OSClass
+	12, // 10: gibson.tools.NmapScript.elements:type_name -> gibson.tools.NmapScript.ElementsEntry
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_tools_nmap_proto_init() }

@@ -7,6 +7,7 @@
 package toolspb
 
 import (
+	graphragpb "github.com/zero-day-ai/sdk/api/gen/graphragpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -298,8 +299,10 @@ type NucleiResponse struct {
 	TemplatesLoaded int32 `protobuf:"varint,5,opt,name=templates_loaded,json=templatesLoaded,proto3" json:"templates_loaded,omitempty"`
 	// TemplatesExecuted is the number of templates executed
 	TemplatesExecuted int32 `protobuf:"varint,6,opt,name=templates_executed,json=templatesExecuted,proto3" json:"templates_executed,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Discovery result for automatic graph storage
+	Discovery     *graphragpb.DiscoveryResult `protobuf:"bytes,100,opt,name=discovery,proto3" json:"discovery,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *NucleiResponse) Reset() {
@@ -372,6 +375,13 @@ func (x *NucleiResponse) GetTemplatesExecuted() int32 {
 		return x.TemplatesExecuted
 	}
 	return 0
+}
+
+func (x *NucleiResponse) GetDiscovery() *graphragpb.DiscoveryResult {
+	if x != nil {
+		return x.Discovery
+	}
+	return nil
 }
 
 // TemplateMatch represents a single nuclei template match
@@ -741,7 +751,7 @@ var File_tools_nuclei_proto protoreflect.FileDescriptor
 
 const file_tools_nuclei_proto_rawDesc = "" +
 	"\n" +
-	"\x12tools/nuclei.proto\x12\fgibson.tools\"\xec\x06\n" +
+	"\x12tools/nuclei.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\xec\x06\n" +
 	"\rNucleiRequest\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x1c\n" +
 	"\ttemplates\x18\x02 \x03(\tR\ttemplates\x12\x12\n" +
@@ -769,14 +779,15 @@ const file_tools_nuclei_proto_rawDesc = "" +
 	"\fshow_browser\x18\x16 \x01(\bR\vshowBrowser\x12)\n" +
 	"\x10system_resolvers\x18\x17 \x01(\bR\x0fsystemResolvers\x12\x18\n" +
 	"\apassive\x18\x18 \x01(\bR\apassive\x12!\n" +
-	"\foffline_http\x18\x19 \x01(\bR\vofflineHttp\"\x89\x02\n" +
+	"\foffline_http\x18\x19 \x01(\bR\vofflineHttp\"\xc9\x02\n" +
 	"\x0eNucleiResponse\x125\n" +
 	"\aresults\x18\x01 \x03(\v2\x1b.gibson.tools.TemplateMatchR\aresults\x12%\n" +
 	"\x0etotal_requests\x18\x02 \x01(\x05R\rtotalRequests\x12#\n" +
 	"\rtotal_matches\x18\x03 \x01(\x05R\ftotalMatches\x12\x1a\n" +
 	"\bduration\x18\x04 \x01(\x01R\bduration\x12)\n" +
 	"\x10templates_loaded\x18\x05 \x01(\x05R\x0ftemplatesLoaded\x12-\n" +
-	"\x12templates_executed\x18\x06 \x01(\x05R\x11templatesExecuted\"\xde\x04\n" +
+	"\x12templates_executed\x18\x06 \x01(\x05R\x11templatesExecuted\x12>\n" +
+	"\tdiscovery\x18d \x01(\v2 .gibson.graphrag.DiscoveryResultR\tdiscovery\"\xde\x04\n" +
 	"\rTemplateMatch\x12\x1f\n" +
 	"\vtemplate_id\x18\x01 \x01(\tR\n" +
 	"templateId\x12#\n" +
@@ -830,23 +841,25 @@ func file_tools_nuclei_proto_rawDescGZIP() []byte {
 
 var file_tools_nuclei_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_tools_nuclei_proto_goTypes = []any{
-	(*NucleiRequest)(nil),          // 0: gibson.tools.NucleiRequest
-	(*NucleiResponse)(nil),         // 1: gibson.tools.NucleiResponse
-	(*TemplateMatch)(nil),          // 2: gibson.tools.TemplateMatch
-	(*TemplateInfo)(nil),           // 3: gibson.tools.TemplateInfo
-	(*TemplateClassification)(nil), // 4: gibson.tools.TemplateClassification
-	nil,                            // 5: gibson.tools.TemplateMatch.MetadataEntry
+	(*NucleiRequest)(nil),              // 0: gibson.tools.NucleiRequest
+	(*NucleiResponse)(nil),             // 1: gibson.tools.NucleiResponse
+	(*TemplateMatch)(nil),              // 2: gibson.tools.TemplateMatch
+	(*TemplateInfo)(nil),               // 3: gibson.tools.TemplateInfo
+	(*TemplateClassification)(nil),     // 4: gibson.tools.TemplateClassification
+	nil,                                // 5: gibson.tools.TemplateMatch.MetadataEntry
+	(*graphragpb.DiscoveryResult)(nil), // 6: gibson.graphrag.DiscoveryResult
 }
 var file_tools_nuclei_proto_depIdxs = []int32{
 	2, // 0: gibson.tools.NucleiResponse.results:type_name -> gibson.tools.TemplateMatch
-	3, // 1: gibson.tools.TemplateMatch.info:type_name -> gibson.tools.TemplateInfo
-	5, // 2: gibson.tools.TemplateMatch.metadata:type_name -> gibson.tools.TemplateMatch.MetadataEntry
-	4, // 3: gibson.tools.TemplateInfo.classification:type_name -> gibson.tools.TemplateClassification
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6, // 1: gibson.tools.NucleiResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3, // 2: gibson.tools.TemplateMatch.info:type_name -> gibson.tools.TemplateInfo
+	5, // 3: gibson.tools.TemplateMatch.metadata:type_name -> gibson.tools.TemplateMatch.MetadataEntry
+	4, // 4: gibson.tools.TemplateInfo.classification:type_name -> gibson.tools.TemplateClassification
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_tools_nuclei_proto_init() }

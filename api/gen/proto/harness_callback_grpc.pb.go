@@ -23,7 +23,7 @@ const (
 	HarnessCallbackService_LLMCompleteWithTools_FullMethodName             = "/gibson.harness.HarnessCallbackService/LLMCompleteWithTools"
 	HarnessCallbackService_LLMCompleteStructured_FullMethodName            = "/gibson.harness.HarnessCallbackService/LLMCompleteStructured"
 	HarnessCallbackService_LLMStream_FullMethodName                        = "/gibson.harness.HarnessCallbackService/LLMStream"
-	HarnessCallbackService_CallTool_FullMethodName                         = "/gibson.harness.HarnessCallbackService/CallTool"
+	HarnessCallbackService_CallToolProto_FullMethodName                    = "/gibson.harness.HarnessCallbackService/CallToolProto"
 	HarnessCallbackService_ListTools_FullMethodName                        = "/gibson.harness.HarnessCallbackService/ListTools"
 	HarnessCallbackService_QueryPlugin_FullMethodName                      = "/gibson.harness.HarnessCallbackService/QueryPlugin"
 	HarnessCallbackService_ListPlugins_FullMethodName                      = "/gibson.harness.HarnessCallbackService/ListPlugins"
@@ -80,7 +80,7 @@ type HarnessCallbackServiceClient interface {
 	LLMCompleteStructured(ctx context.Context, in *LLMCompleteStructuredRequest, opts ...grpc.CallOption) (*LLMCompleteStructuredResponse, error)
 	LLMStream(ctx context.Context, in *LLMStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLMStreamChunk], error)
 	// Tool Operations
-	CallTool(ctx context.Context, in *CallToolRequest, opts ...grpc.CallOption) (*CallToolResponse, error)
+	CallToolProto(ctx context.Context, in *CallToolProtoRequest, opts ...grpc.CallOption) (*CallToolProtoResponse, error)
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
 	// Plugin Operations
 	QueryPlugin(ctx context.Context, in *QueryPluginRequest, opts ...grpc.CallOption) (*QueryPluginResponse, error)
@@ -194,10 +194,10 @@ func (c *harnessCallbackServiceClient) LLMStream(ctx context.Context, in *LLMStr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HarnessCallbackService_LLMStreamClient = grpc.ServerStreamingClient[LLMStreamChunk]
 
-func (c *harnessCallbackServiceClient) CallTool(ctx context.Context, in *CallToolRequest, opts ...grpc.CallOption) (*CallToolResponse, error) {
+func (c *harnessCallbackServiceClient) CallToolProto(ctx context.Context, in *CallToolProtoRequest, opts ...grpc.CallOption) (*CallToolProtoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CallToolResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_CallTool_FullMethodName, in, out, cOpts...)
+	out := new(CallToolProtoResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_CallToolProto_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +627,7 @@ type HarnessCallbackServiceServer interface {
 	LLMCompleteStructured(context.Context, *LLMCompleteStructuredRequest) (*LLMCompleteStructuredResponse, error)
 	LLMStream(*LLMStreamRequest, grpc.ServerStreamingServer[LLMStreamChunk]) error
 	// Tool Operations
-	CallTool(context.Context, *CallToolRequest) (*CallToolResponse, error)
+	CallToolProto(context.Context, *CallToolProtoRequest) (*CallToolProtoResponse, error)
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
 	// Plugin Operations
 	QueryPlugin(context.Context, *QueryPluginRequest) (*QueryPluginResponse, error)
@@ -704,8 +704,8 @@ func (UnimplementedHarnessCallbackServiceServer) LLMCompleteStructured(context.C
 func (UnimplementedHarnessCallbackServiceServer) LLMStream(*LLMStreamRequest, grpc.ServerStreamingServer[LLMStreamChunk]) error {
 	return status.Error(codes.Unimplemented, "method LLMStream not implemented")
 }
-func (UnimplementedHarnessCallbackServiceServer) CallTool(context.Context, *CallToolRequest) (*CallToolResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CallTool not implemented")
+func (UnimplementedHarnessCallbackServiceServer) CallToolProto(context.Context, *CallToolProtoRequest) (*CallToolProtoResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CallToolProto not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTools not implemented")
@@ -917,20 +917,20 @@ func _HarnessCallbackService_LLMStream_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HarnessCallbackService_LLMStreamServer = grpc.ServerStreamingServer[LLMStreamChunk]
 
-func _HarnessCallbackService_CallTool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CallToolRequest)
+func _HarnessCallbackService_CallToolProto_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CallToolProtoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).CallTool(ctx, in)
+		return srv.(HarnessCallbackServiceServer).CallToolProto(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HarnessCallbackService_CallTool_FullMethodName,
+		FullMethod: HarnessCallbackService_CallToolProto_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).CallTool(ctx, req.(*CallToolRequest))
+		return srv.(HarnessCallbackServiceServer).CallToolProto(ctx, req.(*CallToolProtoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1693,8 +1693,8 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HarnessCallbackService_LLMCompleteStructured_Handler,
 		},
 		{
-			MethodName: "CallTool",
-			Handler:    _HarnessCallbackService_CallTool_Handler,
+			MethodName: "CallToolProto",
+			Handler:    _HarnessCallbackService_CallToolProto_Handler,
 		},
 		{
 			MethodName: "ListTools",

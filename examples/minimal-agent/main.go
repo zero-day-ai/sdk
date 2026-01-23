@@ -101,11 +101,9 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	// Example: Call a tool (if available)
 	// In a real scenario, you would use actual tools to test the target
 	//
-	// toolOutput, err := h.CallTool(ctx, "http-request", map[string]any{
-	//     "url": "https://example.com",
-	//     "method": "GET",
-	// })
-	// if err != nil {
+	// req := &toolspb.HTTPRequest{Url: "https://example.com", Method: "GET"}
+	// resp := &toolspb.HTTPResponse{}
+	// if err := h.CallToolProto(ctx, "http-request", req, resp); err != nil {
 	//     fmt.Printf("  Tool call failed: %v\n", err)
 	// }
 

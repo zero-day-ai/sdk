@@ -133,31 +133,10 @@ func (h *LocalHarness) CallToolProto(ctx context.Context, name string, request p
 	return fmt.Errorf("proto tool operations not available in standalone mode (no orchestrator connected)")
 }
 
-// CallTool returns an error indicating tool operations are not available.
-func (h *LocalHarness) CallTool(ctx context.Context, name string, input map[string]any) (map[string]any, error) {
-	h.logger.Warn("CallTool not available in standalone mode", "tool", name)
-	return nil, fmt.Errorf("tool operations not available in standalone mode (no orchestrator connected)")
-}
-
 // ListTools returns an empty list with a warning.
 func (h *LocalHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	h.logger.Warn("ListTools not available in standalone mode")
 	return []tool.Descriptor{}, nil
-}
-
-// CallToolsParallel returns error results for standalone mode (no tools available)
-func (h *LocalHarness) CallToolsParallel(ctx context.Context, calls []agent.ToolCall, maxConcurrency int) ([]agent.ToolResult, error) {
-	h.logger.Warn("CallToolsParallel not available in standalone mode", "call_count", len(calls))
-
-	// Return error results for all calls
-	results := make([]agent.ToolResult, len(calls))
-	for i, call := range calls {
-		results[i] = agent.ToolResult{
-			Name:  call.Name,
-			Error: fmt.Errorf("tool operations not available in standalone mode (no orchestrator connected)"),
-		}
-	}
-	return results, nil
 }
 
 // ============================================================================

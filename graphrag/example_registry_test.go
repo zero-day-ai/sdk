@@ -58,7 +58,7 @@ func ExampleNodeTypeRegistry_ValidateProperties() {
 
 	// Valid host properties
 	hostProps := map[string]any{
-		graphrag.PropIP: "10.0.0.1",
+		"ip": "10.0.0.1",
 	}
 
 	missing, err := registry.ValidateProperties(graphrag.NodeTypeHost, hostProps)
@@ -68,9 +68,9 @@ func ExampleNodeTypeRegistry_ValidateProperties() {
 
 	// Invalid port properties (missing protocol)
 	portProps := map[string]any{
-		graphrag.PropHostID: "host-123",
-		graphrag.PropNumber: 443,
-		// Missing PropProtocol
+		"host_id": "host-123",
+		"number":  443,
+		// Missing protocol
 	}
 
 	missing, err = registry.ValidateProperties(graphrag.NodeTypePort, portProps)
@@ -95,8 +95,8 @@ func ExampleNodeTypeRegistry_AllNodeTypes() {
 	fmt.Printf("Total registered types: %d\n", len(types))
 
 	// Output:
-	// First 5 node types: [agent_run api certificate cloud_asset domain]
-	// Total registered types: 20
+	// First 5 node types: [agent_run certificate domain endpoint evidence]
+	// Total registered types: 16
 }
 
 // ExampleNodeTypeRegistry_IsRegistered demonstrates checking if a node type exists.
@@ -123,10 +123,10 @@ func Example_nodeCreationWithValidation() {
 
 	// Define properties for a new port node
 	properties := map[string]any{
-		graphrag.PropHostID:   "host-abc123",
-		graphrag.PropNumber:   443,
-		graphrag.PropProtocol: "tcp",
-		graphrag.PropState:    "open",
+		"host_id":  "host-abc123",
+		"number":   443,
+		"protocol": "tcp",
+		"state":    "open",
 	}
 
 	// Validate before creating the node
@@ -151,7 +151,7 @@ func Example_validationErrorHandling() {
 
 	// Properties missing the required 'ip' field
 	properties := map[string]any{
-		graphrag.PropName: "my-host",
+		"name": "my-host",
 	}
 
 	// Attempt validation
@@ -178,20 +178,20 @@ func Example_multiNodeTypeValidation() {
 		{
 			nodeType: graphrag.NodeTypeHost,
 			properties: map[string]any{
-				graphrag.PropIP: "192.168.1.1",
+				"ip": "192.168.1.1",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeDomain,
 			properties: map[string]any{
-				graphrag.PropName: "example.com",
+				"name": "example.com",
 			},
 		},
 		{
 			nodeType: graphrag.NodeTypeTechnology,
 			properties: map[string]any{
-				graphrag.PropName: "nginx",
-				"version":         "1.21.0",
+				"name":    "nginx",
+				"version": "1.21.0",
 			},
 		},
 	}
