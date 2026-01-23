@@ -17,11 +17,162 @@ type DiscoveryResult struct {
 }
 
 // NewDiscoveryResult creates a new DiscoveryResult from a proto message.
+// If proto is nil, an empty proto is initialized.
 func NewDiscoveryResult(proto *graphragpb.DiscoveryResult) *DiscoveryResult {
 	if proto == nil {
-		return &DiscoveryResult{}
+		proto = &graphragpb.DiscoveryResult{}
 	}
 	return &DiscoveryResult{Proto: proto}
+}
+
+// NewEmptyDiscoveryResult creates a new empty DiscoveryResult.
+// Use this when creating discovery results from scratch in agents.
+func NewEmptyDiscoveryResult() *DiscoveryResult {
+	return &DiscoveryResult{Proto: &graphragpb.DiscoveryResult{}}
+}
+
+// Hosts returns the slice of discovered hosts for direct access.
+func (d *DiscoveryResult) Hosts() []*graphragpb.Host {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Hosts
+}
+
+// SetHosts sets the hosts slice.
+func (d *DiscoveryResult) SetHosts(hosts []*graphragpb.Host) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Hosts = hosts
+}
+
+// AddHost adds a host to the discovery result.
+func (d *DiscoveryResult) AddHost(host *graphragpb.Host) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Hosts = append(d.Proto.Hosts, host)
+}
+
+// Ports returns the slice of discovered ports for direct access.
+func (d *DiscoveryResult) Ports() []*graphragpb.Port {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Ports
+}
+
+// SetPorts sets the ports slice.
+func (d *DiscoveryResult) SetPorts(ports []*graphragpb.Port) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Ports = ports
+}
+
+// AddPort adds a port to the discovery result.
+func (d *DiscoveryResult) AddPort(port *graphragpb.Port) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Ports = append(d.Proto.Ports, port)
+}
+
+// Services returns the slice of discovered services for direct access.
+func (d *DiscoveryResult) Services() []*graphragpb.Service {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Services
+}
+
+// SetServices sets the services slice.
+func (d *DiscoveryResult) SetServices(services []*graphragpb.Service) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Services = services
+}
+
+// AddService adds a service to the discovery result.
+func (d *DiscoveryResult) AddService(service *graphragpb.Service) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Services = append(d.Proto.Services, service)
+}
+
+// Endpoints returns the slice of discovered endpoints for direct access.
+func (d *DiscoveryResult) Endpoints() []*graphragpb.Endpoint {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Endpoints
+}
+
+// SetEndpoints sets the endpoints slice.
+func (d *DiscoveryResult) SetEndpoints(endpoints []*graphragpb.Endpoint) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Endpoints = endpoints
+}
+
+// Domains returns the slice of discovered domains for direct access.
+func (d *DiscoveryResult) Domains() []*graphragpb.Domain {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Domains
+}
+
+// SetDomains sets the domains slice.
+func (d *DiscoveryResult) SetDomains(domains []*graphragpb.Domain) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Domains = domains
+}
+
+// Subdomains returns the slice of discovered subdomains for direct access.
+func (d *DiscoveryResult) Subdomains() []*graphragpb.Subdomain {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Subdomains
+}
+
+// SetSubdomains sets the subdomains slice.
+func (d *DiscoveryResult) SetSubdomains(subdomains []*graphragpb.Subdomain) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Subdomains = subdomains
+}
+
+// Technologies returns the slice of discovered technologies for direct access.
+func (d *DiscoveryResult) Technologies() []*graphragpb.Technology {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.Technologies
+}
+
+// SetTechnologies sets the technologies slice.
+func (d *DiscoveryResult) SetTechnologies(technologies []*graphragpb.Technology) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Technologies = technologies
+}
+
+// AddTechnology adds a technology to the discovery result.
+func (d *DiscoveryResult) AddTechnology(tech *graphragpb.Technology) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.Technologies = append(d.Proto.Technologies, tech)
 }
 
 // IsEmpty returns true if the discovery result contains no entities.
