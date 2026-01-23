@@ -175,6 +175,73 @@ func (d *DiscoveryResult) AddTechnology(tech *graphragpb.Technology) {
 	d.Proto.Technologies = append(d.Proto.Technologies, tech)
 }
 
+// CustomNodes returns the slice of custom nodes for direct access.
+func (d *DiscoveryResult) CustomNodes() []*graphragpb.CustomNode {
+	if d == nil || d.Proto == nil {
+		return nil
+	}
+	return d.Proto.CustomNodes
+}
+
+// AddCustomNode adds a custom node to the discovery result.
+func (d *DiscoveryResult) AddCustomNode(node *graphragpb.CustomNode) {
+	if d.Proto == nil {
+		d.Proto = &graphragpb.DiscoveryResult{}
+	}
+	d.Proto.CustomNodes = append(d.Proto.CustomNodes, node)
+}
+
+// NewCustomNode creates a new custom node with the given type and category.
+// This is a convenience function for creating infrastructure nodes.
+func NewCustomNode(nodeType, category string) *graphragpb.CustomNode {
+	return &graphragpb.CustomNode{
+		NodeType:     nodeType,
+		IdProperties: make(map[string]string),
+		Properties:   map[string]string{"category": category},
+	}
+}
+
+// CustomNodeBuilder provides a fluent API for building custom nodes.
+type CustomNodeBuilder struct {
+	node *graphragpb.CustomNode
+}
+
+// NewCustomNodeBuilder creates a new custom node builder.
+func NewCustomNodeBuilder(nodeType, category string) *CustomNodeBuilder {
+	return &CustomNodeBuilder{
+		node: &graphragpb.CustomNode{
+			NodeType:     nodeType,
+			IdProperties: make(map[string]string),
+			Properties:   map[string]string{"category": category},
+		},
+	}
+}
+
+// WithIDProp adds an identifying property.
+func (b *CustomNodeBuilder) WithIDProp(key, value string) *CustomNodeBuilder {
+	b.node.IdProperties[key] = value
+	return b
+}
+
+// WithProp adds a regular property.
+func (b *CustomNodeBuilder) WithProp(key, value string) *CustomNodeBuilder {
+	b.node.Properties[key] = value
+	return b
+}
+
+// WithParent sets the parent reference.
+func (b *CustomNodeBuilder) WithParent(parentType string, parentID map[string]string, relationship string) *CustomNodeBuilder {
+	b.node.ParentType = &parentType
+	b.node.ParentId = parentID
+	b.node.RelationshipType = &relationship
+	return b
+}
+
+// Build returns the constructed custom node.
+func (b *CustomNodeBuilder) Build() *graphragpb.CustomNode {
+	return b.node
+}
+
 // IsEmpty returns true if the discovery result contains no entities.
 func (d *DiscoveryResult) IsEmpty() bool {
 	if d == nil || d.Proto == nil {
