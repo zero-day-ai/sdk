@@ -174,13 +174,14 @@ proto-clean:
 # Taxonomy generation from YAML
 taxonomy-gen:
 	@echo "Generating taxonomy from YAML..."
-	@mkdir -p $(TAXONOMYPB_OUT) graphrag/domain graphrag/validation
+	@mkdir -p $(TAXONOMYPB_OUT) graphrag/domain graphrag/validation graphrag/query
 	$(TAXONOMY_GEN_CMD) \
 		--base $(TAXONOMY_YAML) \
 		--output-proto $(PROTO_DIR)/taxonomy.proto \
 		--output-domain graphrag/domain/domain_generated.go \
 		--output-validators graphrag/validation/validators_generated.go \
 		--output-constants graphrag/constants_generated.go \
+		--output-query graphrag/query/query_generated.go \
 		--package domain
 	@echo "Taxonomy generation complete"
 
