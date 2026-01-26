@@ -5,7 +5,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v4.25.1
-// source: graphrag.proto
+// source: api/proto/graphrag.proto
 
 package graphragpb
 
@@ -61,11 +61,11 @@ func (x QueryScope) String() string {
 }
 
 func (QueryScope) Descriptor() protoreflect.EnumDescriptor {
-	return file_graphrag_proto_enumTypes[0].Descriptor()
+	return file_api_proto_graphrag_proto_enumTypes[0].Descriptor()
 }
 
 func (QueryScope) Type() protoreflect.EnumType {
-	return &file_graphrag_proto_enumTypes[0]
+	return &file_api_proto_graphrag_proto_enumTypes[0]
 }
 
 func (x QueryScope) Number() protoreflect.EnumNumber {
@@ -74,7 +74,7 @@ func (x QueryScope) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use QueryScope.Descriptor instead.
 func (QueryScope) EnumDescriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{0}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{0}
 }
 
 // GraphQuery represents a query against the knowledge graph using proto-canonical types.
@@ -98,7 +98,7 @@ type GraphQuery struct {
 
 func (x *GraphQuery) Reset() {
 	*x = GraphQuery{}
-	mi := &file_graphrag_proto_msgTypes[0]
+	mi := &file_api_proto_graphrag_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -110,7 +110,7 @@ func (x *GraphQuery) String() string {
 func (*GraphQuery) ProtoMessage() {}
 
 func (x *GraphQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[0]
+	mi := &file_api_proto_graphrag_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -123,7 +123,7 @@ func (x *GraphQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphQuery.ProtoReflect.Descriptor instead.
 func (*GraphQuery) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{0}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GraphQuery) GetText() string {
@@ -225,7 +225,7 @@ type QueryResult struct {
 
 func (x *QueryResult) Reset() {
 	*x = QueryResult{}
-	mi := &file_graphrag_proto_msgTypes[1]
+	mi := &file_api_proto_graphrag_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -237,7 +237,7 @@ func (x *QueryResult) String() string {
 func (*QueryResult) ProtoMessage() {}
 
 func (x *QueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[1]
+	mi := &file_api_proto_graphrag_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -250,7 +250,7 @@ func (x *QueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryResult.ProtoReflect.Descriptor instead.
 func (*QueryResult) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{1}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *QueryResult) GetNode() *GraphNode {
@@ -323,7 +323,7 @@ type GraphNode struct {
 
 func (x *GraphNode) Reset() {
 	*x = GraphNode{}
-	mi := &file_graphrag_proto_msgTypes[2]
+	mi := &file_api_proto_graphrag_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +335,7 @@ func (x *GraphNode) String() string {
 func (*GraphNode) ProtoMessage() {}
 
 func (x *GraphNode) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[2]
+	mi := &file_api_proto_graphrag_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +348,7 @@ func (x *GraphNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphNode.ProtoReflect.Descriptor instead.
 func (*GraphNode) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{2}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GraphNode) GetId() string {
@@ -469,7 +469,7 @@ type Value struct {
 
 func (x *Value) Reset() {
 	*x = Value{}
-	mi := &file_graphrag_proto_msgTypes[3]
+	mi := &file_api_proto_graphrag_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -481,7 +481,7 @@ func (x *Value) String() string {
 func (*Value) ProtoMessage() {}
 
 func (x *Value) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[3]
+	mi := &file_api_proto_graphrag_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -494,7 +494,7 @@ func (x *Value) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value.ProtoReflect.Descriptor instead.
 func (*Value) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{3}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Value) GetKind() isValue_Kind {
@@ -637,7 +637,7 @@ type ListValue struct {
 
 func (x *ListValue) Reset() {
 	*x = ListValue{}
-	mi := &file_graphrag_proto_msgTypes[4]
+	mi := &file_api_proto_graphrag_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -649,7 +649,7 @@ func (x *ListValue) String() string {
 func (*ListValue) ProtoMessage() {}
 
 func (x *ListValue) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[4]
+	mi := &file_api_proto_graphrag_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -662,7 +662,7 @@ func (x *ListValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListValue.ProtoReflect.Descriptor instead.
 func (*ListValue) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{4}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListValue) GetValues() []*Value {
@@ -681,7 +681,7 @@ type MapValue struct {
 
 func (x *MapValue) Reset() {
 	*x = MapValue{}
-	mi := &file_graphrag_proto_msgTypes[5]
+	mi := &file_api_proto_graphrag_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -693,7 +693,7 @@ func (x *MapValue) String() string {
 func (*MapValue) ProtoMessage() {}
 
 func (x *MapValue) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[5]
+	mi := &file_api_proto_graphrag_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -706,7 +706,7 @@ func (x *MapValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapValue.ProtoReflect.Descriptor instead.
 func (*MapValue) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{5}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *MapValue) GetFields() map[string]*Value {
@@ -736,7 +736,7 @@ type Relationship struct {
 
 func (x *Relationship) Reset() {
 	*x = Relationship{}
-	mi := &file_graphrag_proto_msgTypes[6]
+	mi := &file_api_proto_graphrag_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -748,7 +748,7 @@ func (x *Relationship) String() string {
 func (*Relationship) ProtoMessage() {}
 
 func (x *Relationship) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[6]
+	mi := &file_api_proto_graphrag_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -761,7 +761,7 @@ func (x *Relationship) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Relationship.ProtoReflect.Descriptor instead.
 func (*Relationship) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{6}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Relationship) GetId() string {
@@ -852,7 +852,7 @@ type DiscoveryResult struct {
 
 func (x *DiscoveryResult) Reset() {
 	*x = DiscoveryResult{}
-	mi := &file_graphrag_proto_msgTypes[7]
+	mi := &file_api_proto_graphrag_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -864,7 +864,7 @@ func (x *DiscoveryResult) String() string {
 func (*DiscoveryResult) ProtoMessage() {}
 
 func (x *DiscoveryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[7]
+	mi := &file_api_proto_graphrag_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -877,7 +877,7 @@ func (x *DiscoveryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiscoveryResult.ProtoReflect.Descriptor instead.
 func (*DiscoveryResult) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{7}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DiscoveryResult) GetHosts() []*Host {
@@ -980,7 +980,7 @@ type Host struct {
 
 func (x *Host) Reset() {
 	*x = Host{}
-	mi := &file_graphrag_proto_msgTypes[8]
+	mi := &file_api_proto_graphrag_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -992,7 +992,7 @@ func (x *Host) String() string {
 func (*Host) ProtoMessage() {}
 
 func (x *Host) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[8]
+	mi := &file_api_proto_graphrag_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1005,7 +1005,7 @@ func (x *Host) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Host.ProtoReflect.Descriptor instead.
 func (*Host) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{8}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Host) GetId() string {
@@ -1072,7 +1072,7 @@ type Port struct {
 
 func (x *Port) Reset() {
 	*x = Port{}
-	mi := &file_graphrag_proto_msgTypes[9]
+	mi := &file_api_proto_graphrag_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1084,7 +1084,7 @@ func (x *Port) String() string {
 func (*Port) ProtoMessage() {}
 
 func (x *Port) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[9]
+	mi := &file_api_proto_graphrag_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1097,7 +1097,7 @@ func (x *Port) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Port.ProtoReflect.Descriptor instead.
 func (*Port) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{9}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Port) GetId() string {
@@ -1159,7 +1159,7 @@ type Service struct {
 
 func (x *Service) Reset() {
 	*x = Service{}
-	mi := &file_graphrag_proto_msgTypes[10]
+	mi := &file_api_proto_graphrag_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1171,7 +1171,7 @@ func (x *Service) String() string {
 func (*Service) ProtoMessage() {}
 
 func (x *Service) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[10]
+	mi := &file_api_proto_graphrag_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1184,7 +1184,7 @@ func (x *Service) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Service.ProtoReflect.Descriptor instead.
 func (*Service) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{10}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Service) GetId() string {
@@ -1260,7 +1260,7 @@ type Endpoint struct {
 
 func (x *Endpoint) Reset() {
 	*x = Endpoint{}
-	mi := &file_graphrag_proto_msgTypes[11]
+	mi := &file_api_proto_graphrag_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1272,7 +1272,7 @@ func (x *Endpoint) String() string {
 func (*Endpoint) ProtoMessage() {}
 
 func (x *Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[11]
+	mi := &file_api_proto_graphrag_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1285,7 +1285,7 @@ func (x *Endpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Endpoint.ProtoReflect.Descriptor instead.
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{11}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Endpoint) GetId() string {
@@ -1358,7 +1358,7 @@ type Domain struct {
 
 func (x *Domain) Reset() {
 	*x = Domain{}
-	mi := &file_graphrag_proto_msgTypes[12]
+	mi := &file_api_proto_graphrag_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1370,7 +1370,7 @@ func (x *Domain) String() string {
 func (*Domain) ProtoMessage() {}
 
 func (x *Domain) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[12]
+	mi := &file_api_proto_graphrag_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,7 +1383,7 @@ func (x *Domain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Domain.ProtoReflect.Descriptor instead.
 func (*Domain) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{12}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Domain) GetId() string {
@@ -1434,7 +1434,7 @@ type Subdomain struct {
 
 func (x *Subdomain) Reset() {
 	*x = Subdomain{}
-	mi := &file_graphrag_proto_msgTypes[13]
+	mi := &file_api_proto_graphrag_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1446,7 +1446,7 @@ func (x *Subdomain) String() string {
 func (*Subdomain) ProtoMessage() {}
 
 func (x *Subdomain) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[13]
+	mi := &file_api_proto_graphrag_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1459,7 +1459,7 @@ func (x *Subdomain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subdomain.ProtoReflect.Descriptor instead.
 func (*Subdomain) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{13}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Subdomain) GetId() string {
@@ -1508,7 +1508,7 @@ type Technology struct {
 
 func (x *Technology) Reset() {
 	*x = Technology{}
-	mi := &file_graphrag_proto_msgTypes[14]
+	mi := &file_api_proto_graphrag_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1520,7 +1520,7 @@ func (x *Technology) String() string {
 func (*Technology) ProtoMessage() {}
 
 func (x *Technology) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[14]
+	mi := &file_api_proto_graphrag_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1533,7 +1533,7 @@ func (x *Technology) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Technology.ProtoReflect.Descriptor instead.
 func (*Technology) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{14}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Technology) GetId() string {
@@ -1612,7 +1612,7 @@ type Certificate struct {
 
 func (x *Certificate) Reset() {
 	*x = Certificate{}
-	mi := &file_graphrag_proto_msgTypes[15]
+	mi := &file_api_proto_graphrag_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1624,7 +1624,7 @@ func (x *Certificate) String() string {
 func (*Certificate) ProtoMessage() {}
 
 func (x *Certificate) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[15]
+	mi := &file_api_proto_graphrag_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1637,7 +1637,7 @@ func (x *Certificate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Certificate.ProtoReflect.Descriptor instead.
 func (*Certificate) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{15}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Certificate) GetId() string {
@@ -1731,7 +1731,7 @@ type Finding struct {
 
 func (x *Finding) Reset() {
 	*x = Finding{}
-	mi := &file_graphrag_proto_msgTypes[16]
+	mi := &file_api_proto_graphrag_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1743,7 +1743,7 @@ func (x *Finding) String() string {
 func (*Finding) ProtoMessage() {}
 
 func (x *Finding) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[16]
+	mi := &file_api_proto_graphrag_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1756,7 +1756,7 @@ func (x *Finding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Finding.ProtoReflect.Descriptor instead.
 func (*Finding) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{16}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Finding) GetId() string {
@@ -1850,7 +1850,7 @@ type Evidence struct {
 
 func (x *Evidence) Reset() {
 	*x = Evidence{}
-	mi := &file_graphrag_proto_msgTypes[17]
+	mi := &file_api_proto_graphrag_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1862,7 +1862,7 @@ func (x *Evidence) String() string {
 func (*Evidence) ProtoMessage() {}
 
 func (x *Evidence) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[17]
+	mi := &file_api_proto_graphrag_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1875,7 +1875,7 @@ func (x *Evidence) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Evidence.ProtoReflect.Descriptor instead.
 func (*Evidence) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{17}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Evidence) GetId() string {
@@ -1928,7 +1928,7 @@ type CustomNode struct {
 
 func (x *CustomNode) Reset() {
 	*x = CustomNode{}
-	mi := &file_graphrag_proto_msgTypes[18]
+	mi := &file_api_proto_graphrag_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1940,7 +1940,7 @@ func (x *CustomNode) String() string {
 func (*CustomNode) ProtoMessage() {}
 
 func (x *CustomNode) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[18]
+	mi := &file_api_proto_graphrag_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1953,7 +1953,7 @@ func (x *CustomNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CustomNode.ProtoReflect.Descriptor instead.
 func (*CustomNode) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{18}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CustomNode) GetNodeType() string {
@@ -2013,7 +2013,7 @@ type ExplicitRelationship struct {
 
 func (x *ExplicitRelationship) Reset() {
 	*x = ExplicitRelationship{}
-	mi := &file_graphrag_proto_msgTypes[19]
+	mi := &file_api_proto_graphrag_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2025,7 +2025,7 @@ func (x *ExplicitRelationship) String() string {
 func (*ExplicitRelationship) ProtoMessage() {}
 
 func (x *ExplicitRelationship) ProtoReflect() protoreflect.Message {
-	mi := &file_graphrag_proto_msgTypes[19]
+	mi := &file_api_proto_graphrag_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2038,7 +2038,7 @@ func (x *ExplicitRelationship) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExplicitRelationship.ProtoReflect.Descriptor instead.
 func (*ExplicitRelationship) Descriptor() ([]byte, []int) {
-	return file_graphrag_proto_rawDescGZIP(), []int{19}
+	return file_api_proto_graphrag_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ExplicitRelationship) GetFromType() string {
@@ -2083,11 +2083,11 @@ func (x *ExplicitRelationship) GetProperties() map[string]string {
 	return nil
 }
 
-var File_graphrag_proto protoreflect.FileDescriptor
+var File_api_proto_graphrag_proto protoreflect.FileDescriptor
 
-const file_graphrag_proto_rawDesc = "" +
+const file_api_proto_graphrag_proto_rawDesc = "" +
 	"\n" +
-	"\x0egraphrag.proto\x12\x0fgibson.graphrag\"\xec\x03\n" +
+	"\x18api/proto/graphrag.proto\x12\x0fgibson.graphrag\"\xec\x03\n" +
 	"\n" +
 	"GraphQuery\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1c\n" +
@@ -2418,20 +2418,20 @@ const file_graphrag_proto_rawDesc = "" +
 	"\x12QUERY_SCOPE_GLOBAL\x10\x03B/Z-github.com/zero-day-ai/sdk/api/gen/graphragpbb\x06proto3"
 
 var (
-	file_graphrag_proto_rawDescOnce sync.Once
-	file_graphrag_proto_rawDescData []byte
+	file_api_proto_graphrag_proto_rawDescOnce sync.Once
+	file_api_proto_graphrag_proto_rawDescData []byte
 )
 
-func file_graphrag_proto_rawDescGZIP() []byte {
-	file_graphrag_proto_rawDescOnce.Do(func() {
-		file_graphrag_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_graphrag_proto_rawDesc), len(file_graphrag_proto_rawDesc)))
+func file_api_proto_graphrag_proto_rawDescGZIP() []byte {
+	file_api_proto_graphrag_proto_rawDescOnce.Do(func() {
+		file_api_proto_graphrag_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_graphrag_proto_rawDesc), len(file_api_proto_graphrag_proto_rawDesc)))
 	})
-	return file_graphrag_proto_rawDescData
+	return file_api_proto_graphrag_proto_rawDescData
 }
 
-var file_graphrag_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_graphrag_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
-var file_graphrag_proto_goTypes = []any{
+var file_api_proto_graphrag_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_proto_graphrag_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_api_proto_graphrag_proto_goTypes = []any{
 	(QueryScope)(0),              // 0: gibson.graphrag.QueryScope
 	(*GraphQuery)(nil),           // 1: gibson.graphrag.GraphQuery
 	(*QueryResult)(nil),          // 2: gibson.graphrag.QueryResult
@@ -2464,7 +2464,7 @@ var file_graphrag_proto_goTypes = []any{
 	nil,                          // 29: gibson.graphrag.ExplicitRelationship.ToIdEntry
 	nil,                          // 30: gibson.graphrag.ExplicitRelationship.PropertiesEntry
 }
-var file_graphrag_proto_depIdxs = []int32{
+var file_api_proto_graphrag_proto_depIdxs = []int32{
 	0,  // 0: gibson.graphrag.GraphQuery.scope:type_name -> gibson.graphrag.QueryScope
 	21, // 1: gibson.graphrag.GraphQuery.filters:type_name -> gibson.graphrag.GraphQuery.FiltersEntry
 	3,  // 2: gibson.graphrag.QueryResult.node:type_name -> gibson.graphrag.GraphNode
@@ -2502,13 +2502,13 @@ var file_graphrag_proto_depIdxs = []int32{
 	0,  // [0:30] is the sub-list for field type_name
 }
 
-func init() { file_graphrag_proto_init() }
-func file_graphrag_proto_init() {
-	if File_graphrag_proto != nil {
+func init() { file_api_proto_graphrag_proto_init() }
+func file_api_proto_graphrag_proto_init() {
+	if File_api_proto_graphrag_proto != nil {
 		return
 	}
-	file_graphrag_proto_msgTypes[2].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[3].OneofWrappers = []any{
+	file_api_proto_graphrag_proto_msgTypes[2].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[3].OneofWrappers = []any{
 		(*Value_StringValue)(nil),
 		(*Value_IntValue)(nil),
 		(*Value_DoubleValue)(nil),
@@ -2518,33 +2518,33 @@ func file_graphrag_proto_init() {
 		(*Value_ListValue)(nil),
 		(*Value_MapValue)(nil),
 	}
-	file_graphrag_proto_msgTypes[8].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[9].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[10].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[11].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[12].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[13].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[14].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[15].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[16].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[17].OneofWrappers = []any{}
-	file_graphrag_proto_msgTypes[18].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[8].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[9].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[10].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[11].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[12].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[13].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[14].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[15].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[16].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[17].OneofWrappers = []any{}
+	file_api_proto_graphrag_proto_msgTypes[18].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_graphrag_proto_rawDesc), len(file_graphrag_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_graphrag_proto_rawDesc), len(file_api_proto_graphrag_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_graphrag_proto_goTypes,
-		DependencyIndexes: file_graphrag_proto_depIdxs,
-		EnumInfos:         file_graphrag_proto_enumTypes,
-		MessageInfos:      file_graphrag_proto_msgTypes,
+		GoTypes:           file_api_proto_graphrag_proto_goTypes,
+		DependencyIndexes: file_api_proto_graphrag_proto_depIdxs,
+		EnumInfos:         file_api_proto_graphrag_proto_enumTypes,
+		MessageInfos:      file_api_proto_graphrag_proto_msgTypes,
 	}.Build()
-	File_graphrag_proto = out.File
-	file_graphrag_proto_goTypes = nil
-	file_graphrag_proto_depIdxs = nil
+	File_api_proto_graphrag_proto = out.File
+	file_api_proto_graphrag_proto_goTypes = nil
+	file_api_proto_graphrag_proto_depIdxs = nil
 }

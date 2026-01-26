@@ -676,6 +676,372 @@ taxonomy-gen \
   --output-domain my-agent/domain/domain_generated.go
 ```
 
+## Taxonomy System
+
+The Gibson SDK includes a comprehensive taxonomy system that defines all security domain entity types and their relationships. This system serves as the single source of truth for the knowledge graph schema and automatically generates type-safe Go code.
+
+### Overview
+
+The taxonomy system is centered around `taxonomy/core.yaml`, which defines:
+- **Node types** - Security entities like hosts, ports, services, findings, etc.
+- **Relationship types** - How nodes connect (HAS_PORT, RUNS_SERVICE, AFFECTS, etc.)
+- **Validation rules** - CEL-based constraints ensuring data integrity
+- **Parent-child hierarchies** - Automatic relationship wiring
+
+All generated code is produced by the `taxonomy-gen` tool, ensuring consistency between YAML definitions and runtime types.
+
+### Core YAML: Single Source of Truth
+
+The `taxonomy/core.yaml` file (version 3.0.0) is the authoritative definition:
+
+```yaml
+version: "3.0.0"
+kind: core
+
+node_types:
+  - name: host
+    category: asset
+    description: "IP address or hostname"
+    properties:
+      - name: ip
+        type: string
+      - name: hostname
+        type: string
+    parent: null  # Root type
+    identifying_properties: [ip]
+    validations:
+      - rule: "has(self.ip) || has(self.hostname)"
+        message: "host requires either ip or hostname"
+
+  - name: port
+    category: asset
+    description: "Network port on a host"
+    properties:
+      - name: number
+        type: int32
+        required: true
+    parent:
+      type: host
+      ref_field: host_id
+      relationship: HAS_PORT
+      required: true
+```
+
+### Entity Types
+
+The taxonomy defines two categories of node types:
+
+#### Root Types (No Parent)
+
+These entities can exist independently and attach directly to mission runs:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `mission` | Top-level assessment mission | A penetration test engagement |
+| `host` | IP address or hostname | 192.168.1.1, server.local |
+| `domain` | Root domain | example.com |
+| `technology` | Detected framework/software | nginx 1.18.0, React |
+| `certificate` | TLS/SSL certificate | x509 certificate |
+| `finding` | Security vulnerability | SQL injection, weak cipher |
+| `technique` | Attack technique | MITRE ATT&CK or Gibson technique |
+
+#### Child Types (Require Parent)
+
+These entities must belong to a parent entity:
+
+| Type | Parent | Relationship | Description |
+|------|--------|--------------|-------------|
+| `mission_run` | `mission` | HAS_RUN | Single pipeline execution |
+| `agent_run` | `mission_run` | CONTAINS_AGENT_RUN | Agent execution |
+| `tool_execution` | `agent_run` | EXECUTED_TOOL | Tool invocation |
+| `llm_call` | `agent_run` | MADE_CALL | LLM API call |
+| `subdomain` | `domain` | HAS_SUBDOMAIN | api.example.com |
+| `port` | `host` | HAS_PORT | Port 443/tcp |
+| `service` | `port` | RUNS_SERVICE | HTTPS service |
+| `endpoint` | `service` | HAS_ENDPOINT | /api/v1/users |
+| `evidence` | `finding` | HAS_EVIDENCE | Proof of vulnerability |
+
+### UUID-Based Identity
+
+**All entities use UUID as their primary key**, not natural keys like IP addresses or domain names.
+
+#### Why UUIDs?
+
+- **Uniqueness**: Guaranteed unique across distributed systems
+- **Mergeability**: Entities can be created independently and merged later
+- **Immutability**: Natural keys change (IPs reassign, domains transfer)
+- **Consistency**: Parent-child relationships always reference UUIDs
+
+#### Example: Natural Key vs UUID
+
+```go
+// ❌ OLD WAY: Natural key matching
+port := &Port{
+    HostIp: "192.168.1.1",  // Fragile - what if IP changes?
+    Number: 443,
+}
+
+// ✅ NEW WAY: UUID references
+host := NewHost()
+host.Ip = "192.168.1.1"  // UUID in host.Id
+
+port := NewPort(host, 443, "tcp")
+port.ParentHostId = host.Id  // Automatically set by helper
+```
+
+### Generated Helpers
+
+The `graphrag/helpers_generated.go` file provides type-safe constructors for all entity types.
+
+#### Creating Root Entities
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag"
+
+// Root entities - no parent needed
+host := graphrag.NewHost()
+host.Ip = "192.168.1.1"
+host.Hostname = "server.local"
+host.Os = "Linux"
+
+domain := graphrag.NewDomain("example.com")
+domain.Registrar = "GoDaddy"
+
+finding := graphrag.NewFinding("SQL Injection", "critical")
+finding.Description = "SQL injection in login form"
+finding.Confidence = 0.95
+```
+
+#### Creating Child Entities
+
+Child entity helpers automatically wire parent IDs:
+
+```go
+// Port belongs to host
+port := graphrag.NewPort(host, 443, "tcp")
+port.State = "open"
+// port.ParentHostId is automatically set to host.Id
+
+// Service belongs to port
+service := graphrag.NewService(port, "https")
+service.Product = "nginx"
+service.Version = "1.18.0"
+// service.ParentPortId is automatically set to port.Id
+
+// Endpoint belongs to service
+endpoint := graphrag.NewEndpoint(service, "/api/v1/users")
+endpoint.Method = "GET"
+endpoint.StatusCode = 200
+// endpoint.ParentServiceId is automatically set to service.Id
+```
+
+#### Helper Safety
+
+All helpers perform validation:
+
+```go
+// ✅ Valid: parent has UUID
+host := graphrag.NewHost()  // host.Id = "uuid-123..."
+port := graphrag.NewPort(host, 443, "tcp")  // OK
+
+// ❌ PANIC: parent missing UUID
+host := &taxonomypb.Host{}  // host.Id = ""
+port := graphrag.NewPort(host, 443, "tcp")  // PANIC!
+// Error: "parent Host must have Id set - use NewHost() or set Id manually"
+```
+
+### Parent-Child Relationships
+
+The `graphrag/taxonomy/relationships_generated.go` file defines the complete relationship hierarchy.
+
+#### Relationship Configuration
+
+```go
+type ParentRelationship struct {
+    ChildType    string  // e.g., "port"
+    ParentType   string  // e.g., "host"
+    RefField     string  // UUID field on child: "host_id"
+    ParentField  string  // Always "id"
+    Relationship string  // Neo4j edge type: "HAS_PORT"
+    Required     bool    // Must have parent?
+}
+```
+
+#### Asset Hierarchy Example
+
+```
+Host (192.168.1.1)
+  └─[HAS_PORT]→ Port (443/tcp)
+      └─[RUNS_SERVICE]→ Service (https)
+          └─[HAS_ENDPOINT]→ Endpoint (/api/v1/users)
+```
+
+```go
+host := graphrag.NewHost()
+host.Ip = "192.168.1.1"
+
+port := graphrag.NewPort(host, 443, "tcp")
+service := graphrag.NewService(port, "https")
+endpoint := graphrag.NewEndpoint(service, "/api/v1/users")
+
+// In Neo4j, creates:
+// (host:Host {id: "uuid-1", ip: "192.168.1.1"})
+// (port:Port {id: "uuid-2", number: 443})-[:HAS_PORT]->(host)
+// (service:Service {id: "uuid-3", name: "https"})-[:RUNS_SERVICE]->(port)
+// (endpoint:Endpoint {id: "uuid-4", url: "/api/..."})-[:HAS_ENDPOINT]->(service)
+```
+
+#### Checking Relationships Programmatically
+
+```go
+import "github.com/zero-day-ai/sdk/graphrag/taxonomy"
+
+// Check if type is root or child
+isRoot := taxonomy.IsRootNodeType("host")       // true
+isRoot := taxonomy.IsRootNodeType("port")       // false
+
+// Get parent relationship info
+rel := taxonomy.GetParentRelationship("port")
+// rel.ParentType = "host"
+// rel.RefField = "host_id"
+// rel.Relationship = "HAS_PORT"
+// rel.Required = true
+```
+
+### Full Code Example
+
+Complete workflow showing all concepts:
+
+```go
+package main
+
+import (
+    "github.com/zero-day-ai/sdk/graphrag"
+    "github.com/zero-day-ai/sdk/graphrag/taxonomy"
+)
+
+func main() {
+    // 1. Create root entity (host)
+    host := graphrag.NewHost()
+    host.Ip = "192.168.1.100"
+    host.Hostname = "web-server-01"
+    host.Os = "Ubuntu"
+    host.State = "up"
+
+    // 2. Create child hierarchy
+    port := graphrag.NewPort(host, 443, "tcp")
+    port.State = "open"
+
+    service := graphrag.NewService(port, "https")
+    service.Product = "nginx"
+    service.Version = "1.18.0"
+
+    endpoint := graphrag.NewEndpoint(service, "/api/v1/users")
+    endpoint.Method = "GET"
+    endpoint.StatusCode = 200
+
+    // 3. Create a finding
+    finding := graphrag.NewFinding("Weak TLS Configuration", "medium")
+    finding.Description = "Server supports TLS 1.0"
+    finding.Confidence = 0.85
+    finding.CveIds = "CVE-2023-12345"
+
+    // 4. Create evidence for finding
+    evidence := graphrag.NewEvidence(finding, "response")
+    evidence.Content = "TLS 1.0 handshake successful"
+    evidence.Url = "https://192.168.1.100:443"
+
+    // 5. All entities have UUIDs automatically assigned
+    println("Host ID:", host.Id)         // "uuid-generated-1"
+    println("Port ID:", port.Id)         // "uuid-generated-2"
+    println("Finding ID:", finding.Id)   // "uuid-generated-3"
+
+    // 6. Parent references are automatically wired
+    println("Port parent:", port.ParentHostId)         // Same as host.Id
+    println("Service parent:", service.ParentPortId)   // Same as port.Id
+    println("Evidence parent:", evidence.ParentFindingId) // Same as finding.Id
+
+    // 7. Submit to GraphRAG (all entities persisted with relationships)
+    // discovery := &DiscoveryResult{
+    //     Hosts: []*taxonomypb.Host{host},
+    //     Findings: []*taxonomypb.Finding{finding},
+    // }
+}
+```
+
+### Extending the Taxonomy
+
+To add custom entity types for your agent:
+
+1. **Create extension YAML**:
+
+```yaml
+# my-agent/taxonomy/extension.yaml
+version: "1.0.0"
+kind: extension
+extends: "3.0.0"
+
+node_types:
+  - name: api_key
+    category: asset
+    description: "Discovered API key"
+    properties:
+      - name: key_value
+        type: string
+        required: true
+      - name: service
+        type: string
+    parent:
+      type: finding
+      ref_field: finding_id
+      relationship: CONTAINS_CREDENTIAL
+      required: true
+```
+
+2. **Generate code**:
+
+```bash
+make generate-taxonomy
+```
+
+3. **Use in agent**:
+
+```go
+import "github.com/myorg/myagent/graphrag"
+
+finding := graphrag.NewFinding("Exposed API Key", "critical")
+apiKey := graphrag.NewApiKey(finding)
+apiKey.KeyValue = "sk-..."
+apiKey.Service = "OpenAI"
+```
+
+### Regenerating Code
+
+When you modify `taxonomy/core.yaml`:
+
+```bash
+# Regenerate taxonomy code only
+make generate-taxonomy
+
+# Regenerate all generated code (protobufs, taxonomy, etc.)
+make generate
+```
+
+Generated files:
+- `graphrag/helpers_generated.go` - NewXxx() constructors
+- `graphrag/taxonomy/relationships_generated.go` - ParentRelationships map
+- `api/gen/taxonomypb/*.pb.go` - Protocol buffer types
+
+### Benefits
+
+- **Type Safety**: Compile-time guarantees for entity creation
+- **Automatic UUIDs**: No manual ID generation needed
+- **Relationship Wiring**: Parent IDs automatically set
+- **Single Source of Truth**: YAML drives all generated code
+- **Extensibility**: Agents can add custom types via extensions
+- **Validation**: CEL rules enforce data integrity
+- **Consistency**: All components use same entity definitions
+
 ## gRPC Serving Options
 
 ```go

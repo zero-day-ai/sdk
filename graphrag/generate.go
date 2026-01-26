@@ -4,4 +4,4 @@
 // Run `go generate ./...` from the SDK root to regenerate taxonomy code.
 package graphrag
 
-//go:generate go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen --base ../taxonomy/core.yaml --output-proto ../api/proto/taxonomy.proto --output-domain domain/domain_generated.go --output-validators validation/validators_generated.go --output-constants constants_generated.go --output-query query/query_generated.go --package domain
+//go:generate go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen --base ../taxonomy/core.yaml --output-proto ../api/proto/taxonomy.proto --output-domain domain/domain_generated.go --output-validators validation/validators_generated.go --output-constants constants_generated.go --output-query query/query_generated.go --output-helpers helpers_generated.go --package graphrag

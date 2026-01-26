@@ -1,7 +1,7 @@
 # Gibson SDK Makefile
 # The SDK is a library - no binary to compile, but we build examples and run tests
 
-.PHONY: all bin test test-race test-coverage lint fmt vet tidy clean deps check proto proto-deps proto-clean taxonomy-gen generate help
+.PHONY: all bin test test-race test-coverage lint fmt vet tidy clean deps check proto proto-deps proto-clean taxonomy-gen taxonomy-proto generate verify-generated help
 
 # Go parameters
 GOCMD=go
@@ -21,7 +21,9 @@ TOOLSPB_OUT=$(PROTO_OUT)/toolspb
 
 # Taxonomy generation
 TAXONOMY_YAML=taxonomy/core.yaml
-TAXONOMY_GEN_CMD=go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen
+# Use local gibson for development (use go run github.com/zero-day-ai/gibson/cmd/taxonomy-gen for production)
+GIBSON_DIR=../gibson
+TAXONOMY_GEN_CMD=cd $(GIBSON_DIR) && go run ./cmd/taxonomy-gen
 
 # Example binaries to build
 EXAMPLES=minimal-agent custom-tool custom-plugin
@@ -174,15 +176,28 @@ proto-clean:
 # Taxonomy generation from YAML
 taxonomy-gen:
 	@echo "Generating taxonomy from YAML..."
-	@mkdir -p $(TAXONOMYPB_OUT) graphrag/domain graphrag/validation graphrag/query
-	$(TAXONOMY_GEN_CMD) \
-		--base $(TAXONOMY_YAML) \
-		--output-proto $(PROTO_DIR)/taxonomy.proto \
-		--output-domain graphrag/domain/domain_generated.go \
-		--output-validators graphrag/validation/validators_generated.go \
-		--output-constants graphrag/constants_generated.go \
-		--output-query graphrag/query/query_generated.go \
+	@mkdir -p $(TAXONOMYPB_OUT) graphrag/domain graphrag/validation graphrag/query graphrag/taxonomy
+	@cd $(GIBSON_DIR) && go run ./cmd/taxonomy-gen \
+		--base ../sdk/$(TAXONOMY_YAML) \
+		--output-proto ../sdk/$(PROTO_DIR)/taxonomy.proto \
+		--output-domain ../sdk/graphrag/domain/domain_generated.go \
+		--output-validators ../sdk/graphrag/validation/validators_generated.go \
+		--output-constants ../sdk/graphrag/constants_generated.go \
+		--output-query ../sdk/graphrag/query/query_generated.go \
+		--output-helpers ../sdk/graphrag/helpers_generated.go \
 		--package domain
+	@echo "Generating relationships mapping..."
+	@cd $(GIBSON_DIR) && go run ./cmd/taxonomy-gen \
+		--base ../sdk/$(TAXONOMY_YAML) \
+		--output-relationships ../sdk/graphrag/taxonomy/relationships_generated.go \
+		--package taxonomy
+	@echo "Formatting generated files..."
+	@gofmt -w graphrag/domain/domain_generated.go \
+		graphrag/validation/validators_generated.go \
+		graphrag/constants_generated.go \
+		graphrag/query/query_generated.go \
+		graphrag/helpers_generated.go \
+		graphrag/taxonomy/relationships_generated.go
 	@echo "Taxonomy generation complete"
 
 # Generate taxonomy proto
@@ -198,6 +213,54 @@ taxonomy-proto: taxonomy-gen proto-deps
 # Full generate: YAML -> Proto -> Go code
 generate: taxonomy-gen taxonomy-proto
 	@echo "All generation complete!"
+
+# Verify that generated files are up to date
+# Used in CI to catch uncommitted generated code changes
+verify-generated:
+	@echo "Verifying generated files are up to date..."
+	@echo "  Backing up current generated files..."
+	@mkdir -p .tmp/verify
+	@cp graphrag/helpers_generated.go .tmp/verify/helpers_generated.go.bak 2>/dev/null || true
+	@cp graphrag/taxonomy/relationships_generated.go .tmp/verify/relationships_generated.go.bak 2>/dev/null || true
+	@cp graphrag/domain/domain_generated.go .tmp/verify/domain_generated.go.bak 2>/dev/null || true
+	@cp graphrag/validation/validators_generated.go .tmp/verify/validators_generated.go.bak 2>/dev/null || true
+	@cp graphrag/constants_generated.go .tmp/verify/constants_generated.go.bak 2>/dev/null || true
+	@cp graphrag/query/query_generated.go .tmp/verify/query_generated.go.bak 2>/dev/null || true
+	@cp $(PROTO_DIR)/taxonomy.proto .tmp/verify/taxonomy.proto.bak 2>/dev/null || true
+	@echo "  Running generation..."
+	@$(MAKE) taxonomy-gen > /dev/null 2>&1
+	@echo "  Comparing generated files..."
+	@DIFF_FOUND=0; \
+	for file in \
+		graphrag/helpers_generated.go \
+		graphrag/taxonomy/relationships_generated.go \
+		graphrag/domain/domain_generated.go \
+		graphrag/validation/validators_generated.go \
+		graphrag/constants_generated.go \
+		graphrag/query/query_generated.go \
+		$(PROTO_DIR)/taxonomy.proto; do \
+		backup=".tmp/verify/$$(basename $$file).bak"; \
+		if [ -f "$$backup" ]; then \
+			if ! diff -q "$$file" "$$backup" > /dev/null 2>&1; then \
+				echo "  ERROR: $$file differs from generated version"; \
+				echo "  Run 'make generate' and commit the changes"; \
+				DIFF_FOUND=1; \
+			fi; \
+		fi; \
+	done; \
+	echo "  Restoring backup files..."; \
+	cp .tmp/verify/helpers_generated.go.bak graphrag/helpers_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/relationships_generated.go.bak graphrag/taxonomy/relationships_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/domain_generated.go.bak graphrag/domain/domain_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/validators_generated.go.bak graphrag/validation/validators_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/constants_generated.go.bak graphrag/constants_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/query_generated.go.bak graphrag/query/query_generated.go 2>/dev/null || true; \
+	cp .tmp/verify/taxonomy.proto.bak $(PROTO_DIR)/taxonomy.proto 2>/dev/null || true; \
+	rm -rf .tmp/verify; \
+	if [ $$DIFF_FOUND -eq 1 ]; then \
+		exit 1; \
+	fi
+	@echo "Generated files are up to date!"
 
 # Help target
 help:
@@ -218,9 +281,10 @@ help:
 	@echo "  make proto         - Generate Go code from proto files"
 	@echo "  make proto-deps    - Install protoc plugins"
 	@echo "  make proto-clean   - Remove generated proto files"
-	@echo "  make taxonomy-gen  - Generate taxonomy from YAML (proto, domain, validators)"
+	@echo "  make taxonomy-gen  - Generate taxonomy from YAML (proto, domain, validators, helpers)"
 	@echo "  make taxonomy-proto- Generate Go code from taxonomy.proto"
 	@echo "  make generate      - Full generation: YAML -> Proto -> Go"
+	@echo "  make verify-generated - Verify generated files are up to date (CI check)"
 	@echo "  make help          - Show this help message"
 	@echo ""
 	@echo "Note: The SDK is a library. 'make bin' builds the example applications."

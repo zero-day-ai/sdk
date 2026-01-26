@@ -62,6 +62,7 @@ node_types:
         description: "When the run completed"
     parent:
       type: mission
+      ref_field: mission_id
       relationship: HAS_RUN
       required: true
     identifying_properties: [run_number]
@@ -89,6 +90,7 @@ node_types:
         description: "Error message if failed"
     parent:
       type: mission_run
+      ref_field: mission_run_id
       relationship: CONTAINS_AGENT_RUN
       required: true
     identifying_properties: [agent_name]
@@ -121,6 +123,7 @@ node_types:
         description: "Standard error"
     parent:
       type: agent_run
+      ref_field: agent_run_id
       relationship: EXECUTED_TOOL
       required: true
     identifying_properties: [tool_name, started_at]
@@ -156,6 +159,7 @@ node_types:
         description: "When the call started"
     parent:
       type: agent_run
+      ref_field: agent_run_id
       relationship: MADE_CALL
       required: true
 
@@ -199,6 +203,7 @@ node_types:
         description: "Full subdomain (e.g., api.example.com)"
     parent:
       type: domain
+      ref_field: domain_id
       relationship: HAS_SUBDOMAIN
       required: true
     identifying_properties: [name]
@@ -254,6 +259,7 @@ node_types:
         description: "Reason for state determination"
     parent:
       type: host
+      ref_field: host_id
       relationship: HAS_PORT
       required: true
     identifying_properties: [number, protocol]
@@ -286,6 +292,7 @@ node_types:
         description: "CPE identifier"
     parent:
       type: port
+      ref_field: port_id
       relationship: RUNS_SERVICE
       required: true
     identifying_properties: [name]
@@ -316,6 +323,7 @@ node_types:
         description: "Page title"
     parent:
       type: service
+      ref_field: service_id
       relationship: HAS_ENDPOINT
       required: true
     identifying_properties: [url, method]
@@ -442,6 +450,7 @@ node_types:
         description: "URL related to evidence"
     parent:
       type: finding
+      ref_field: finding_id
       relationship: HAS_EVIDENCE
       required: true
 

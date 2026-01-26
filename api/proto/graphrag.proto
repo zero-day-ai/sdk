@@ -131,98 +131,120 @@ message DiscoveryResult {
 
 // Host discovered by a tool.
 message Host {
-  string ip = 1;
-  optional string hostname = 2;
-  optional string state = 3;
-  optional string os = 4;
-  optional string os_version = 5;
-  optional string mac_address = 6;
+  optional string id = 1;  // Agent-generated UUID for this host
+  string ip = 2;
+  optional string hostname = 3;
+  optional string state = 4;
+  optional string os = 5;
+  optional string os_version = 6;
+  optional string mac_address = 7;
 }
 
 // Port discovered on a host.
 message Port {
-  string host_id = 1;  // Links to parent host (ip or hostname)
-  int32 number = 2;
-  string protocol = 3;
-  optional string state = 4;
-  optional string reason = 5;
+  optional string id = 1;  // Agent-generated UUID for this port
+  string host_id = 2;  // Parent Host UUID
+  int32 number = 3;
+  string protocol = 4;
+  optional string state = 5;
+  optional string reason = 6;
 }
 
 // Service running on a port.
 message Service {
-  string port_id = 1;  // Composite: host_id:number:protocol
-  string name = 2;
-  optional string product = 3;
-  optional string version = 4;
-  optional string extra_info = 5;
-  optional string banner = 6;
-  optional string cpe = 7;
+  optional string id = 1;  // Agent-generated UUID for this service
+  string port_id = 2;  // Parent Port UUID
+  string name = 3;
+  optional string product = 4;
+  optional string version = 5;
+  optional string extra_info = 6;
+  optional string banner = 7;
+  optional string cpe = 8;
 }
 
 // Endpoint (URL) on a service.
 message Endpoint {
-  string service_id = 1;
-  string url = 2;
-  optional string method = 3;
-  optional int32 status_code = 4;
-  optional string content_type = 5;
-  optional int64 content_length = 6;
-  optional string title = 7;
+  optional string id = 1;  // Agent-generated UUID for this endpoint
+  string service_id = 2;  // Parent Service UUID
+  string url = 3;
+  optional string method = 4;
+  optional int32 status_code = 5;
+  optional string content_type = 6;
+  optional int64 content_length = 7;
+  optional string title = 8;
 }
 
 // Domain discovered.
 message Domain {
-  string name = 1;
-  optional string registrar = 2;
-  optional int64 created_date = 3;
-  optional int64 expiry_date = 4;
+  optional string id = 1;  // Agent-generated UUID for this domain
+  string name = 2;
+  optional string registrar = 3;
+  optional int64 created_date = 4;
+  optional int64 expiry_date = 5;
 }
 
 // Subdomain under a domain.
 message Subdomain {
-  string parent_domain = 1;
-  string name = 2;
-  optional string full_name = 3;
+  optional string id = 1;  // Agent-generated UUID for this subdomain
+  string domain_id = 2;  // Parent Domain UUID
+  string name = 3;
+  optional string full_name = 4;
 }
 
 // Technology detected.
 message Technology {
-  string name = 1;
-  optional string version = 2;
-  optional string category = 3;
-  optional int32 confidence = 4;
-  optional string cpe = 5;
+  optional string id = 1;  // Agent-generated UUID for this technology
+  string name = 2;
+  optional string version = 3;
+  optional string category = 4;
+  optional int32 confidence = 5;
+  optional string cpe = 6;
+
+  // Parent entity reference (optional - tech can be associated with various entities)
+  optional string parent_id = 10;
+  optional string parent_type = 11;  // e.g., "service", "endpoint", "host"
 }
 
 // Certificate discovered.
 message Certificate {
-  optional string subject = 1;
-  optional string issuer = 2;
-  optional string serial_number = 3;
-  optional int64 not_before = 4;
-  optional int64 not_after = 5;
-  optional string fingerprint_sha256 = 6;
-  optional string san = 7;
+  optional string id = 1;  // Agent-generated UUID for this certificate
+  optional string subject = 2;
+  optional string issuer = 3;
+  optional string serial_number = 4;
+  optional int64 not_before = 5;
+  optional int64 not_after = 6;
+  optional string fingerprint_sha256 = 7;
+  optional string san = 8;
+
+  // Parent entity reference (optional - cert can be associated with various entities)
+  optional string parent_id = 10;
+  optional string parent_type = 11;  // e.g., "service", "endpoint", "host"
 }
 
 // Finding (vulnerability or security issue).
 message Finding {
-  string title = 1;
-  optional string description = 2;
-  string severity = 3;
-  optional double confidence = 4;
-  optional string category = 5;
-  optional string remediation = 6;
-  optional double cvss_score = 7;
-  optional string cve_ids = 8;
+  optional string id = 1;  // Agent-generated UUID for this finding
+  string title = 2;
+  optional string description = 3;
+  string severity = 4;
+  optional double confidence = 5;
+  optional string category = 6;
+  optional string remediation = 7;
+  optional double cvss_score = 8;
+  optional string cve_ids = 9;
+
+  // Parent entity reference (optional - finding can be associated with various entities)
+  optional string parent_id = 10;
+  optional string parent_type = 11;  // e.g., "service", "endpoint", "host", "technology"
 }
 
 // Evidence for a finding.
 message Evidence {
-  string finding_id = 1;
-  string type = 2;
-  optional string content = 3;
-  optional string url = 4;
+  optional string id = 1;  // Agent-generated UUID for this evidence
+  string finding_id = 2;  // Parent Finding UUID
+  string type = 3;
+  optional string content = 4;
+  optional string url = 5;
 }
 
 // CustomNode for entities not in standard taxonomy.
