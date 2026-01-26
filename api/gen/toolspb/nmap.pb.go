@@ -22,217 +22,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ScanType defines the type of nmap scan to perform
-type ScanType int32
-
-const (
-	// Sentinel value - must be first
-	ScanType_SCAN_TYPE_UNSPECIFIED ScanType = 0
-	// SYN scan (default, stealthy, requires root)
-	ScanType_SCAN_TYPE_SYN ScanType = 1
-	// Connect scan (completes TCP handshake)
-	ScanType_SCAN_TYPE_CONNECT ScanType = 2
-	// UDP scan
-	ScanType_SCAN_TYPE_UDP ScanType = 3
-	// ACK scan (for firewall rule detection)
-	ScanType_SCAN_TYPE_ACK ScanType = 4
-	// Window scan
-	ScanType_SCAN_TYPE_WINDOW ScanType = 5
-	// Maimon scan
-	ScanType_SCAN_TYPE_MAIMON ScanType = 6
-	// Null scan (no flags set)
-	ScanType_SCAN_TYPE_NULL ScanType = 7
-	// FIN scan
-	ScanType_SCAN_TYPE_FIN ScanType = 8
-	// Xmas scan (FIN, PSH, URG flags)
-	ScanType_SCAN_TYPE_XMAS ScanType = 9
-	// SCTP INIT scan
-	ScanType_SCAN_TYPE_SCTP_INIT ScanType = 10
-	// SCTP COOKIE ECHO scan
-	ScanType_SCAN_TYPE_SCTP_COOKIE_ECHO ScanType = 11
-	// Ping scan only (no port scan)
-	ScanType_SCAN_TYPE_PING ScanType = 12
-)
-
-// Enum value maps for ScanType.
-var (
-	ScanType_name = map[int32]string{
-		0:  "SCAN_TYPE_UNSPECIFIED",
-		1:  "SCAN_TYPE_SYN",
-		2:  "SCAN_TYPE_CONNECT",
-		3:  "SCAN_TYPE_UDP",
-		4:  "SCAN_TYPE_ACK",
-		5:  "SCAN_TYPE_WINDOW",
-		6:  "SCAN_TYPE_MAIMON",
-		7:  "SCAN_TYPE_NULL",
-		8:  "SCAN_TYPE_FIN",
-		9:  "SCAN_TYPE_XMAS",
-		10: "SCAN_TYPE_SCTP_INIT",
-		11: "SCAN_TYPE_SCTP_COOKIE_ECHO",
-		12: "SCAN_TYPE_PING",
-	}
-	ScanType_value = map[string]int32{
-		"SCAN_TYPE_UNSPECIFIED":      0,
-		"SCAN_TYPE_SYN":              1,
-		"SCAN_TYPE_CONNECT":          2,
-		"SCAN_TYPE_UDP":              3,
-		"SCAN_TYPE_ACK":              4,
-		"SCAN_TYPE_WINDOW":           5,
-		"SCAN_TYPE_MAIMON":           6,
-		"SCAN_TYPE_NULL":             7,
-		"SCAN_TYPE_FIN":              8,
-		"SCAN_TYPE_XMAS":             9,
-		"SCAN_TYPE_SCTP_INIT":        10,
-		"SCAN_TYPE_SCTP_COOKIE_ECHO": 11,
-		"SCAN_TYPE_PING":             12,
-	}
-)
-
-func (x ScanType) Enum() *ScanType {
-	p := new(ScanType)
-	*p = x
-	return p
-}
-
-func (x ScanType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ScanType) Descriptor() protoreflect.EnumDescriptor {
-	return file_tools_nmap_proto_enumTypes[0].Descriptor()
-}
-
-func (ScanType) Type() protoreflect.EnumType {
-	return &file_tools_nmap_proto_enumTypes[0]
-}
-
-func (x ScanType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ScanType.Descriptor instead.
-func (ScanType) EnumDescriptor() ([]byte, []int) {
-	return file_tools_nmap_proto_rawDescGZIP(), []int{0}
-}
-
-// TimingTemplate defines nmap timing templates (T0-T5)
-type TimingTemplate int32
-
-const (
-	// Sentinel value - must be first
-	TimingTemplate_TIMING_TEMPLATE_UNSPECIFIED TimingTemplate = 0
-	// T0 - Paranoid (very slow, IDS evasion)
-	TimingTemplate_TIMING_TEMPLATE_PARANOID TimingTemplate = 1
-	// T1 - Sneaky (slow, IDS evasion)
-	TimingTemplate_TIMING_TEMPLATE_SNEAKY TimingTemplate = 2
-	// T2 - Polite (slow, less bandwidth)
-	TimingTemplate_TIMING_TEMPLATE_POLITE TimingTemplate = 3
-	// T3 - Normal (default)
-	TimingTemplate_TIMING_TEMPLATE_NORMAL TimingTemplate = 4
-	// T4 - Aggressive (fast, assumes good network)
-	TimingTemplate_TIMING_TEMPLATE_AGGRESSIVE TimingTemplate = 5
-	// T5 - Insane (very fast, may sacrifice accuracy)
-	TimingTemplate_TIMING_TEMPLATE_INSANE TimingTemplate = 6
-)
-
-// Enum value maps for TimingTemplate.
-var (
-	TimingTemplate_name = map[int32]string{
-		0: "TIMING_TEMPLATE_UNSPECIFIED",
-		1: "TIMING_TEMPLATE_PARANOID",
-		2: "TIMING_TEMPLATE_SNEAKY",
-		3: "TIMING_TEMPLATE_POLITE",
-		4: "TIMING_TEMPLATE_NORMAL",
-		5: "TIMING_TEMPLATE_AGGRESSIVE",
-		6: "TIMING_TEMPLATE_INSANE",
-	}
-	TimingTemplate_value = map[string]int32{
-		"TIMING_TEMPLATE_UNSPECIFIED": 0,
-		"TIMING_TEMPLATE_PARANOID":    1,
-		"TIMING_TEMPLATE_SNEAKY":      2,
-		"TIMING_TEMPLATE_POLITE":      3,
-		"TIMING_TEMPLATE_NORMAL":      4,
-		"TIMING_TEMPLATE_AGGRESSIVE":  5,
-		"TIMING_TEMPLATE_INSANE":      6,
-	}
-)
-
-func (x TimingTemplate) Enum() *TimingTemplate {
-	p := new(TimingTemplate)
-	*p = x
-	return p
-}
-
-func (x TimingTemplate) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (TimingTemplate) Descriptor() protoreflect.EnumDescriptor {
-	return file_tools_nmap_proto_enumTypes[1].Descriptor()
-}
-
-func (TimingTemplate) Type() protoreflect.EnumType {
-	return &file_tools_nmap_proto_enumTypes[1]
-}
-
-func (x TimingTemplate) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use TimingTemplate.Descriptor instead.
-func (TimingTemplate) EnumDescriptor() ([]byte, []int) {
-	return file_tools_nmap_proto_rawDescGZIP(), []int{1}
-}
-
 // NmapRequest represents input for the nmap tool
 type NmapRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Targets is the list of hosts or networks to scan (required)
 	Targets []string `protobuf:"bytes,1,rep,name=targets,proto3" json:"targets,omitempty"`
-	// Ports specifies the ports to scan (e.g., "80,443,8080", "1-1024", "T:80,U:53")
-	Ports string `protobuf:"bytes,2,opt,name=ports,proto3" json:"ports,omitempty"`
-	// ScanType is the type of scan to perform
-	ScanType ScanType `protobuf:"varint,3,opt,name=scan_type,json=scanType,proto3,enum=gibson.tools.ScanType" json:"scan_type,omitempty"`
-	// Timing is the timing template
-	Timing TimingTemplate `protobuf:"varint,4,opt,name=timing,proto3,enum=gibson.tools.TimingTemplate" json:"timing,omitempty"`
-	// ServiceDetection enables service version detection (-sV)
-	ServiceDetection bool `protobuf:"varint,5,opt,name=service_detection,json=serviceDetection,proto3" json:"service_detection,omitempty"`
-	// OSDetection enables OS detection (-O)
-	OsDetection bool `protobuf:"varint,6,opt,name=os_detection,json=osDetection,proto3" json:"os_detection,omitempty"`
-	// AggressiveScan enables aggressive scanning (-A: OS, version, script, traceroute)
-	AggressiveScan bool `protobuf:"varint,7,opt,name=aggressive_scan,json=aggressiveScan,proto3" json:"aggressive_scan,omitempty"`
-	// ScriptScan enables default script scanning (--script=default)
-	ScriptScan bool `protobuf:"varint,8,opt,name=script_scan,json=scriptScan,proto3" json:"script_scan,omitempty"`
-	// Scripts specifies custom NSE scripts to run
-	Scripts []string `protobuf:"bytes,9,rep,name=scripts,proto3" json:"scripts,omitempty"`
-	// FragmentPackets enables packet fragmentation for IDS evasion
-	FragmentPackets bool `protobuf:"varint,10,opt,name=fragment_packets,json=fragmentPackets,proto3" json:"fragment_packets,omitempty"`
-	// Decoys specifies decoy IP addresses for scan obfuscation
-	Decoys []string `protobuf:"bytes,11,rep,name=decoys,proto3" json:"decoys,omitempty"`
-	// SourcePort specifies the source port to use
-	SourcePort int32 `protobuf:"varint,12,opt,name=source_port,json=sourcePort,proto3" json:"source_port,omitempty"`
-	// DataLength adds random data to sent packets
-	DataLength int32 `protobuf:"varint,13,opt,name=data_length,json=dataLength,proto3" json:"data_length,omitempty"`
-	// MaxRetries is the maximum number of port scan probe retransmissions
-	MaxRetries int32 `protobuf:"varint,14,opt,name=max_retries,json=maxRetries,proto3" json:"max_retries,omitempty"`
-	// HostTimeout is the timeout per host in seconds
-	HostTimeout int32 `protobuf:"varint,15,opt,name=host_timeout,json=hostTimeout,proto3" json:"host_timeout,omitempty"`
-	// ScanDelay is the delay between probes in milliseconds
-	ScanDelay int32 `protobuf:"varint,16,opt,name=scan_delay,json=scanDelay,proto3" json:"scan_delay,omitempty"`
-	// MaxScanDelay is the maximum delay between probes
-	MaxScanDelay int32 `protobuf:"varint,17,opt,name=max_scan_delay,json=maxScanDelay,proto3" json:"max_scan_delay,omitempty"`
-	// MinRate is the minimum packets per second
-	MinRate int32 `protobuf:"varint,18,opt,name=min_rate,json=minRate,proto3" json:"min_rate,omitempty"`
-	// MaxRate is the maximum packets per second
-	MaxRate int32 `protobuf:"varint,19,opt,name=max_rate,json=maxRate,proto3" json:"max_rate,omitempty"`
-	// DisableDNS disables DNS resolution
-	DisableDns bool `protobuf:"varint,20,opt,name=disable_dns,json=disableDns,proto3" json:"disable_dns,omitempty"`
-	// DisablePing skips host discovery (treat all hosts as online)
-	DisablePing bool `protobuf:"varint,21,opt,name=disable_ping,json=disablePing,proto3" json:"disable_ping,omitempty"`
-	// IPv6 enables IPv6 scanning
-	Ipv6 bool `protobuf:"varint,22,opt,name=ipv6,proto3" json:"ipv6,omitempty"`
-	// Privileged runs nmap in privileged mode
-	Privileged    bool `protobuf:"varint,23,opt,name=privileged,proto3" json:"privileged,omitempty"`
+	// Args contains raw nmap arguments (e.g., "-sV", "-O", "-p 1-1000", "-T4")
+	Args          []string `protobuf:"bytes,2,rep,name=args,proto3" json:"args,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -274,158 +70,11 @@ func (x *NmapRequest) GetTargets() []string {
 	return nil
 }
 
-func (x *NmapRequest) GetPorts() string {
+func (x *NmapRequest) GetArgs() []string {
 	if x != nil {
-		return x.Ports
-	}
-	return ""
-}
-
-func (x *NmapRequest) GetScanType() ScanType {
-	if x != nil {
-		return x.ScanType
-	}
-	return ScanType_SCAN_TYPE_UNSPECIFIED
-}
-
-func (x *NmapRequest) GetTiming() TimingTemplate {
-	if x != nil {
-		return x.Timing
-	}
-	return TimingTemplate_TIMING_TEMPLATE_UNSPECIFIED
-}
-
-func (x *NmapRequest) GetServiceDetection() bool {
-	if x != nil {
-		return x.ServiceDetection
-	}
-	return false
-}
-
-func (x *NmapRequest) GetOsDetection() bool {
-	if x != nil {
-		return x.OsDetection
-	}
-	return false
-}
-
-func (x *NmapRequest) GetAggressiveScan() bool {
-	if x != nil {
-		return x.AggressiveScan
-	}
-	return false
-}
-
-func (x *NmapRequest) GetScriptScan() bool {
-	if x != nil {
-		return x.ScriptScan
-	}
-	return false
-}
-
-func (x *NmapRequest) GetScripts() []string {
-	if x != nil {
-		return x.Scripts
+		return x.Args
 	}
 	return nil
-}
-
-func (x *NmapRequest) GetFragmentPackets() bool {
-	if x != nil {
-		return x.FragmentPackets
-	}
-	return false
-}
-
-func (x *NmapRequest) GetDecoys() []string {
-	if x != nil {
-		return x.Decoys
-	}
-	return nil
-}
-
-func (x *NmapRequest) GetSourcePort() int32 {
-	if x != nil {
-		return x.SourcePort
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetDataLength() int32 {
-	if x != nil {
-		return x.DataLength
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetMaxRetries() int32 {
-	if x != nil {
-		return x.MaxRetries
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetHostTimeout() int32 {
-	if x != nil {
-		return x.HostTimeout
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetScanDelay() int32 {
-	if x != nil {
-		return x.ScanDelay
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetMaxScanDelay() int32 {
-	if x != nil {
-		return x.MaxScanDelay
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetMinRate() int32 {
-	if x != nil {
-		return x.MinRate
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetMaxRate() int32 {
-	if x != nil {
-		return x.MaxRate
-	}
-	return 0
-}
-
-func (x *NmapRequest) GetDisableDns() bool {
-	if x != nil {
-		return x.DisableDns
-	}
-	return false
-}
-
-func (x *NmapRequest) GetDisablePing() bool {
-	if x != nil {
-		return x.DisablePing
-	}
-	return false
-}
-
-func (x *NmapRequest) GetIpv6() bool {
-	if x != nil {
-		return x.Ipv6
-	}
-	return false
-}
-
-func (x *NmapRequest) GetPrivileged() bool {
-	if x != nil {
-		return x.Privileged
-	}
-	return false
 }
 
 // NmapResponse represents output from the nmap tool
@@ -1150,40 +799,10 @@ var File_tools_nmap_proto protoreflect.FileDescriptor
 
 const file_tools_nmap_proto_rawDesc = "" +
 	"\n" +
-	"\x10tools/nmap.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\"\x98\x06\n" +
+	"\x10tools/nmap.proto\x12\fgibson.tools\x1a\x0egraphrag.proto\";\n" +
 	"\vNmapRequest\x12\x18\n" +
-	"\atargets\x18\x01 \x03(\tR\atargets\x12\x14\n" +
-	"\x05ports\x18\x02 \x01(\tR\x05ports\x123\n" +
-	"\tscan_type\x18\x03 \x01(\x0e2\x16.gibson.tools.ScanTypeR\bscanType\x124\n" +
-	"\x06timing\x18\x04 \x01(\x0e2\x1c.gibson.tools.TimingTemplateR\x06timing\x12+\n" +
-	"\x11service_detection\x18\x05 \x01(\bR\x10serviceDetection\x12!\n" +
-	"\fos_detection\x18\x06 \x01(\bR\vosDetection\x12'\n" +
-	"\x0faggressive_scan\x18\a \x01(\bR\x0eaggressiveScan\x12\x1f\n" +
-	"\vscript_scan\x18\b \x01(\bR\n" +
-	"scriptScan\x12\x18\n" +
-	"\ascripts\x18\t \x03(\tR\ascripts\x12)\n" +
-	"\x10fragment_packets\x18\n" +
-	" \x01(\bR\x0ffragmentPackets\x12\x16\n" +
-	"\x06decoys\x18\v \x03(\tR\x06decoys\x12\x1f\n" +
-	"\vsource_port\x18\f \x01(\x05R\n" +
-	"sourcePort\x12\x1f\n" +
-	"\vdata_length\x18\r \x01(\x05R\n" +
-	"dataLength\x12\x1f\n" +
-	"\vmax_retries\x18\x0e \x01(\x05R\n" +
-	"maxRetries\x12!\n" +
-	"\fhost_timeout\x18\x0f \x01(\x05R\vhostTimeout\x12\x1d\n" +
-	"\n" +
-	"scan_delay\x18\x10 \x01(\x05R\tscanDelay\x12$\n" +
-	"\x0emax_scan_delay\x18\x11 \x01(\x05R\fmaxScanDelay\x12\x19\n" +
-	"\bmin_rate\x18\x12 \x01(\x05R\aminRate\x12\x19\n" +
-	"\bmax_rate\x18\x13 \x01(\x05R\amaxRate\x12\x1f\n" +
-	"\vdisable_dns\x18\x14 \x01(\bR\n" +
-	"disableDns\x12!\n" +
-	"\fdisable_ping\x18\x15 \x01(\bR\vdisablePing\x12\x12\n" +
-	"\x04ipv6\x18\x16 \x01(\bR\x04ipv6\x12\x1e\n" +
-	"\n" +
-	"privileged\x18\x17 \x01(\bR\n" +
-	"privileged\"\xed\x02\n" +
+	"\atargets\x18\x01 \x03(\tR\atargets\x12\x12\n" +
+	"\x04args\x18\x02 \x03(\tR\x04args\"\xed\x02\n" +
 	"\fNmapResponse\x12,\n" +
 	"\x05hosts\x18\x01 \x03(\v2\x16.gibson.tools.NmapHostR\x05hosts\x12\x1f\n" +
 	"\vtotal_hosts\x18\x02 \x01(\x05R\n" +
@@ -1262,30 +881,7 @@ const file_tools_nmap_proto_rawDesc = "" +
 	"\belements\x18\x03 \x03(\v2&.gibson.tools.NmapScript.ElementsEntryR\belements\x1a;\n" +
 	"\rElementsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xa9\x02\n" +
-	"\bScanType\x12\x19\n" +
-	"\x15SCAN_TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
-	"\rSCAN_TYPE_SYN\x10\x01\x12\x15\n" +
-	"\x11SCAN_TYPE_CONNECT\x10\x02\x12\x11\n" +
-	"\rSCAN_TYPE_UDP\x10\x03\x12\x11\n" +
-	"\rSCAN_TYPE_ACK\x10\x04\x12\x14\n" +
-	"\x10SCAN_TYPE_WINDOW\x10\x05\x12\x14\n" +
-	"\x10SCAN_TYPE_MAIMON\x10\x06\x12\x12\n" +
-	"\x0eSCAN_TYPE_NULL\x10\a\x12\x11\n" +
-	"\rSCAN_TYPE_FIN\x10\b\x12\x12\n" +
-	"\x0eSCAN_TYPE_XMAS\x10\t\x12\x17\n" +
-	"\x13SCAN_TYPE_SCTP_INIT\x10\n" +
-	"\x12\x1e\n" +
-	"\x1aSCAN_TYPE_SCTP_COOKIE_ECHO\x10\v\x12\x12\n" +
-	"\x0eSCAN_TYPE_PING\x10\f*\xdf\x01\n" +
-	"\x0eTimingTemplate\x12\x1f\n" +
-	"\x1bTIMING_TEMPLATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
-	"\x18TIMING_TEMPLATE_PARANOID\x10\x01\x12\x1a\n" +
-	"\x16TIMING_TEMPLATE_SNEAKY\x10\x02\x12\x1a\n" +
-	"\x16TIMING_TEMPLATE_POLITE\x10\x03\x12\x1a\n" +
-	"\x16TIMING_TEMPLATE_NORMAL\x10\x04\x12\x1e\n" +
-	"\x1aTIMING_TEMPLATE_AGGRESSIVE\x10\x05\x12\x1a\n" +
-	"\x16TIMING_TEMPLATE_INSANE\x10\x06B,Z*github.com/zero-day-ai/sdk/api/gen/toolspbb\x06proto3"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B,Z*github.com/zero-day-ai/sdk/api/gen/toolspbb\x06proto3"
 
 var (
 	file_tools_nmap_proto_rawDescOnce sync.Once
@@ -1299,41 +895,36 @@ func file_tools_nmap_proto_rawDescGZIP() []byte {
 	return file_tools_nmap_proto_rawDescData
 }
 
-var file_tools_nmap_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_tools_nmap_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_tools_nmap_proto_goTypes = []any{
-	(ScanType)(0),                      // 0: gibson.tools.ScanType
-	(TimingTemplate)(0),                // 1: gibson.tools.TimingTemplate
-	(*NmapRequest)(nil),                // 2: gibson.tools.NmapRequest
-	(*NmapResponse)(nil),               // 3: gibson.tools.NmapResponse
-	(*NmapHost)(nil),                   // 4: gibson.tools.NmapHost
-	(*NmapPort)(nil),                   // 5: gibson.tools.NmapPort
-	(*NmapService)(nil),                // 6: gibson.tools.NmapService
-	(*OSMatch)(nil),                    // 7: gibson.tools.OSMatch
-	(*OSClass)(nil),                    // 8: gibson.tools.OSClass
-	(*NmapScript)(nil),                 // 9: gibson.tools.NmapScript
-	nil,                                // 10: gibson.tools.NmapHost.ScriptsEntry
-	nil,                                // 11: gibson.tools.NmapPort.ScriptsEntry
-	nil,                                // 12: gibson.tools.NmapScript.ElementsEntry
-	(*graphragpb.DiscoveryResult)(nil), // 13: gibson.graphrag.DiscoveryResult
+	(*NmapRequest)(nil),                // 0: gibson.tools.NmapRequest
+	(*NmapResponse)(nil),               // 1: gibson.tools.NmapResponse
+	(*NmapHost)(nil),                   // 2: gibson.tools.NmapHost
+	(*NmapPort)(nil),                   // 3: gibson.tools.NmapPort
+	(*NmapService)(nil),                // 4: gibson.tools.NmapService
+	(*OSMatch)(nil),                    // 5: gibson.tools.OSMatch
+	(*OSClass)(nil),                    // 6: gibson.tools.OSClass
+	(*NmapScript)(nil),                 // 7: gibson.tools.NmapScript
+	nil,                                // 8: gibson.tools.NmapHost.ScriptsEntry
+	nil,                                // 9: gibson.tools.NmapPort.ScriptsEntry
+	nil,                                // 10: gibson.tools.NmapScript.ElementsEntry
+	(*graphragpb.DiscoveryResult)(nil), // 11: gibson.graphrag.DiscoveryResult
 }
 var file_tools_nmap_proto_depIdxs = []int32{
-	0,  // 0: gibson.tools.NmapRequest.scan_type:type_name -> gibson.tools.ScanType
-	1,  // 1: gibson.tools.NmapRequest.timing:type_name -> gibson.tools.TimingTemplate
-	4,  // 2: gibson.tools.NmapResponse.hosts:type_name -> gibson.tools.NmapHost
-	13, // 3: gibson.tools.NmapResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
-	5,  // 4: gibson.tools.NmapHost.ports:type_name -> gibson.tools.NmapPort
-	7,  // 5: gibson.tools.NmapHost.os_matches:type_name -> gibson.tools.OSMatch
-	10, // 6: gibson.tools.NmapHost.scripts:type_name -> gibson.tools.NmapHost.ScriptsEntry
-	6,  // 7: gibson.tools.NmapPort.service:type_name -> gibson.tools.NmapService
-	11, // 8: gibson.tools.NmapPort.scripts:type_name -> gibson.tools.NmapPort.ScriptsEntry
-	8,  // 9: gibson.tools.OSMatch.classes:type_name -> gibson.tools.OSClass
-	12, // 10: gibson.tools.NmapScript.elements:type_name -> gibson.tools.NmapScript.ElementsEntry
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	2,  // 0: gibson.tools.NmapResponse.hosts:type_name -> gibson.tools.NmapHost
+	11, // 1: gibson.tools.NmapResponse.discovery:type_name -> gibson.graphrag.DiscoveryResult
+	3,  // 2: gibson.tools.NmapHost.ports:type_name -> gibson.tools.NmapPort
+	5,  // 3: gibson.tools.NmapHost.os_matches:type_name -> gibson.tools.OSMatch
+	8,  // 4: gibson.tools.NmapHost.scripts:type_name -> gibson.tools.NmapHost.ScriptsEntry
+	4,  // 5: gibson.tools.NmapPort.service:type_name -> gibson.tools.NmapService
+	9,  // 6: gibson.tools.NmapPort.scripts:type_name -> gibson.tools.NmapPort.ScriptsEntry
+	6,  // 7: gibson.tools.OSMatch.classes:type_name -> gibson.tools.OSClass
+	10, // 8: gibson.tools.NmapScript.elements:type_name -> gibson.tools.NmapScript.ElementsEntry
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_tools_nmap_proto_init() }
@@ -1346,14 +937,13 @@ func file_tools_nmap_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tools_nmap_proto_rawDesc), len(file_tools_nmap_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      0,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_tools_nmap_proto_goTypes,
 		DependencyIndexes: file_tools_nmap_proto_depIdxs,
-		EnumInfos:         file_tools_nmap_proto_enumTypes,
 		MessageInfos:      file_tools_nmap_proto_msgTypes,
 	}.Build()
 	File_tools_nmap_proto = out.File
