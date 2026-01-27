@@ -24,7 +24,10 @@ const (
 	HarnessCallbackService_LLMCompleteStructured_FullMethodName            = "/gibson.harness.HarnessCallbackService/LLMCompleteStructured"
 	HarnessCallbackService_LLMStream_FullMethodName                        = "/gibson.harness.HarnessCallbackService/LLMStream"
 	HarnessCallbackService_CallToolProto_FullMethodName                    = "/gibson.harness.HarnessCallbackService/CallToolProto"
+	HarnessCallbackService_CallToolProtoStream_FullMethodName              = "/gibson.harness.HarnessCallbackService/CallToolProtoStream"
 	HarnessCallbackService_ListTools_FullMethodName                        = "/gibson.harness.HarnessCallbackService/ListTools"
+	HarnessCallbackService_QueueToolWork_FullMethodName                    = "/gibson.harness.HarnessCallbackService/QueueToolWork"
+	HarnessCallbackService_ToolResults_FullMethodName                      = "/gibson.harness.HarnessCallbackService/ToolResults"
 	HarnessCallbackService_QueryPlugin_FullMethodName                      = "/gibson.harness.HarnessCallbackService/QueryPlugin"
 	HarnessCallbackService_ListPlugins_FullMethodName                      = "/gibson.harness.HarnessCallbackService/ListPlugins"
 	HarnessCallbackService_DelegateToAgent_FullMethodName                  = "/gibson.harness.HarnessCallbackService/DelegateToAgent"
@@ -81,7 +84,11 @@ type HarnessCallbackServiceClient interface {
 	LLMStream(ctx context.Context, in *LLMStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLMStreamChunk], error)
 	// Tool Operations
 	CallToolProto(ctx context.Context, in *CallToolProtoRequest, opts ...grpc.CallOption) (*CallToolProtoResponse, error)
+	CallToolProtoStream(ctx context.Context, in *CallToolProtoStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CallToolProtoStreamResponse], error)
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
+	// Tool Work Queue Operations
+	QueueToolWork(ctx context.Context, in *QueueToolWorkRequest, opts ...grpc.CallOption) (*QueueToolWorkResponse, error)
+	ToolResults(ctx context.Context, in *ToolResultsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ToolResultResponse], error)
 	// Plugin Operations
 	QueryPlugin(ctx context.Context, in *QueryPluginRequest, opts ...grpc.CallOption) (*QueryPluginResponse, error)
 	ListPlugins(ctx context.Context, in *ListPluginsRequest, opts ...grpc.CallOption) (*ListPluginsResponse, error)
@@ -204,6 +211,25 @@ func (c *harnessCallbackServiceClient) CallToolProto(ctx context.Context, in *Ca
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) CallToolProtoStream(ctx context.Context, in *CallToolProtoStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CallToolProtoStreamResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[1], HarnessCallbackService_CallToolProtoStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[CallToolProtoStreamRequest, CallToolProtoStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HarnessCallbackService_CallToolProtoStreamClient = grpc.ServerStreamingClient[CallToolProtoStreamResponse]
+
 func (c *harnessCallbackServiceClient) ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListToolsResponse)
@@ -213,6 +239,35 @@ func (c *harnessCallbackServiceClient) ListTools(ctx context.Context, in *ListTo
 	}
 	return out, nil
 }
+
+func (c *harnessCallbackServiceClient) QueueToolWork(ctx context.Context, in *QueueToolWorkRequest, opts ...grpc.CallOption) (*QueueToolWorkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueueToolWorkResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_QueueToolWork_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) ToolResults(ctx context.Context, in *ToolResultsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ToolResultResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[2], HarnessCallbackService_ToolResults_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ToolResultsRequest, ToolResultResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HarnessCallbackService_ToolResultsClient = grpc.ServerStreamingClient[ToolResultResponse]
 
 func (c *harnessCallbackServiceClient) QueryPlugin(ctx context.Context, in *QueryPluginRequest, opts ...grpc.CallOption) (*QueryPluginResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -628,7 +683,11 @@ type HarnessCallbackServiceServer interface {
 	LLMStream(*LLMStreamRequest, grpc.ServerStreamingServer[LLMStreamChunk]) error
 	// Tool Operations
 	CallToolProto(context.Context, *CallToolProtoRequest) (*CallToolProtoResponse, error)
+	CallToolProtoStream(*CallToolProtoStreamRequest, grpc.ServerStreamingServer[CallToolProtoStreamResponse]) error
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
+	// Tool Work Queue Operations
+	QueueToolWork(context.Context, *QueueToolWorkRequest) (*QueueToolWorkResponse, error)
+	ToolResults(*ToolResultsRequest, grpc.ServerStreamingServer[ToolResultResponse]) error
 	// Plugin Operations
 	QueryPlugin(context.Context, *QueryPluginRequest) (*QueryPluginResponse, error)
 	ListPlugins(context.Context, *ListPluginsRequest) (*ListPluginsResponse, error)
@@ -707,8 +766,17 @@ func (UnimplementedHarnessCallbackServiceServer) LLMStream(*LLMStreamRequest, gr
 func (UnimplementedHarnessCallbackServiceServer) CallToolProto(context.Context, *CallToolProtoRequest) (*CallToolProtoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CallToolProto not implemented")
 }
+func (UnimplementedHarnessCallbackServiceServer) CallToolProtoStream(*CallToolProtoStreamRequest, grpc.ServerStreamingServer[CallToolProtoStreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method CallToolProtoStream not implemented")
+}
 func (UnimplementedHarnessCallbackServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTools not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) QueueToolWork(context.Context, *QueueToolWorkRequest) (*QueueToolWorkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QueueToolWork not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) ToolResults(*ToolResultsRequest, grpc.ServerStreamingServer[ToolResultResponse]) error {
+	return status.Error(codes.Unimplemented, "method ToolResults not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) QueryPlugin(context.Context, *QueryPluginRequest) (*QueryPluginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method QueryPlugin not implemented")
@@ -935,6 +1003,17 @@ func _HarnessCallbackService_CallToolProto_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_CallToolProtoStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(CallToolProtoStreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HarnessCallbackServiceServer).CallToolProtoStream(m, &grpc.GenericServerStream[CallToolProtoStreamRequest, CallToolProtoStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HarnessCallbackService_CallToolProtoStreamServer = grpc.ServerStreamingServer[CallToolProtoStreamResponse]
+
 func _HarnessCallbackService_ListTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListToolsRequest)
 	if err := dec(in); err != nil {
@@ -952,6 +1031,35 @@ func _HarnessCallbackService_ListTools_Handler(srv interface{}, ctx context.Cont
 	}
 	return interceptor(ctx, in, info, handler)
 }
+
+func _HarnessCallbackService_QueueToolWork_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueueToolWorkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).QueueToolWork(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_QueueToolWork_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).QueueToolWork(ctx, req.(*QueueToolWorkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_ToolResults_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ToolResultsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HarnessCallbackServiceServer).ToolResults(m, &grpc.GenericServerStream[ToolResultsRequest, ToolResultResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HarnessCallbackService_ToolResultsServer = grpc.ServerStreamingServer[ToolResultResponse]
 
 func _HarnessCallbackService_QueryPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryPluginRequest)
@@ -1701,6 +1809,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HarnessCallbackService_ListTools_Handler,
 		},
 		{
+			MethodName: "QueueToolWork",
+			Handler:    _HarnessCallbackService_QueueToolWork_Handler,
+		},
+		{
 			MethodName: "QueryPlugin",
 			Handler:    _HarnessCallbackService_QueryPlugin_Handler,
 		},
@@ -1865,6 +1977,16 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "LLMStream",
 			Handler:       _HarnessCallbackService_LLMStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "CallToolProtoStream",
+			Handler:       _HarnessCallbackService_CallToolProtoStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ToolResults",
+			Handler:       _HarnessCallbackService_ToolResults_Handler,
 			ServerStreams: true,
 		},
 	},

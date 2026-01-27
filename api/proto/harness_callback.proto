@@ -17,7 +17,12 @@ service HarnessCallbackService {
 
     // Tool Operations
     rpc CallToolProto(CallToolProtoRequest) returns (CallToolProtoResponse);
+    rpc CallToolProtoStream(CallToolProtoStreamRequest) returns (stream CallToolProtoStreamResponse);
     rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+    // Tool Work Queue Operations
+    rpc QueueToolWork(QueueToolWorkRequest) returns (QueueToolWorkResponse);
+    rpc ToolResults(ToolResultsRequest) returns (stream ToolResultResponse);
 
     // Plugin Operations
     rpc QueryPlugin(QueryPluginRequest) returns (QueryPluginResponse);
@@ -245,6 +250,65 @@ message CallToolProtoResponse {
     HarnessError error = 2;
 }
 
+// CallToolProtoStreamRequest initiates a streaming tool execution.
+message CallToolProtoStreamRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    // JSON-serialized proto request message
+    bytes input_json = 3;
+    // Fully qualified proto message type name for input (e.g., "gibson.tool.nmap.NmapRequest")
+    string input_type = 4;
+    // Fully qualified proto message type name for output (e.g., "gibson.tool.nmap.NmapResponse")
+    string output_type = 5;
+    // Optional timeout in milliseconds
+    int64 timeout_ms = 6;
+}
+
+// CallToolProtoStreamResponse streams tool execution events back to the agent.
+message CallToolProtoStreamResponse {
+    oneof payload {
+        ToolProgressEvent progress = 1;
+        ToolPartialResultEvent partial = 2;
+        ToolWarningEvent warning = 3;
+        ToolCompleteEvent complete = 4;
+        ToolErrorEvent error = 5;
+    }
+    string trace_id = 10;
+    string span_id = 11;
+    int64 sequence = 12;
+    int64 timestamp_ms = 13;
+}
+
+// ToolProgressEvent indicates progress during tool execution
+message ToolProgressEvent {
+    int32 percent = 1;
+    string stage = 2;
+    string message = 3;
+}
+
+// ToolPartialResultEvent contains partial results during execution
+message ToolPartialResultEvent {
+    bytes output_json = 1;
+    string description = 2;
+}
+
+// ToolWarningEvent contains non-fatal warnings during execution
+message ToolWarningEvent {
+    string message = 1;
+    string code = 2;
+}
+
+// ToolCompleteEvent signals successful completion with final output
+message ToolCompleteEvent {
+    bytes output_json = 1;
+}
+
+// ToolErrorEvent signals an error during execution
+message ToolErrorEvent {
+    HarnessError error = 1;
+    bool fatal = 2;
+}
+
 message ListToolsRequest {
     ContextInfo context = 1;
 }
@@ -262,6 +326,36 @@ message HarnessToolDescriptor {
     // Structured schemas with full taxonomy support
     JSONSchemaNode input_schema = 5;
     JSONSchemaNode output_schema = 6;
+}
+
+// QueueToolWorkRequest initiates parallel execution of multiple tool invocations.
+message QueueToolWorkRequest {
+    ContextInfo context = 1;
+    string tool_name = 2;
+    repeated string input_jsons = 3;  // Each input as JSON string
+    string input_type = 4;            // Proto message type name
+    string output_type = 5;           // Expected output type name
+}
+
+// QueueToolWorkResponse returns a job ID for tracking the work queue.
+message QueueToolWorkResponse {
+    string job_id = 1;
+    HarnessError error = 2;
+}
+
+// ToolResultsRequest requests streaming results for a queued job.
+message ToolResultsRequest {
+    ContextInfo context = 1;
+    string job_id = 2;
+}
+
+// ToolResultResponse streams individual results as tool executions complete.
+message ToolResultResponse {
+    int32 index = 1;              // Position in original inputs
+    string output_json = 2;       // Output as JSON (empty if error)
+    string output_type = 3;       // Proto message type
+    HarnessError error = 4;       // Error if execution failed
+    bool is_final = 5;            // True if this is the last result
 }
 
 // JSONSchemaNode represents a JSON Schema node with taxonomy support.

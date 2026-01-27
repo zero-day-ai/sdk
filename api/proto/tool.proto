@@ -8,6 +8,7 @@ service ToolService {
     rpc GetDescriptor(ToolGetDescriptorRequest) returns (ToolDescriptor);
     rpc Execute(ToolExecuteRequest) returns (ToolExecuteResponse);
     rpc Health(ToolHealthRequest) returns (gibson.common.HealthStatus);
+    rpc StreamExecute(stream ToolClientMessage) returns (stream ToolMessage);
 }
 
 message ToolGetDescriptorRequest {}
@@ -32,3 +33,73 @@ message ToolExecuteResponse {
 }
 
 message ToolHealthRequest {}
+
+// Client -> Tool messages for streaming
+message ToolClientMessage {
+    oneof payload {
+        ToolStartRequest start = 1;
+        ToolCancelRequest cancel = 2;
+    }
+}
+
+message ToolStartRequest {
+    string input_json = 1;
+    int64 timeout_ms = 2;
+    // Trace ID for distributed tracing (propagated from agent/orchestrator).
+    string trace_id = 3;
+    // Parent span ID for distributed tracing (propagated from agent/orchestrator).
+    string parent_span_id = 4;
+}
+
+message ToolCancelRequest {
+    string reason = 1;
+}
+
+// Tool -> Client messages for streaming
+message ToolMessage {
+    oneof payload {
+        ToolProgress progress = 1;
+        ToolPartialResult partial = 2;
+        ToolWarning warning = 3;
+        ToolComplete complete = 4;
+        ToolError error = 5;
+    }
+    string trace_id = 10;
+    string span_id = 11;
+    int64 sequence = 12;
+    int64 timestamp_ms = 13;
+}
+
+message ToolProgress {
+    // Progress percentage (0-100)
+    int32 percent = 1;
+    // Current stage description
+    string stage = 2;
+    // Human-readable status message
+    string message = 3;
+}
+
+message ToolPartialResult {
+    // JSON-encoded partial output matching the tool's output schema
+    string output_json = 1;
+    // Optional description of this partial result
+    string description = 2;
+}
+
+message ToolWarning {
+    // Warning message
+    string message = 1;
+    // Optional warning code
+    string code = 2;
+}
+
+message ToolComplete {
+    // Final JSON-encoded output matching the tool's output schema
+    string output_json = 1;
+}
+
+message ToolError {
+    gibson.common.Error error = 1;
+    // Whether this error is recoverable
+    bool fatal = 2;
+}

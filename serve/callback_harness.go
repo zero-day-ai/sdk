@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
 	protolib "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // CallbackHarness implements agent.Harness by forwarding all operations
@@ -528,6 +530,179 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 	}
 
 	return nil
+}
+
+// CallToolProtoStream invokes a tool with streaming event callbacks.
+// This enables real-time progress updates, partial results, and warnings during tool execution.
+//
+// The method marshals the input proto to JSON, calls the daemon's CallToolProtoStream RPC
+// (which will be added in Phase 6), receives streaming ToolMessage events, dispatches them
+// to the callback methods, and returns the final output.
+//
+// NOTE: This implementation is prepared for Phase 6. The daemon-side CallToolProtoStream RPC
+// will be added to HarnessCallbackService in Phase 6. Until then, this method will fail
+// with "unimplemented" error from the daemon.
+func (h *CallbackHarness) CallToolProtoStream(ctx context.Context, toolName string, input protolib.Message, output protolib.Message, callback agent.ToolStreamCallback) error {
+	// Start span for streaming proto tool call
+	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto.stream",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.tool.name", toolName),
+			attribute.String("gibson.tool.request_type", string(input.ProtoReflect().Descriptor().FullName())),
+		),
+	)
+	defer span.End()
+
+	// Use protojson marshaler with snake_case field names to match tool schemas
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames: true, // Use snake_case (proto field names) instead of camelCase
+	}
+
+	// Serialize proto request to JSON
+	inputJSON, err := marshaler.Marshal(input)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal proto input to JSON")
+		return fmt.Errorf("failed to marshal proto input to JSON: %w", err)
+	}
+	_ = inputJSON // Will be used once daemon RPC is implemented
+
+	// TODO(Phase 6): This will fail with "unimplemented" until daemon adds CallToolProtoStream RPC
+	// For now, return error indicating streaming not available
+	// Once Phase 6 is complete, remove this error and uncomment the implementation below
+	span.RecordError(fmt.Errorf("tool streaming not yet available"))
+	span.SetStatus(codes.Error, "tool streaming not yet available")
+	return fmt.Errorf("tool streaming not yet implemented in daemon (Phase 6 pending)")
+
+	// Implementation ready for Phase 6 (currently unreachable):
+	/*
+		// Create streaming request context info
+		inputType := string(input.ProtoReflect().Descriptor().FullName())
+		outputType := string(output.ProtoReflect().Descriptor().FullName())
+
+		// TODO: Phase 6 will add CallToolProtoStream method to CallbackClient
+		// This is the expected implementation once the RPC is added:
+
+		// Get the bidirectional stream from daemon
+		// stream, err := h.client.CallToolProtoStream(ctx)
+		// if err != nil {
+		//     span.RecordError(err)
+		//     span.SetStatus(codes.Error, err.Error())
+		//     return fmt.Errorf("failed to establish tool stream: %w", err)
+		// }
+
+		// Create result channel for blocking until completion
+		type streamResult struct {
+			err error
+		}
+		resultCh := make(chan streamResult, 1)
+
+		// Spawn goroutine to receive ToolMessage events
+		go func() {
+			defer close(resultCh)
+
+			for {
+				// Receive next message from stream
+				// msg, err := stream.Recv()
+				// if err != nil {
+				//     if err == io.EOF {
+				//         // Stream closed normally
+				//         resultCh <- streamResult{err: nil}
+				//         return
+				//     }
+				//     resultCh <- streamResult{err: fmt.Errorf("stream recv error: %w", err)}
+				//     return
+				// }
+
+				// Dispatch based on message type
+				// switch payload := msg.Payload.(type) {
+				// case *proto.ToolMessage_Progress:
+				//     callback.OnProgress(
+				//         int(payload.Progress.Percent),
+				//         payload.Progress.Stage,
+				//         payload.Progress.Message,
+				//     )
+				//
+				// case *proto.ToolMessage_Partial:
+				//     // Unmarshal partial output
+				//     unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+				//     partialOutput := protolib.Clone(output)
+				//     if err := unmarshaler.Unmarshal([]byte(payload.Partial.OutputJson), partialOutput); err != nil {
+				//         h.logger.Warn("failed to unmarshal partial output", "error", err)
+				//         continue
+				//     }
+				//     // Determine if incremental based on description or default to true
+				//     incremental := payload.Partial.Description != "replace"
+				//     callback.OnPartial(partialOutput, incremental)
+				//
+				// case *proto.ToolMessage_Warning:
+				//     callback.OnWarning(payload.Warning.Message, payload.Warning.Code)
+				//
+				// case *proto.ToolMessage_Error:
+				//     fatal := payload.Error.Fatal
+				//     err := fmt.Errorf("%s", payload.Error.Error.Message)
+				//     callback.OnError(err, fatal)
+				//     if fatal {
+				//         resultCh <- streamResult{err: err}
+				//         return
+				//     }
+				//
+				// case *proto.ToolMessage_Complete:
+				//     // Unmarshal final output into output parameter
+				//     unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+				//     if err := unmarshaler.Unmarshal([]byte(payload.Complete.OutputJson), output); err != nil {
+				//         resultCh <- streamResult{err: fmt.Errorf("failed to unmarshal final output: %w", err)}
+				//         return
+				//     }
+				//     resultCh <- streamResult{err: nil}
+				//     return
+				// }
+			}
+		}()
+
+		// Send ToolStartRequest to initiate execution
+		// startReq := &proto.ToolClientMessage{
+		//     Payload: &proto.ToolClientMessage_Start{
+		//         Start: &proto.ToolStartRequest{
+		//             InputJson:  inputJSON,
+		//             TimeoutMs:  0, // Use context deadline
+		//             TraceId:    h.tracer.SpanContext().TraceID().String(),
+		//             ParentSpanId: h.tracer.SpanContext().SpanID().String(),
+		//         },
+		//     },
+		// }
+		// if err := stream.Send(startReq); err != nil {
+		//     span.RecordError(err)
+		//     span.SetStatus(codes.Error, "failed to send start request")
+		//     return fmt.Errorf("failed to send start request: %w", err)
+		// }
+
+		// Wait for completion or context cancellation
+		select {
+		case result := <-resultCh:
+			if result.err != nil {
+				span.RecordError(result.err)
+				span.SetStatus(codes.Error, result.err.Error())
+				return result.err
+			}
+			return nil
+
+		case <-ctx.Done():
+			// Send cancellation request
+			// cancelReq := &proto.ToolClientMessage{
+			//     Payload: &proto.ToolClientMessage_Cancel{
+			//         Cancel: &proto.ToolCancelRequest{
+			//             Reason: "context cancelled",
+			//         },
+			//     },
+			// }
+			// _ = stream.Send(cancelReq) // Best effort
+
+			span.RecordError(ctx.Err())
+			span.SetStatus(codes.Error, ctx.Err().Error())
+			return ctx.Err()
+		}
+	*/
 }
 
 // ListTools returns descriptors for all available tools.
@@ -1763,4 +1938,244 @@ func (h *CallbackHarness) convertValidationResponse(resp *proto.ValidationRespon
 	}
 
 	return result
+}
+
+// ============================================================================
+// Tool Work Queue Operations
+// ============================================================================
+
+// QueueToolWork queues multiple tool invocations for parallel execution.
+// Returns a job ID that can be used to retrieve results via ToolResults.
+// This enables agents to submit batches of work for parallel processing by workers.
+func (h *CallbackHarness) QueueToolWork(ctx context.Context, toolName string, inputs []protolib.Message) (string, error) {
+	// Start span for queue submission
+	ctx, span := h.tracer.Start(ctx, "gibson.tool.queue_work",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.tool.name", toolName),
+			attribute.Int("gibson.tool.batch_size", len(inputs)),
+		),
+	)
+	defer span.End()
+
+	if len(inputs) == 0 {
+		err := fmt.Errorf("no inputs provided for queue work")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", err
+	}
+
+	// Use protojson marshaler with snake_case field names
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames: true, // Use snake_case (proto field names) instead of camelCase
+	}
+
+	// Marshal each input proto to JSON
+	inputJSONs := make([]string, len(inputs))
+	var inputType, outputType string
+
+	for i, input := range inputs {
+		if input == nil {
+			err := fmt.Errorf("input at index %d is nil", i)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return "", err
+		}
+
+		// Marshal input to JSON
+		inputJSON, err := marshaler.Marshal(input)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to marshal input to JSON")
+			return "", fmt.Errorf("failed to marshal input at index %d to JSON: %w", i, err)
+		}
+
+		inputJSONs[i] = string(inputJSON)
+
+		// Extract input type from first message (all must be same type)
+		if i == 0 {
+			inputType = string(input.ProtoReflect().Descriptor().FullName())
+
+			// TODO: We need to determine output type somehow. For now, we'll need to
+			// add this as a parameter to the method signature in the future, or infer
+			// from tool metadata. Using empty string for now.
+			outputType = "" // Will be determined by daemon from tool metadata
+		}
+	}
+
+	// Create the proto request
+	protoReq := &proto.QueueToolWorkRequest{
+		Context:    h.client.contextInfo(),
+		ToolName:   toolName,
+		InputJsons: inputJSONs,
+		InputType:  inputType,
+		OutputType: outputType,
+	}
+
+	// Call daemon RPC
+	// TODO: This will fail until the daemon implements QueueToolWork RPC handler (Phase 5)
+	resp, err := h.client.QueueToolWork(ctx, protoReq)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", fmt.Errorf("QueueToolWork callback failed: %w", err)
+	}
+
+	if resp.Error != nil {
+		err := fmt.Errorf("QueueToolWork error: %s", resp.Error.Message)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, resp.Error.Message)
+		return "", err
+	}
+
+	// Record job ID in span
+	span.SetAttributes(attribute.String("gibson.tool.job_id", resp.JobId))
+
+	return resp.JobId, nil
+}
+
+// ToolResults returns a channel that streams results for a queued job.
+// The channel will receive one QueuedToolResult per input in the original batch.
+// Results may arrive in any order (check the Index field).
+// The channel will be closed when all results have been received or an error occurs.
+func (h *CallbackHarness) ToolResults(ctx context.Context, jobID string) <-chan agent.QueuedToolResult {
+	// Start span for results streaming
+	ctx, span := h.tracer.Start(ctx, "gibson.tool.results",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gibson.tool.job_id", jobID),
+		),
+	)
+
+	// Create result channel (buffered for better performance)
+	resultChan := make(chan agent.QueuedToolResult, 10)
+
+	// Spawn goroutine to receive streaming results
+	go func() {
+		defer close(resultChan)
+		defer span.End()
+
+		// Create streaming request
+		protoReq := &proto.ToolResultsRequest{
+			Context: h.client.contextInfo(),
+			JobId:   jobID,
+		}
+
+		// Call daemon RPC to get streaming response
+		// TODO: This will fail until the daemon implements ToolResults RPC handler (Phase 5)
+		stream, err := h.client.ToolResults(ctx, protoReq)
+		if err != nil {
+			// Send error result
+			h.logger.Error("ToolResults stream failed", "error", err, "job_id", jobID)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			resultChan <- agent.QueuedToolResult{
+				Index:  0,
+				Output: nil,
+				Error:  fmt.Errorf("failed to establish results stream: %w", err),
+			}
+			return
+		}
+
+		resultCount := 0
+		for {
+			// Receive next result from stream
+			protoResult, err := stream.Recv()
+			if err != nil {
+				// Check if stream ended normally
+				if err.Error() == "EOF" {
+					span.SetAttributes(attribute.Int("gibson.tool.results_count", resultCount))
+					return
+				}
+
+				// Stream error
+				h.logger.Error("error receiving result from stream", "error", err, "job_id", jobID)
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				resultChan <- agent.QueuedToolResult{
+					Index:  0,
+					Output: nil,
+					Error:  fmt.Errorf("stream recv error: %w", err),
+				}
+				return
+			}
+
+			resultCount++
+
+			// Convert proto result to agent.QueuedToolResult
+			var toolResult agent.QueuedToolResult
+
+			// Handle error results
+			if protoResult.Error != nil {
+				toolResult = agent.QueuedToolResult{
+					Index:  int(protoResult.Index),
+					Output: nil,
+					Error:  fmt.Errorf("%s", protoResult.Error.Message),
+				}
+			} else {
+				// Parse output JSON into proto message using protoregistry
+				var outputProto protolib.Message
+
+				if protoResult.OutputType != "" {
+					// Look up message type in registry
+					msgType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(protoResult.OutputType))
+					if err != nil {
+						toolResult = agent.QueuedToolResult{
+							Index:  int(protoResult.Index),
+							Output: nil,
+							Error:  fmt.Errorf("unknown output type %s: %w", protoResult.OutputType, err),
+						}
+					} else {
+						// Create new message instance
+						outputProto = msgType.New().Interface()
+
+						// Unmarshal JSON into proto message
+						unmarshaler := protojson.UnmarshalOptions{
+							DiscardUnknown: true, // Ignore fields not in proto
+						}
+
+						if err := unmarshaler.Unmarshal([]byte(protoResult.OutputJson), outputProto); err != nil {
+							toolResult = agent.QueuedToolResult{
+								Index:  int(protoResult.Index),
+								Output: nil,
+								Error:  fmt.Errorf("failed to unmarshal output JSON: %w", err),
+							}
+						} else {
+							// Successfully unmarshaled output
+							toolResult = agent.QueuedToolResult{
+								Index:  int(protoResult.Index),
+								Output: outputProto,
+								Error:  nil,
+							}
+						}
+					}
+				} else {
+					// No output type specified - this is an error
+					toolResult = agent.QueuedToolResult{
+						Index:  int(protoResult.Index),
+						Output: nil,
+						Error:  fmt.Errorf("output type not specified in result"),
+					}
+				}
+			}
+
+			// Send result on channel
+			select {
+			case resultChan <- toolResult:
+			case <-ctx.Done():
+				h.logger.Warn("context cancelled while sending result", "job_id", jobID)
+				span.RecordError(ctx.Err())
+				span.SetStatus(codes.Error, ctx.Err().Error())
+				return
+			}
+
+			// Check if this was the final result
+			if protoResult.IsFinal {
+				span.SetAttributes(attribute.Int("gibson.tool.results_count", resultCount))
+				return
+			}
+		}
+	}()
+
+	return resultChan
 }

@@ -22,6 +22,7 @@ const (
 	ToolService_GetDescriptor_FullMethodName = "/gibson.tool.ToolService/GetDescriptor"
 	ToolService_Execute_FullMethodName       = "/gibson.tool.ToolService/Execute"
 	ToolService_Health_FullMethodName        = "/gibson.tool.ToolService/Health"
+	ToolService_StreamExecute_FullMethodName = "/gibson.tool.ToolService/StreamExecute"
 )
 
 // ToolServiceClient is the client API for ToolService service.
@@ -31,6 +32,7 @@ type ToolServiceClient interface {
 	GetDescriptor(ctx context.Context, in *ToolGetDescriptorRequest, opts ...grpc.CallOption) (*ToolDescriptor, error)
 	Execute(ctx context.Context, in *ToolExecuteRequest, opts ...grpc.CallOption) (*ToolExecuteResponse, error)
 	Health(ctx context.Context, in *ToolHealthRequest, opts ...grpc.CallOption) (*HealthStatus, error)
+	StreamExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ToolClientMessage, ToolMessage], error)
 }
 
 type toolServiceClient struct {
@@ -71,6 +73,19 @@ func (c *toolServiceClient) Health(ctx context.Context, in *ToolHealthRequest, o
 	return out, nil
 }
 
+func (c *toolServiceClient) StreamExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ToolClientMessage, ToolMessage], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ToolService_ServiceDesc.Streams[0], ToolService_StreamExecute_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ToolClientMessage, ToolMessage]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ToolService_StreamExecuteClient = grpc.BidiStreamingClient[ToolClientMessage, ToolMessage]
+
 // ToolServiceServer is the server API for ToolService service.
 // All implementations must embed UnimplementedToolServiceServer
 // for forward compatibility.
@@ -78,6 +93,7 @@ type ToolServiceServer interface {
 	GetDescriptor(context.Context, *ToolGetDescriptorRequest) (*ToolDescriptor, error)
 	Execute(context.Context, *ToolExecuteRequest) (*ToolExecuteResponse, error)
 	Health(context.Context, *ToolHealthRequest) (*HealthStatus, error)
+	StreamExecute(grpc.BidiStreamingServer[ToolClientMessage, ToolMessage]) error
 	mustEmbedUnimplementedToolServiceServer()
 }
 
@@ -96,6 +112,9 @@ func (UnimplementedToolServiceServer) Execute(context.Context, *ToolExecuteReque
 }
 func (UnimplementedToolServiceServer) Health(context.Context, *ToolHealthRequest) (*HealthStatus, error) {
 	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
+}
+func (UnimplementedToolServiceServer) StreamExecute(grpc.BidiStreamingServer[ToolClientMessage, ToolMessage]) error {
+	return status.Error(codes.Unimplemented, "method StreamExecute not implemented")
 }
 func (UnimplementedToolServiceServer) mustEmbedUnimplementedToolServiceServer() {}
 func (UnimplementedToolServiceServer) testEmbeddedByValue()                     {}
@@ -172,6 +191,13 @@ func _ToolService_Health_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ToolService_StreamExecute_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ToolServiceServer).StreamExecute(&grpc.GenericServerStream[ToolClientMessage, ToolMessage]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ToolService_StreamExecuteServer = grpc.BidiStreamingServer[ToolClientMessage, ToolMessage]
+
 // ToolService_ServiceDesc is the grpc.ServiceDesc for ToolService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -192,6 +218,13 @@ var ToolService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ToolService_Health_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamExecute",
+			Handler:       _ToolService_StreamExecute_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "tool.proto",
 }

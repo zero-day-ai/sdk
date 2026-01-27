@@ -32,6 +32,62 @@ type ToolResult struct {
 	Error  error          // Error if tool failed (nil if success)
 }
 
+// QueuedToolResult represents the result of a single tool execution from QueueToolWork.
+// Results arrive in completion order, not submission order.
+// Use Index to correlate results with the original input slice position.
+type QueuedToolResult struct {
+	Index  int           // Position in original inputs slice (0-based)
+	Output proto.Message // The tool's output proto (nil if error)
+	Error  error         // Error if execution failed (nil if success)
+}
+
+// ToolStreamCallback receives streaming events during tool execution.
+// Implementations should handle events asynchronously and not block,
+// as callback methods are invoked from the stream receiver goroutine.
+//
+// All callback methods are optional - implementations can choose to ignore
+// events they don't care about by providing no-op methods.
+type ToolStreamCallback interface {
+	// OnProgress is called when the tool reports progress.
+	//
+	// percent: Progress percentage from 0-100, or 0 if indeterminate.
+	// phase: Current execution phase (e.g., "discovery", "scanning").
+	// message: Human-readable status message.
+	//
+	// This is called frequently during long-running operations.
+	// Implementations should avoid expensive operations in this callback.
+	OnProgress(percent int, phase, message string)
+
+	// OnPartial is called when the tool emits a partial result.
+	//
+	// output: A proto message of the tool's output type containing partial results.
+	// incremental: If true, this result should be appended to previous partials.
+	//              If false, this result replaces all previous partials.
+	//
+	// Partial results allow processing data as it becomes available rather than
+	// waiting for complete execution.
+	OnPartial(output proto.Message, incremental bool)
+
+	// OnWarning is called when the tool emits a non-fatal warning.
+	//
+	// message: Human-readable warning message.
+	// context: Additional context about where the warning occurred (may be empty).
+	//
+	// Warnings indicate recoverable errors or expected failures that don't
+	// prevent the tool from continuing.
+	OnWarning(message, context string)
+
+	// OnError is called when the tool encounters an error.
+	//
+	// err: The error that occurred.
+	// fatal: If true, the tool will terminate after this error.
+	//        If false, the tool will continue execution.
+	//
+	// Fatal errors prevent any useful output. Non-fatal errors are logged
+	// issues that don't stop execution.
+	OnError(err error, fatal bool)
+}
+
 // MissionManager provides mission lifecycle operations for agents.
 // This interface enables agents to autonomously create, run, monitor, and manage missions,
 // supporting hierarchical agent architectures and autonomous operation patterns.
@@ -192,9 +248,86 @@ type Harness interface {
 	// The request and response parameters should be pointers to proto message types.
 	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error
 
+	// CallToolProtoStream invokes a tool with streaming event callbacks.
+	// This enables real-time progress updates, partial results, and warnings during tool execution.
+	//
+	// The callback parameter receives events as they arrive:
+	//   - OnProgress: Progress percentage and status updates
+	//   - OnPartial: Incremental or replacement partial results
+	//   - OnWarning: Non-fatal warnings during execution
+	//   - OnError: Fatal or non-fatal errors
+	//
+	// The method blocks until the tool completes or fails, returning the final output
+	// or an error. The final output is also delivered via callback.OnPartial() before returning.
+	//
+	// Example:
+	//   callback := &MyToolCallback{}
+	//   output := &pb.NmapOutput{}
+	//   err := h.CallToolProtoStream(ctx, "nmap", &pb.NmapInput{Target: "192.168.1.0/24"}, output, callback)
+	//   if err != nil {
+	//       return fmt.Errorf("nmap failed: %w", err)
+	//   }
+	//   // output now contains the final result
+	CallToolProtoStream(ctx context.Context, toolName string, input proto.Message, output proto.Message, callback ToolStreamCallback) error
+
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.
 	ListTools(ctx context.Context) ([]tool.Descriptor, error)
+
+	// QueueToolWork submits multiple tool executions to a Redis queue for parallel processing.
+	// Each input in the slice will be queued separately and processed by available tool workers.
+	// Returns a job ID that can be used to retrieve results via ToolResults.
+	//
+	// This method enables high-throughput parallel tool execution by distributing work
+	// across multiple workers. Results arrive in completion order (not input order),
+	// so use QueuedToolResult.Index to correlate results with inputs.
+	//
+	// The method returns immediately after queueing - it does not wait for execution.
+	// Use ToolResults to receive results as they complete.
+	//
+	// Example:
+	//   // Queue 100 port scans in parallel
+	//   inputs := make([]proto.Message, 100)
+	//   for i, target := range targets {
+	//       inputs[i] = &pb.NmapInput{Target: target}
+	//   }
+	//   jobID, err := h.QueueToolWork(ctx, "nmap", inputs)
+	//   if err != nil {
+	//       return fmt.Errorf("failed to queue scans: %w", err)
+	//   }
+	//
+	//   // Process results as they arrive
+	//   for result := range h.ToolResults(ctx, jobID) {
+	//       if result.Error != nil {
+	//           log.Printf("Scan %d failed: %v", result.Index, result.Error)
+	//           continue
+	//       }
+	//       output := result.Output.(*pb.NmapOutput)
+	//       log.Printf("Scan %d complete: %d hosts found", result.Index, len(output.Hosts))
+	//   }
+	QueueToolWork(ctx context.Context, toolName string, inputs []proto.Message) (string, error)
+
+	// ToolResults returns a channel that receives results as tool executions complete.
+	// The channel is closed when all results have been received or an error occurs.
+	//
+	// Results may arrive in any order depending on execution time. Use QueuedToolResult.Index
+	// to correlate results with the original input slice positions from QueueToolWork.
+	//
+	// The channel will be closed automatically when:
+	//   - All results have been received (one per input)
+	//   - The context is cancelled
+	//   - A fatal error occurs retrieving results
+	//
+	// Example:
+	//   for result := range h.ToolResults(ctx, jobID) {
+	//       if result.Error != nil {
+	//           log.Printf("Tool execution %d failed: %v", result.Index, result.Error)
+	//           continue
+	//       }
+	//       // Process successful result
+	//       processOutput(result.Index, result.Output)
+	//   }
+	ToolResults(ctx context.Context, jobID string) <-chan QueuedToolResult
 
 	// Plugin Access Methods
 	//

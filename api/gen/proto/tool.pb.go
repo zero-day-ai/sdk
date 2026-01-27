@@ -281,6 +281,635 @@ func (*ToolHealthRequest) Descriptor() ([]byte, []int) {
 	return file_tool_proto_rawDescGZIP(), []int{4}
 }
 
+// Client -> Tool messages for streaming
+type ToolClientMessage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ToolClientMessage_Start
+	//	*ToolClientMessage_Cancel
+	Payload       isToolClientMessage_Payload `protobuf_oneof:"payload"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolClientMessage) Reset() {
+	*x = ToolClientMessage{}
+	mi := &file_tool_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolClientMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolClientMessage) ProtoMessage() {}
+
+func (x *ToolClientMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolClientMessage.ProtoReflect.Descriptor instead.
+func (*ToolClientMessage) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ToolClientMessage) GetPayload() isToolClientMessage_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *ToolClientMessage) GetStart() *ToolStartRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolClientMessage_Start); ok {
+			return x.Start
+		}
+	}
+	return nil
+}
+
+func (x *ToolClientMessage) GetCancel() *ToolCancelRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolClientMessage_Cancel); ok {
+			return x.Cancel
+		}
+	}
+	return nil
+}
+
+type isToolClientMessage_Payload interface {
+	isToolClientMessage_Payload()
+}
+
+type ToolClientMessage_Start struct {
+	Start *ToolStartRequest `protobuf:"bytes,1,opt,name=start,proto3,oneof"`
+}
+
+type ToolClientMessage_Cancel struct {
+	Cancel *ToolCancelRequest `protobuf:"bytes,2,opt,name=cancel,proto3,oneof"`
+}
+
+func (*ToolClientMessage_Start) isToolClientMessage_Payload() {}
+
+func (*ToolClientMessage_Cancel) isToolClientMessage_Payload() {}
+
+type ToolStartRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	InputJson string                 `protobuf:"bytes,1,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	TimeoutMs int64                  `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	// Trace ID for distributed tracing (propagated from agent/orchestrator).
+	TraceId string `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	// Parent span ID for distributed tracing (propagated from agent/orchestrator).
+	ParentSpanId  string `protobuf:"bytes,4,opt,name=parent_span_id,json=parentSpanId,proto3" json:"parent_span_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolStartRequest) Reset() {
+	*x = ToolStartRequest{}
+	mi := &file_tool_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolStartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolStartRequest) ProtoMessage() {}
+
+func (x *ToolStartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolStartRequest.ProtoReflect.Descriptor instead.
+func (*ToolStartRequest) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ToolStartRequest) GetInputJson() string {
+	if x != nil {
+		return x.InputJson
+	}
+	return ""
+}
+
+func (x *ToolStartRequest) GetTimeoutMs() int64 {
+	if x != nil {
+		return x.TimeoutMs
+	}
+	return 0
+}
+
+func (x *ToolStartRequest) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *ToolStartRequest) GetParentSpanId() string {
+	if x != nil {
+		return x.ParentSpanId
+	}
+	return ""
+}
+
+type ToolCancelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reason        string                 `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolCancelRequest) Reset() {
+	*x = ToolCancelRequest{}
+	mi := &file_tool_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolCancelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolCancelRequest) ProtoMessage() {}
+
+func (x *ToolCancelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolCancelRequest.ProtoReflect.Descriptor instead.
+func (*ToolCancelRequest) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ToolCancelRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+// Tool -> Client messages for streaming
+type ToolMessage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ToolMessage_Progress
+	//	*ToolMessage_Partial
+	//	*ToolMessage_Warning
+	//	*ToolMessage_Complete
+	//	*ToolMessage_Error
+	Payload       isToolMessage_Payload `protobuf_oneof:"payload"`
+	TraceId       string                `protobuf:"bytes,10,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	SpanId        string                `protobuf:"bytes,11,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	Sequence      int64                 `protobuf:"varint,12,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	TimestampMs   int64                 `protobuf:"varint,13,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolMessage) Reset() {
+	*x = ToolMessage{}
+	mi := &file_tool_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolMessage) ProtoMessage() {}
+
+func (x *ToolMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolMessage.ProtoReflect.Descriptor instead.
+func (*ToolMessage) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ToolMessage) GetPayload() isToolMessage_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetProgress() *ToolProgress {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolMessage_Progress); ok {
+			return x.Progress
+		}
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetPartial() *ToolPartialResult {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolMessage_Partial); ok {
+			return x.Partial
+		}
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetWarning() *ToolWarning {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolMessage_Warning); ok {
+			return x.Warning
+		}
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetComplete() *ToolComplete {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolMessage_Complete); ok {
+			return x.Complete
+		}
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetError() *ToolError {
+	if x != nil {
+		if x, ok := x.Payload.(*ToolMessage_Error); ok {
+			return x.Error
+		}
+	}
+	return nil
+}
+
+func (x *ToolMessage) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *ToolMessage) GetSpanId() string {
+	if x != nil {
+		return x.SpanId
+	}
+	return ""
+}
+
+func (x *ToolMessage) GetSequence() int64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *ToolMessage) GetTimestampMs() int64 {
+	if x != nil {
+		return x.TimestampMs
+	}
+	return 0
+}
+
+type isToolMessage_Payload interface {
+	isToolMessage_Payload()
+}
+
+type ToolMessage_Progress struct {
+	Progress *ToolProgress `protobuf:"bytes,1,opt,name=progress,proto3,oneof"`
+}
+
+type ToolMessage_Partial struct {
+	Partial *ToolPartialResult `protobuf:"bytes,2,opt,name=partial,proto3,oneof"`
+}
+
+type ToolMessage_Warning struct {
+	Warning *ToolWarning `protobuf:"bytes,3,opt,name=warning,proto3,oneof"`
+}
+
+type ToolMessage_Complete struct {
+	Complete *ToolComplete `protobuf:"bytes,4,opt,name=complete,proto3,oneof"`
+}
+
+type ToolMessage_Error struct {
+	Error *ToolError `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
+}
+
+func (*ToolMessage_Progress) isToolMessage_Payload() {}
+
+func (*ToolMessage_Partial) isToolMessage_Payload() {}
+
+func (*ToolMessage_Warning) isToolMessage_Payload() {}
+
+func (*ToolMessage_Complete) isToolMessage_Payload() {}
+
+func (*ToolMessage_Error) isToolMessage_Payload() {}
+
+type ToolProgress struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Progress percentage (0-100)
+	Percent int32 `protobuf:"varint,1,opt,name=percent,proto3" json:"percent,omitempty"`
+	// Current stage description
+	Stage string `protobuf:"bytes,2,opt,name=stage,proto3" json:"stage,omitempty"`
+	// Human-readable status message
+	Message       string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolProgress) Reset() {
+	*x = ToolProgress{}
+	mi := &file_tool_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolProgress) ProtoMessage() {}
+
+func (x *ToolProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolProgress.ProtoReflect.Descriptor instead.
+func (*ToolProgress) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ToolProgress) GetPercent() int32 {
+	if x != nil {
+		return x.Percent
+	}
+	return 0
+}
+
+func (x *ToolProgress) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+func (x *ToolProgress) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ToolPartialResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// JSON-encoded partial output matching the tool's output schema
+	OutputJson string `protobuf:"bytes,1,opt,name=output_json,json=outputJson,proto3" json:"output_json,omitempty"`
+	// Optional description of this partial result
+	Description   string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolPartialResult) Reset() {
+	*x = ToolPartialResult{}
+	mi := &file_tool_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolPartialResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolPartialResult) ProtoMessage() {}
+
+func (x *ToolPartialResult) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolPartialResult.ProtoReflect.Descriptor instead.
+func (*ToolPartialResult) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ToolPartialResult) GetOutputJson() string {
+	if x != nil {
+		return x.OutputJson
+	}
+	return ""
+}
+
+func (x *ToolPartialResult) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type ToolWarning struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Warning message
+	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	// Optional warning code
+	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolWarning) Reset() {
+	*x = ToolWarning{}
+	mi := &file_tool_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolWarning) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolWarning) ProtoMessage() {}
+
+func (x *ToolWarning) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolWarning.ProtoReflect.Descriptor instead.
+func (*ToolWarning) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ToolWarning) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *ToolWarning) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+type ToolComplete struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Final JSON-encoded output matching the tool's output schema
+	OutputJson    string `protobuf:"bytes,1,opt,name=output_json,json=outputJson,proto3" json:"output_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolComplete) Reset() {
+	*x = ToolComplete{}
+	mi := &file_tool_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolComplete) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolComplete) ProtoMessage() {}
+
+func (x *ToolComplete) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolComplete.ProtoReflect.Descriptor instead.
+func (*ToolComplete) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ToolComplete) GetOutputJson() string {
+	if x != nil {
+		return x.OutputJson
+	}
+	return ""
+}
+
+type ToolError struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Error *Error                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	// Whether this error is recoverable
+	Fatal         bool `protobuf:"varint,2,opt,name=fatal,proto3" json:"fatal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolError) Reset() {
+	*x = ToolError{}
+	mi := &file_tool_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolError) ProtoMessage() {}
+
+func (x *ToolError) ProtoReflect() protoreflect.Message {
+	mi := &file_tool_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolError.ProtoReflect.Descriptor instead.
+func (*ToolError) Descriptor() ([]byte, []int) {
+	return file_tool_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ToolError) GetError() *Error {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
+func (x *ToolError) GetFatal() bool {
+	if x != nil {
+		return x.Fatal
+	}
+	return false
+}
+
 var File_tool_proto protoreflect.FileDescriptor
 
 const file_tool_proto_rawDesc = "" +
@@ -304,11 +933,54 @@ const file_tool_proto_rawDesc = "" +
 	"\voutput_json\x18\x01 \x01(\tR\n" +
 	"outputJson\x12*\n" +
 	"\x05error\x18\x02 \x01(\v2\x14.gibson.common.ErrorR\x05error\"\x13\n" +
-	"\x11ToolHealthRequest2\xf7\x01\n" +
+	"\x11ToolHealthRequest\"\x8f\x01\n" +
+	"\x11ToolClientMessage\x125\n" +
+	"\x05start\x18\x01 \x01(\v2\x1d.gibson.tool.ToolStartRequestH\x00R\x05start\x128\n" +
+	"\x06cancel\x18\x02 \x01(\v2\x1e.gibson.tool.ToolCancelRequestH\x00R\x06cancelB\t\n" +
+	"\apayload\"\x91\x01\n" +
+	"\x10ToolStartRequest\x12\x1d\n" +
+	"\n" +
+	"input_json\x18\x01 \x01(\tR\tinputJson\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\x02 \x01(\x03R\ttimeoutMs\x12\x19\n" +
+	"\btrace_id\x18\x03 \x01(\tR\atraceId\x12$\n" +
+	"\x0eparent_span_id\x18\x04 \x01(\tR\fparentSpanId\"+\n" +
+	"\x11ToolCancelRequest\x12\x16\n" +
+	"\x06reason\x18\x01 \x01(\tR\x06reason\"\x9f\x03\n" +
+	"\vToolMessage\x127\n" +
+	"\bprogress\x18\x01 \x01(\v2\x19.gibson.tool.ToolProgressH\x00R\bprogress\x12:\n" +
+	"\apartial\x18\x02 \x01(\v2\x1e.gibson.tool.ToolPartialResultH\x00R\apartial\x124\n" +
+	"\awarning\x18\x03 \x01(\v2\x18.gibson.tool.ToolWarningH\x00R\awarning\x127\n" +
+	"\bcomplete\x18\x04 \x01(\v2\x19.gibson.tool.ToolCompleteH\x00R\bcomplete\x12.\n" +
+	"\x05error\x18\x05 \x01(\v2\x16.gibson.tool.ToolErrorH\x00R\x05error\x12\x19\n" +
+	"\btrace_id\x18\n" +
+	" \x01(\tR\atraceId\x12\x17\n" +
+	"\aspan_id\x18\v \x01(\tR\x06spanId\x12\x1a\n" +
+	"\bsequence\x18\f \x01(\x03R\bsequence\x12!\n" +
+	"\ftimestamp_ms\x18\r \x01(\x03R\vtimestampMsB\t\n" +
+	"\apayload\"X\n" +
+	"\fToolProgress\x12\x18\n" +
+	"\apercent\x18\x01 \x01(\x05R\apercent\x12\x14\n" +
+	"\x05stage\x18\x02 \x01(\tR\x05stage\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"V\n" +
+	"\x11ToolPartialResult\x12\x1f\n" +
+	"\voutput_json\x18\x01 \x01(\tR\n" +
+	"outputJson\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\";\n" +
+	"\vToolWarning\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\"/\n" +
+	"\fToolComplete\x12\x1f\n" +
+	"\voutput_json\x18\x01 \x01(\tR\n" +
+	"outputJson\"M\n" +
+	"\tToolError\x12*\n" +
+	"\x05error\x18\x01 \x01(\v2\x14.gibson.common.ErrorR\x05error\x12\x14\n" +
+	"\x05fatal\x18\x02 \x01(\bR\x05fatal2\xc6\x02\n" +
 	"\vToolService\x12S\n" +
 	"\rGetDescriptor\x12%.gibson.tool.ToolGetDescriptorRequest\x1a\x1b.gibson.tool.ToolDescriptor\x12L\n" +
 	"\aExecute\x12\x1f.gibson.tool.ToolExecuteRequest\x1a .gibson.tool.ToolExecuteResponse\x12E\n" +
-	"\x06Health\x12\x1e.gibson.tool.ToolHealthRequest\x1a\x1b.gibson.common.HealthStatusB*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
+	"\x06Health\x12\x1e.gibson.tool.ToolHealthRequest\x1a\x1b.gibson.common.HealthStatus\x12M\n" +
+	"\rStreamExecute\x12\x1e.gibson.tool.ToolClientMessage\x1a\x18.gibson.tool.ToolMessage(\x010\x01B*Z(github.com/zero-day-ai/sdk/api/gen/protob\x06proto3"
 
 var (
 	file_tool_proto_rawDescOnce sync.Once
@@ -322,32 +994,51 @@ func file_tool_proto_rawDescGZIP() []byte {
 	return file_tool_proto_rawDescData
 }
 
-var file_tool_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_tool_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_tool_proto_goTypes = []any{
 	(*ToolGetDescriptorRequest)(nil), // 0: gibson.tool.ToolGetDescriptorRequest
 	(*ToolDescriptor)(nil),           // 1: gibson.tool.ToolDescriptor
 	(*ToolExecuteRequest)(nil),       // 2: gibson.tool.ToolExecuteRequest
 	(*ToolExecuteResponse)(nil),      // 3: gibson.tool.ToolExecuteResponse
 	(*ToolHealthRequest)(nil),        // 4: gibson.tool.ToolHealthRequest
-	(*JSONSchema)(nil),               // 5: gibson.common.JSONSchema
-	(*Error)(nil),                    // 6: gibson.common.Error
-	(*HealthStatus)(nil),             // 7: gibson.common.HealthStatus
+	(*ToolClientMessage)(nil),        // 5: gibson.tool.ToolClientMessage
+	(*ToolStartRequest)(nil),         // 6: gibson.tool.ToolStartRequest
+	(*ToolCancelRequest)(nil),        // 7: gibson.tool.ToolCancelRequest
+	(*ToolMessage)(nil),              // 8: gibson.tool.ToolMessage
+	(*ToolProgress)(nil),             // 9: gibson.tool.ToolProgress
+	(*ToolPartialResult)(nil),        // 10: gibson.tool.ToolPartialResult
+	(*ToolWarning)(nil),              // 11: gibson.tool.ToolWarning
+	(*ToolComplete)(nil),             // 12: gibson.tool.ToolComplete
+	(*ToolError)(nil),                // 13: gibson.tool.ToolError
+	(*JSONSchema)(nil),               // 14: gibson.common.JSONSchema
+	(*Error)(nil),                    // 15: gibson.common.Error
+	(*HealthStatus)(nil),             // 16: gibson.common.HealthStatus
 }
 var file_tool_proto_depIdxs = []int32{
-	5, // 0: gibson.tool.ToolDescriptor.input_schema:type_name -> gibson.common.JSONSchema
-	5, // 1: gibson.tool.ToolDescriptor.output_schema:type_name -> gibson.common.JSONSchema
-	6, // 2: gibson.tool.ToolExecuteResponse.error:type_name -> gibson.common.Error
-	0, // 3: gibson.tool.ToolService.GetDescriptor:input_type -> gibson.tool.ToolGetDescriptorRequest
-	2, // 4: gibson.tool.ToolService.Execute:input_type -> gibson.tool.ToolExecuteRequest
-	4, // 5: gibson.tool.ToolService.Health:input_type -> gibson.tool.ToolHealthRequest
-	1, // 6: gibson.tool.ToolService.GetDescriptor:output_type -> gibson.tool.ToolDescriptor
-	3, // 7: gibson.tool.ToolService.Execute:output_type -> gibson.tool.ToolExecuteResponse
-	7, // 8: gibson.tool.ToolService.Health:output_type -> gibson.common.HealthStatus
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	14, // 0: gibson.tool.ToolDescriptor.input_schema:type_name -> gibson.common.JSONSchema
+	14, // 1: gibson.tool.ToolDescriptor.output_schema:type_name -> gibson.common.JSONSchema
+	15, // 2: gibson.tool.ToolExecuteResponse.error:type_name -> gibson.common.Error
+	6,  // 3: gibson.tool.ToolClientMessage.start:type_name -> gibson.tool.ToolStartRequest
+	7,  // 4: gibson.tool.ToolClientMessage.cancel:type_name -> gibson.tool.ToolCancelRequest
+	9,  // 5: gibson.tool.ToolMessage.progress:type_name -> gibson.tool.ToolProgress
+	10, // 6: gibson.tool.ToolMessage.partial:type_name -> gibson.tool.ToolPartialResult
+	11, // 7: gibson.tool.ToolMessage.warning:type_name -> gibson.tool.ToolWarning
+	12, // 8: gibson.tool.ToolMessage.complete:type_name -> gibson.tool.ToolComplete
+	13, // 9: gibson.tool.ToolMessage.error:type_name -> gibson.tool.ToolError
+	15, // 10: gibson.tool.ToolError.error:type_name -> gibson.common.Error
+	0,  // 11: gibson.tool.ToolService.GetDescriptor:input_type -> gibson.tool.ToolGetDescriptorRequest
+	2,  // 12: gibson.tool.ToolService.Execute:input_type -> gibson.tool.ToolExecuteRequest
+	4,  // 13: gibson.tool.ToolService.Health:input_type -> gibson.tool.ToolHealthRequest
+	5,  // 14: gibson.tool.ToolService.StreamExecute:input_type -> gibson.tool.ToolClientMessage
+	1,  // 15: gibson.tool.ToolService.GetDescriptor:output_type -> gibson.tool.ToolDescriptor
+	3,  // 16: gibson.tool.ToolService.Execute:output_type -> gibson.tool.ToolExecuteResponse
+	16, // 17: gibson.tool.ToolService.Health:output_type -> gibson.common.HealthStatus
+	8,  // 18: gibson.tool.ToolService.StreamExecute:output_type -> gibson.tool.ToolMessage
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_tool_proto_init() }
@@ -356,13 +1047,24 @@ func file_tool_proto_init() {
 		return
 	}
 	file_common_proto_init()
+	file_tool_proto_msgTypes[5].OneofWrappers = []any{
+		(*ToolClientMessage_Start)(nil),
+		(*ToolClientMessage_Cancel)(nil),
+	}
+	file_tool_proto_msgTypes[8].OneofWrappers = []any{
+		(*ToolMessage_Progress)(nil),
+		(*ToolMessage_Partial)(nil),
+		(*ToolMessage_Warning)(nil),
+		(*ToolMessage_Complete)(nil),
+		(*ToolMessage_Error)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tool_proto_rawDesc), len(file_tool_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

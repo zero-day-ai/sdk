@@ -2,6 +2,7 @@ package serve
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -145,6 +146,17 @@ func serveToolGRPC(t tool.Tool, opts ...Option) error {
 		// Add proto message types
 		metadata["input_message_type"] = t.InputMessageType()
 		metadata["output_message_type"] = t.OutputMessageType()
+
+		// Capture capabilities if the tool implements CapabilityProvider
+		capCtx := context.Background()
+		if caps := tool.GetCapabilities(capCtx, t); caps != nil {
+			// Serialize capabilities to JSON for storage in metadata
+			if capsJSON, err := json.Marshal(caps); err == nil {
+				metadata["capabilities"] = string(capsJSON)
+			} else {
+				slog.Warn("failed to serialize tool capabilities", "error", err, "tool", t.Name())
+			}
+		}
 
 		// Create ServiceInfo struct (using map to avoid circular dependency)
 		serviceInfo = map[string]interface{}{

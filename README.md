@@ -254,6 +254,392 @@ Tools are stateless operations that wrap security utilities. They use Protocol B
 
 For complete tool development documentation, see **[docs/TOOLS.md](docs/TOOLS.md)**.
 
+### Queue-Based Tool Workers
+
+Gibson supports running tools as background workers that process work items from Redis queues. This enables horizontal scaling of tool execution across multiple processes or containers.
+
+#### Architecture Overview
+
+The worker system operates in a producer-consumer pattern:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Gibson Daemon                             │
+│  ┌──────────────┐         ┌─────────────┐                       │
+│  │   Agents     │ ─────▶  │ Tool Queue  │                       │
+│  │              │         │  (Redis)    │                       │
+│  └──────────────┘         └─────────────┘                       │
+└─────────────────────────────────────┼───────────────────────────┘
+                                      │
+                                      │ LPUSH WorkItems
+                                      ▼
+                          ┌───────────────────────┐
+                          │   Redis Queue         │
+                          │ tool:<name>:queue     │
+                          └───────────────────────┘
+                                      │
+                           ┌──────────┼──────────┐
+                           │          │          │
+                    BRPOP  │    BRPOP │   BRPOP  │
+                           ▼          ▼          ▼
+                    ┌──────────┬──────────┬──────────┐
+                    │ Worker 1 │ Worker 2 │ Worker 3 │
+                    │ (nmap)   │ (nmap)   │ (httpx)  │
+                    └──────────┴──────────┴──────────┘
+                           │          │          │
+                           └──────────┼──────────┘
+                                      │
+                                      │ PUBLISH Results
+                                      ▼
+                          ┌───────────────────────┐
+                          │ Results Channel       │
+                          │ results:<jobID>       │
+                          └───────────────────────┘
+                                      │
+                                      │ SUBSCRIBE
+                                      ▼
+┌─────────────────────────────────────┼───────────────────────────┐
+│                        Gibson Daemon                             │
+│  ┌──────────────┐         ┌─────────────┐                       │
+│  │   Agents     │ ◀─────  │ Result      │                       │
+│  │              │         │ Collector   │                       │
+│  └──────────────┘         └─────────────┘                       │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Flow**:
+1. **Gibson daemon** pushes `WorkItem` to `tool:<name>:queue`
+2. **Tool workers** pop work items using blocking `BRPOP`
+3. **Workers** execute tools with the proto input
+4. **Workers** publish `Result` to `results:<jobID>` channel
+5. **Gibson daemon** subscribes to results and returns to agents
+
+#### Creating a Tool Worker
+
+To run your tool as a worker, use the `worker.Run()` function:
+
+```go
+package main
+
+import (
+    "log"
+    "time"
+
+    "github.com/myorg/mytool"
+    "github.com/zero-day-ai/sdk/tool/worker"
+)
+
+func main() {
+    // Create your tool instance
+    tool := &mytool.MyTool{}
+
+    // Configure worker options
+    opts := worker.Options{
+        RedisURL:        "redis://localhost:6379",  // Redis connection
+        Concurrency:     4,                          // Number of worker goroutines
+        ShutdownTimeout: 30 * time.Second,          // Graceful shutdown timeout
+    }
+
+    // Run the worker (blocks until shutdown signal)
+    if err := worker.Run(tool, opts); err != nil {
+        log.Fatalf("Worker failed: %v", err)
+    }
+}
+```
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `RedisURL` | `string` | `redis://localhost:6379` | Redis connection string |
+| `Concurrency` | `int` | `4` | Number of parallel worker goroutines |
+| `ShutdownTimeout` | `time.Duration` | `30s` | Max time to wait for graceful shutdown |
+| `Logger` | `*slog.Logger` | JSON logger | Structured logger for worker operations |
+
+**Concurrency Tuning**:
+- **Higher values** (8-16): For I/O-bound tools (network scans, API calls)
+- **Lower values** (2-4): For CPU-bound tools or resource-constrained environments
+- **Consider**: Tool execution time, memory usage, queue depth
+
+#### Worker Lifecycle
+
+1. **Startup**:
+   - Connect to Redis
+   - Register tool metadata (`tool:<name>:meta`)
+   - Increment worker count (`tool:<name>:workers`)
+   - Start heartbeat goroutine (every 10s)
+   - Start N worker goroutines
+
+2. **Processing**:
+   - Pop `WorkItem` from `tool:<name>:queue` (blocking)
+   - Unmarshal proto input from JSON
+   - Execute tool via `ExecuteProto()`
+   - Marshal proto output to JSON
+   - Publish `Result` to `results:<jobID>`
+
+3. **Shutdown** (on SIGTERM/SIGINT):
+   - Cancel context (stops new work)
+   - Wait for in-flight items to complete
+   - Decrement worker count
+   - Close Redis connection
+   - Exit (or timeout after `ShutdownTimeout`)
+
+#### Redis Key Schema
+
+Workers interact with Redis using these key patterns:
+
+| Key Pattern | Type | Purpose | Example |
+|-------------|------|---------|---------|
+| `tool:<name>:queue` | List | Work items waiting for execution | `tool:nmap:queue` |
+| `tool:<name>:meta` | Hash | Tool metadata (version, types, etc.) | `tool:nmap:meta` |
+| `tool:<name>:health` | Key | Health check with TTL (15s) | `tool:nmap:health` |
+| `tool:<name>:workers` | Counter | Number of active workers | `tool:nmap:workers` |
+| `results:<jobID>` | Pub/Sub | Result delivery channel | `results:uuid-123-456` |
+
+**Operations**:
+- `LPUSH tool:<name>:queue <WorkItem>` - Submit work (daemon)
+- `BRPOP tool:<name>:queue 5` - Pop work with 5s timeout (worker)
+- `HSET tool:<name>:meta ...` - Register tool metadata (worker)
+- `INCR tool:<name>:workers` - Worker startup (worker)
+- `DECR tool:<name>:workers` - Worker shutdown (worker)
+- `SETEX tool:<name>:health 15 "alive"` - Heartbeat (worker)
+- `PUBLISH results:<jobID> <Result>` - Send result (worker)
+
+#### Work Item Structure
+
+```go
+type WorkItem struct {
+    JobID         string  // UUID correlating batch items
+    Index         int     // Position in batch (0-based)
+    Total         int     // Total items in batch
+    Tool          string  // Tool name (e.g., "nmap")
+    InputJSON     string  // Proto input as JSON
+    InputType     string  // Proto message type (e.g., "gibson.tools.nmap.v1.ScanRequest")
+    OutputType    string  // Expected proto output type
+    TraceID       string  // OpenTelemetry trace ID
+    SpanID        string  // OpenTelemetry span ID
+    SubmittedAt   int64   // Unix timestamp (ms)
+}
+```
+
+#### Result Structure
+
+```go
+type Result struct {
+    JobID         string  // Correlates with WorkItem
+    Index         int     // Position in batch
+    OutputJSON    string  // Proto output as JSON (empty if error)
+    OutputType    string  // Proto message type
+    Error         string  // Error message (empty if success)
+    WorkerID      string  // Unique worker identifier
+    StartedAt     int64   // Unix timestamp (ms)
+    CompletedAt   int64   // Unix timestamp (ms)
+}
+```
+
+#### Deployment Patterns
+
+**Local Development**:
+```bash
+# Terminal 1: Start Redis
+docker run -p 6379:6379 redis:7-alpine
+
+# Terminal 2: Run worker
+go run ./cmd/mytool-worker
+
+# Terminal 3: Run Gibson daemon
+gibson daemon start
+```
+
+**Docker Compose**:
+```yaml
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  nmap-worker:
+    build: ./tools/nmap
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORKER_CONCURRENCY: 8
+    deploy:
+      replicas: 3
+
+  httpx-worker:
+    build: ./tools/httpx
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORKER_CONCURRENCY: 4
+    deploy:
+      replicas: 2
+
+  gibson:
+    build: ./gibson
+    environment:
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8080:8080"
+```
+
+**Kubernetes**:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nmap-worker
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nmap-worker
+  template:
+    metadata:
+      labels:
+        app: nmap-worker
+    spec:
+      containers:
+      - name: worker
+        image: ghcr.io/myorg/nmap-worker:latest
+        env:
+        - name: REDIS_URL
+          value: redis://redis-service:6379
+        - name: WORKER_CONCURRENCY
+          value: "8"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+```
+
+#### Error Handling
+
+Workers are designed to be resilient:
+
+| Error Type | Behavior |
+|------------|----------|
+| **Redis connection failure** | Fatal - `worker.Run()` returns error |
+| **Pop timeout** | Non-fatal - loop continues |
+| **Proto unmarshal error** | Captured in `Result.Error` |
+| **Tool execution error** | Captured in `Result.Error` |
+| **Proto marshal error** | Captured in `Result.Error` |
+| **Result publish error** | Logged, not retried |
+| **Context cancellation** | Graceful shutdown initiated |
+
+All errors are logged with structured fields for observability.
+
+#### Observability
+
+Workers emit structured logs with these fields:
+
+```json
+{
+  "level": "info",
+  "msg": "work item completed",
+  "tool": "nmap",
+  "version": "1.0.0",
+  "worker_id": "hostname-1234-abc123",
+  "worker_num": 0,
+  "job_id": "uuid-123-456",
+  "index": 0,
+  "total": 10,
+  "duration_ms": 1234
+}
+```
+
+Use these logs with log aggregation systems (Loki, Elasticsearch) to monitor:
+- Work item throughput
+- Error rates
+- Worker count per tool
+- Queue wait times
+- Execution durations
+
+#### Example: Complete Worker Implementation
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+    "os"
+    "time"
+
+    pb "github.com/myorg/mytool/proto"
+    "github.com/zero-day-ai/sdk/tool/worker"
+    "github.com/zero-day-ai/sdk/types"
+    "google.golang.org/protobuf/proto"
+)
+
+type MyTool struct{}
+
+func (t *MyTool) Name() string                { return "mytool" }
+func (t *MyTool) Version() string             { return "1.0.0" }
+func (t *MyTool) Description() string         { return "My custom tool" }
+func (t *MyTool) Tags() []string              { return []string{"scanning"} }
+func (t *MyTool) InputMessageType() string    { return "myorg.mytool.v1.Request" }
+func (t *MyTool) OutputMessageType() string   { return "myorg.mytool.v1.Response" }
+
+func (t *MyTool) ExecuteProto(ctx context.Context, input proto.Message) (proto.Message, error) {
+    req := input.(*pb.Request)
+
+    // Execute tool logic
+    result, err := performScan(req.Target)
+    if err != nil {
+        return nil, fmt.Errorf("scan failed: %w", err)
+    }
+
+    return &pb.Response{
+        Success: true,
+        Data:    result,
+    }, nil
+}
+
+func (t *MyTool) Health(ctx context.Context) types.HealthStatus {
+    return types.HealthStatus{Status: types.HealthStatusHealthy}
+}
+
+func performScan(target string) (string, error) {
+    // Your tool implementation
+    return "scan results", nil
+}
+
+func main() {
+    // Get configuration from environment
+    redisURL := os.Getenv("REDIS_URL")
+    if redisURL == "" {
+        redisURL = "redis://localhost:6379"
+    }
+
+    concurrency := 4
+    if c := os.Getenv("WORKER_CONCURRENCY"); c != "" {
+        fmt.Sscanf(c, "%d", &concurrency)
+    }
+
+    // Create tool
+    tool := &MyTool{}
+
+    // Run worker
+    opts := worker.Options{
+        RedisURL:        redisURL,
+        Concurrency:     concurrency,
+        ShutdownTimeout: 30 * time.Second,
+    }
+
+    log.Printf("Starting worker: tool=%s version=%s concurrency=%d",
+        tool.Name(), tool.Version(), concurrency)
+
+    if err := worker.Run(tool, opts); err != nil {
+        log.Fatalf("Worker error: %v", err)
+    }
+}
+```
+
 ### 1. Define Proto Messages
 
 ```protobuf

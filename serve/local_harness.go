@@ -133,6 +133,30 @@ func (h *LocalHarness) CallToolProto(ctx context.Context, name string, request p
 	return fmt.Errorf("proto tool operations not available in standalone mode (no orchestrator connected)")
 }
 
+// CallToolProtoStream returns an error indicating streaming tool operations are not available.
+func (h *LocalHarness) CallToolProtoStream(ctx context.Context, name string, request protolib.Message, response protolib.Message, callback agent.ToolStreamCallback) error {
+	h.logger.Warn("CallToolProtoStream not available in standalone mode", "tool", name)
+	return fmt.Errorf("streaming tool operations not available in standalone mode (no orchestrator connected)")
+}
+
+// QueueToolWork returns an error indicating queue-based tool execution is not available.
+func (h *LocalHarness) QueueToolWork(ctx context.Context, toolName string, inputs []protolib.Message) (string, error) {
+	h.logger.Warn("QueueToolWork not available in standalone mode", "tool", toolName, "input_count", len(inputs))
+	return "", fmt.Errorf("queue-based tool execution not available in standalone mode (no orchestrator connected)")
+}
+
+// ToolResults returns a closed channel with an error indicating queue-based tool execution is not available.
+func (h *LocalHarness) ToolResults(ctx context.Context, jobID string) <-chan agent.QueuedToolResult {
+	h.logger.Warn("ToolResults not available in standalone mode", "job_id", jobID)
+	ch := make(chan agent.QueuedToolResult, 1)
+	ch <- agent.QueuedToolResult{
+		Index: 0,
+		Error: fmt.Errorf("queue-based tool execution not available in standalone mode (no orchestrator connected)"),
+	}
+	close(ch)
+	return ch
+}
+
 // ListTools returns an empty list with a warning.
 func (h *LocalHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
 	h.logger.Warn("ListTools not available in standalone mode")

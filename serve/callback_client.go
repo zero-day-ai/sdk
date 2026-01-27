@@ -994,3 +994,39 @@ func (c *CallbackClient) QueryNodes(ctx context.Context, req *proto.QueryNodesRe
 	}
 	return resp, nil
 }
+
+// ============================================================================
+// Tool Work Queue Operations
+// ============================================================================
+
+// QueueToolWork queues multiple tool invocations for parallel execution.
+// Returns a job ID that can be used to retrieve results via ToolResults.
+func (c *CallbackClient) QueueToolWork(ctx context.Context, req *proto.QueueToolWorkRequest) (*proto.QueueToolWorkResponse, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("QueueToolWork: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.QueueToolWork(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("QueueToolWork: %w", err)
+	}
+	return resp, nil
+}
+
+// ToolResults returns a streaming client for receiving job results.
+// The caller should call Recv() on the returned stream to receive results.
+func (c *CallbackClient) ToolResults(ctx context.Context, req *proto.ToolResultsRequest) (proto.HarnessCallbackService_ToolResultsClient, error) {
+	if !c.IsConnected() {
+		return nil, fmt.Errorf("ToolResults: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	stream, err := c.client.ToolResults(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ToolResults: %w", err)
+	}
+	return stream, nil
+}

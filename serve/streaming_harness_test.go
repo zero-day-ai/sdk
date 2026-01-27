@@ -3,6 +3,7 @@ package serve
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -133,6 +134,10 @@ func (m *mockStreamHarness) CallToolProto(ctx context.Context, name string, requ
 		return m.callToolProtoFunc(ctx, name, request, response)
 	}
 	return nil
+}
+
+func (m *mockStreamHarness) CallToolProtoStream(ctx context.Context, name string, request protolib.Message, response protolib.Message, callback agent.ToolStreamCallback) error {
+	return fmt.Errorf("streaming not implemented in mock")
 }
 
 func (m *mockStreamHarness) ListTools(ctx context.Context) ([]tool.Descriptor, error) {
