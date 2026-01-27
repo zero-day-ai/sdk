@@ -211,15 +211,22 @@ func (c *RedisClient) Subscribe(ctx context.Context, channel string) (<-chan Res
 
 // RegisterTool writes tool metadata to Redis and adds to available set.
 func (c *RedisClient) RegisterTool(ctx context.Context, meta ToolMeta) error {
-	// Marshal metadata to map for HSET
-	data, err := json.Marshal(meta)
+	// Convert tags slice to JSON string for Redis storage
+	tagsJSON, err := json.Marshal(meta.Tags)
 	if err != nil {
-		return fmt.Errorf("failed to marshal tool metadata: %w", err)
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 
-	var metaMap map[string]interface{}
-	if err := json.Unmarshal(data, &metaMap); err != nil {
-		return fmt.Errorf("failed to convert metadata to map: %w", err)
+	// Build a flat map for HSET (Redis can't store nested structures)
+	metaMap := map[string]interface{}{
+		"name":        meta.Name,
+		"version":     meta.Version,
+		"description": meta.Description,
+		"input_type":  meta.InputMessageType,
+		"output_type": meta.OutputMessageType,
+		"schema":      meta.Schema,
+		"tags":        string(tagsJSON), // Store as JSON string
+		"worker_count": meta.WorkerCount,
 	}
 
 	// Write metadata to hash
