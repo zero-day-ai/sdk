@@ -217,21 +217,25 @@ func (c *RedisClient) RegisterTool(ctx context.Context, meta ToolMeta) error {
 		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 
-	// Build a flat map for HSET (Redis can't store nested structures)
-	metaMap := map[string]interface{}{
-		"name":        meta.Name,
-		"version":     meta.Version,
-		"description": meta.Description,
-		"input_type":  meta.InputMessageType,
-		"output_type": meta.OutputMessageType,
-		"schema":      meta.Schema,
-		"tags":        string(tagsJSON), // Store as JSON string
-		"worker_count": meta.WorkerCount,
+	// Build a flat map for HSET - all values must be strings for go-redis
+	metaMap := map[string]string{
+		"name":         meta.Name,
+		"version":      meta.Version,
+		"description":  meta.Description,
+		"input_type":   meta.InputMessageType,
+		"output_type":  meta.OutputMessageType,
+		"schema":       meta.Schema,
+		"tags":         string(tagsJSON),
+		"worker_count": strconv.Itoa(meta.WorkerCount),
 	}
 
-	// Write metadata to hash
+	// Write metadata to hash using individual field-value pairs
 	metaKey := fmt.Sprintf("tool:%s:meta", meta.Name)
-	if err := c.client.HSet(ctx, metaKey, metaMap).Err(); err != nil {
+	args := make([]interface{}, 0, len(metaMap)*2)
+	for k, v := range metaMap {
+		args = append(args, k, v)
+	}
+	if err := c.client.HSet(ctx, metaKey, args...).Err(); err != nil {
 		return fmt.Errorf("failed to set tool metadata: %w", err)
 	}
 
